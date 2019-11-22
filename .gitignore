@@ -1,0 +1,7 @@
+__pycache__/
+pls/__pycache__/
+*.py[cod]
+pls/*.py[cod]
+
+#sphinx
+docs/_build/

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import fractional_matrix_power
 from scipy.linalg import lapack
-
+from exceptions import *
 
 def gsvd(A, M=[], W=[], exp=0.5):
 	"""performs Generalized Singular Value Decomposition given an
@@ -36,9 +36,18 @@ def gsvd(A, M=[], W=[], exp=0.5):
 	if W == []:
 		W = np.identity(A.shape[1])
 
-	if (M.shape[0] != A.shape[0]) or (W.shape[0] != A.shape[1]):
+	#handle dimension mismatches of input matrices
+	M_wrong_dim = M.shape[0] != A.shape[0]
+	W_wrong_dim = W.shape[0] != A.shape[1]
+	if M_wrong_dim:
+		raise InputMatrixDimensionMismatchError(
+			"Dimension of M {} doesn't match number of rows of A ({})"
+			.format(M.shape, A.shape[0]))
+	if W_wrong_dim:
+		raise InputMatrixDimensionMismatchError(
+			"Dimension of W {} doesn't match number of columns of A ({})"
+			.format(W.shape, A.shape[1]))
 		
-
 	#transpose A and swap M and W if more columns than rows
 	flipped = False
 	if A.shape[0] < A.shape[1]:
