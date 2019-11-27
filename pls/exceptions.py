@@ -2,7 +2,7 @@
 
 
 class Error(Exception):
-    """Base class for the following excpetions
+    """Base class for the following excpetions.
     """
 
     pass
@@ -10,7 +10,14 @@ class Error(Exception):
 
 class InputMatrixDimensionMismatchError(Error):
     """Exception raised when the dimensions of M and W don't match
-    the dimensions of M and W
+    the dimensions of M and W.
+    """
+
+    pass
+
+
+class ConditionMatrixMalformedError(Error):
+    """Raised when the Condition matrix is not of shape (n,).
     """
 
     pass
