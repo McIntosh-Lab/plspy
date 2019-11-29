@@ -4,7 +4,7 @@ from scipy.linalg import lapack
 import exceptions
 
 
-def gsvd(A, M=[], W=[], exp=0.5):
+def gsvd(A, M=None, W=None, exp=0.5):
     """Performs Generalized Singular Value Decomposition given an
     input matrix `A`, row-wise constraint matrix `M`, column-wise
     constraint matrix `W`, and an exponent value `exp`.
@@ -33,12 +33,12 @@ def gsvd(A, M=[], W=[], exp=0.5):
 
     A = np.array(A)
     # if no M/W matrix specified, use identity matrix
-    if M == []:
+    if M is None or M == []:
         M = np.identity(A.shape[0])
     # cast to numpy array
     else:
         M = np.array(M)
-    if W == []:
+    if W is None or W == []:
         W = np.identity(A.shape[1])
     else:
         W = np.array(W)

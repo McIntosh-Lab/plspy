@@ -21,3 +21,10 @@ class ConditionMatrixMalformedError(Error):
     """
 
     pass
+
+
+class NotImplementedError(Error):
+    """Raised when a function has yet to be implemented.
+    """
+
+    pass

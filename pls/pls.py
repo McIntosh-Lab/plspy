@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 
 # project imports
 import pls_classes
@@ -15,7 +15,14 @@ def PLS(*args, **kwargs):
     try:
         pls_method = kwargs.pop("pls_method")
     except KeyError:
-        pls_method = "default"
+        pls_method = "mct"
+        kwargs["pls_alg"] = pls_method
 
+    # pls_method = kwargs.get("pls_method")
+    # if pls_method is None:
+    #     pls_method = "mct"
+    #     kwargs["pls_method"] = pls_method
+
+    print(kwargs)
     # return finished PLS class with user-specified method
     return pls_classes.PLSBase.create(pls_method, *args, **kwargs)
