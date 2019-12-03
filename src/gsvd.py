@@ -12,7 +12,7 @@ def gsvd(A, M=None, W=None, exp=0.5):
     Parameters
     ----------
     A : array_like
-        Input matrix of dimension `m`x`n`
+        Input matrix of dimension `m` x `n`
     M : array_like
         Row-wise constraint matrix of size `m`x`m`
     W : array_like

@@ -69,7 +69,8 @@ class PLSBase(abc.ABC):
     def _create(cls, pls_method, *args, **kwargs):
         if pls_method not in cls._subclasses and pls_method in cls._pls_types:
             raise exceptions.NotImplementedError(
-                "Specified PLS method has not yet been implemented."
+                f"Specified PLS/Resample method {cls._pls_types[pls_method]} "
+                "has not yet been implemented."
             )
         elif pls_method not in cls._subclasses:
             raise ValueError(f"Invalid PLS method {pls_method}")
@@ -167,9 +168,7 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
                 "For {self.pls_types[self.pls_alg]},"
                 "Y must be of type None. Y = \n{Y}"
             )
-        self.groups_sizes, self.num_groups = self._get_groups_info(
-            groups_sizes
-        )
+        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -186,14 +185,15 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
 
         # compute X means and X mean-centered values
         self.X_means, self.X_mc = self._mean_center(X, ngroups=self.num_groups)
-        self.U, self.s, self.V = self._run_pls(
-            self.X_mc, ngroups=self.num_groups
-        )
+        self.U, self.s, self.V = self._run_pls(self.X_mc, ngroups=self.num_groups)
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = self._compute_latents(self.X_mc, self.V)
-        self.resample_tests = bootstrap_permutation.ResampleTestTaskPLS(
+        self.resample_tests = bootstrap_permutation.ResampleTest._create(
+            self.pls_alg,
             self.X,
+            self.U,
             self.s,
+            self.V,
             self.cond_order,
             preprocess=self._mean_center,
             nperm=self.num_perm,
@@ -251,8 +251,7 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
         """
         if ngroups == 1:
             prod = np.dot(
-                np.ones((X.shape[0], 1)),
-                np.mean(X, axis=0).reshape((1, X.shape[1])),
+                np.ones((X.shape[0], 1)), np.mean(X, axis=0).reshape((1, X.shape[1])),
             )
 
             X_means = X - prod
@@ -324,7 +323,7 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
 
     def __repr__(self):
         stg = ""
-        info = f"\nAlgorithm: {self.pls_types[self.pls_alg]}\n\n"
+        info = f"\nAlgorithm: {self._pls_types[self.pls_alg]}\n\n"
         stg += info
         for k, v in self.__dict__.items():
             stg += f"\n{k}:\n\t"
@@ -333,7 +332,7 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
 
     def __str__(self):
         stg = ""
-        info = f"\nAlgorithm: {self.pls_types[self.pls_alg]}\n\n"
+        info = f"\nAlgorithm: {self._pls_types[self.pls_alg]}\n\n"
         stg += info
         for k, v in self.__dict__.items():
             stg += f"\n{k}:\n\t"

@@ -10,6 +10,7 @@ target/
 .tox/
 .pre-commit*
 *.toml
+*.ini
 
 #sphinx
 docs/_build/

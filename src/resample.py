@@ -6,7 +6,9 @@ import scipy.stats
 import exceptions
 
 
-def resample_without_replacement(matrix, C=None, group_num=1, return_indices=False):
+def resample_without_replacement(
+    matrix, C=None, group_num=1, return_indices=False
+):
     """Resamples input matrix without replacement. This implementation
     uses condition array `C` to shuffle the rows of `matrix` within
     conditions, without replacement. Returns `resampled` as shuffled
@@ -80,7 +82,9 @@ def resample_without_replacement(matrix, C=None, group_num=1, return_indices=Fal
     # return resampled
 
 
-def resample_with_replacement(matrix, C=None, group_num=1, return_indices=False):
+def resample_with_replacement(
+    matrix, C=None, group_num=1, return_indices=False
+):
     """Resamples input matrix with replacement. This implementation
     uses condition array `C` to shuffle the rows of `matrix` within
     conditions, with replacement. Returns `resampled` as shuffled
