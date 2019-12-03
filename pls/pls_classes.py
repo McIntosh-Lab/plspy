@@ -2,7 +2,7 @@ import abc
 import numpy as np
 
 # project imports
-# import bootstrap_permutation
+import bootstrap_permutation
 import gsvd
 import exceptions
 
@@ -14,10 +14,10 @@ class PLSBase(abc.ABC):
     """
 
     # tracks registered PLSBase subclasses
-    subclasses = {}
+    _subclasses = {}
 
     # maps abbreviated user-specified classnames to full PLS variant names
-    pls_types = {
+    _pls_types = {
         "mct": "Mean-Centering Task PLS",
         # "mct_mg": "Mean-Centering Task PLS - Multi-Group",
         "nrt": "Non-Rotated Task PLS",
@@ -34,41 +34,49 @@ class PLSBase(abc.ABC):
 
     # force existence of run function
     @abc.abstractmethod
-    def run_pls(self):
+    def _run_pls(self):
         pass
 
     # force existence of bootstrap function
-    @abc.abstractmethod
-    def bootstrap(self):
-        pass
+    # @abc.abstractmethod
+    # def bootstrap(self):
+    #     pass
 
     # force existence of permutation function
-    @abc.abstractmethod
-    def permutation(self):
-        pass
+    # @abc.abstractmethod
+    # def permutation(self):
+    #     pass
 
     @abc.abstractmethod
     def __str__(self):
         pass
 
+    @abc.abstractmethod
+    def __repr__(self):
+        pass
+
     # register valid decorated PLS method as a subclass of PLSBase
     @classmethod
-    def register_subclass(cls, pls_method):
+    def _register_subclass(cls, pls_method):
         def decorator(subclass):
-            cls.subclasses[pls_method] = subclass
+            cls._subclasses[pls_method] = subclass
             return subclass
 
         return decorator
 
     # instantiate and return valid registered PLS method specified by user
     @classmethod
-    def create(cls, pls_method, *args, **kwargs):
-        if pls_method not in cls.subclasses:
+    def _create(cls, pls_method, *args, **kwargs):
+        if pls_method not in cls._subclasses and pls_method in cls._pls_types:
+            raise exceptions.NotImplementedError(
+                "Specified PLS method has not yet been implemented."
+            )
+        elif pls_method not in cls._subclasses:
             raise ValueError(f"Invalid PLS method {pls_method}")
-        return cls.subclasses[pls_method](*args, **kwargs)
+        return cls._subclasses[pls_method](*args, **kwargs)
 
 
-@PLSBase.register_subclass("mct")
+@PLSBase._register_subclass("mct")
 class _MeanCenterTaskSingleGroupPLS(PLSBase):
     """Driver class for Mean-Centered Task PLS. Currently only has single-group
     MCT-PLS implemented.
@@ -135,7 +143,10 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
      X_latent : np_array
-        latent variables of input X; dot-product of X_mc and V.
+        Latent variables of input X; dot-product of X_mc and V.
+    resample_tests : class
+        Class containing results for permutation and bootstrap tests. See
+        documentation on Resample Tests for more information.
 
     """
 
@@ -145,8 +156,9 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
         Y: None,
         groups_sizes: tuple,
         num_conditions: int,
-        num_perm: int = 0,
-        num_boot: int = 0,
+        cond_order: list = None,
+        num_perm: int = 1000,
+        num_boot: int = 1000,
         **kwargs,
     ):
         self.X = X
@@ -155,24 +167,44 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
                 "For {self.pls_types[self.pls_alg]},"
                 "Y must be of type None. Y = \n{Y}"
             )
-        self.groups_sizes, self.num_groups = self.get_groups_info(groups_sizes)
-        # self.num_groups = len(self.groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
+        # if no user-specified condition list, generate one
+        if cond_order is None:
+            self.cond_order = self._get_cond_order(
+                self.groups_sizes, self.num_conditions
+            )
+        else:
+            self.cond_order = cond_order
+
         self.num_perm = num_perm
         self.num_boot = num_boot
         for k, v in kwargs.items():
             setattr(self, k, v)
 
         # compute X means and X mean-centered values
-        self.X_means, self.X_mc = self.mean_center(X, ngroups=self.num_groups)
-        self.U, self.s, self.V = self.run_pls(
+        self.X_means, self.X_mc = self._mean_center(X, ngroups=self.num_groups)
+        self.U, self.s, self.V = self._run_pls(
             self.X_mc, ngroups=self.num_groups
         )
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self.compute_latents(self.X_mc, self.V)
+        self.X_latent = self._compute_latents(self.X_mc, self.V)
+        self.resample_tests = bootstrap_permutation.ResampleTestTaskPLS(
+            self.X,
+            self.s,
+            self.cond_order,
+            preprocess=self._mean_center,
+            nperm=self.num_perm,
+            nboot=self.num_boot,
+            ngroups=self.num_groups,
+            nonrotated=None,
+        )
+        print("\nDone.")
 
     @staticmethod
-    def compute_latents(I, EV, ngroups=1):
+    def _compute_latents(I, EV, ngroups=1):
         """Computes latent values of original mxn input matrix `I`
         and corresponding nxn eigenvector `EV` by performing a dot-product.
 
@@ -198,7 +230,7 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
             )
 
     @staticmethod
-    def mean_center(X, ngroups=1):
+    def _mean_center(X, ngroups=1):
         """Single-group preprocessing for `X`. Generates `X_means` and
         `X_mc` for use with `run_pls`
 
@@ -232,7 +264,7 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
             )
 
     @staticmethod
-    def run_pls(mc, ngroups=1):
+    def _run_pls(mc, ngroups=1):
         """Runs and returns results of Generalized SVD on `mc`,
         mean-centered input matrix `X`.
 
@@ -262,16 +294,8 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
                 "Multi-group MCT-PLS not yet implemented."
             )
 
-    # TODO: implement OOP version of boostrap and permutation
-    # and wrap them with these
-    def bootstrap(self):
-        pass
-
-    def permutation(self):
-        pass
-
     @staticmethod
-    def get_groups_info(groups_tuple):
+    def _get_groups_info(groups_tuple):
         """Returns tuple of groups tuple passed into class and
         number of subjects.
         """
@@ -280,6 +304,23 @@ class _MeanCenterTaskSingleGroupPLS(PLSBase):
             return ((), 0)
         else:
             return (groups_tuple, len(groups_tuple))
+
+    @staticmethod
+    def _get_cond_order(groups_tuple, num_conditions):
+        """
+        Returns a list of lists. Each sub-list contains the condition ordering
+        for each group, where the condition number starts at 0 and iterates to
+        `num_conditions`. Length of each sub-list is `groups_tuple[i] *
+        num_conditions` and length of returned list is `len(groups_tuple)`.
+        """
+        cond_order = []
+        # print(f"GT: {groups_tuple}")
+        for i in range(len(groups_tuple)):
+            group_list = []
+            for k in range(num_conditions):
+                group_list.extend([k] * groups_tuple[i])
+                cond_order.append(group_list)
+        return cond_order
 
     def __repr__(self):
         stg = ""

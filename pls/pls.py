@@ -12,6 +12,10 @@ def PLS(*args, **kwargs):
     TODO: implement first version of PLS and document required values here
 
     """
+
+    # TODO: handle first argument being pls method
+    # print(f"arg1:{args[0]}")
+
     try:
         pls_method = kwargs.pop("pls_method")
     except KeyError:
@@ -23,6 +27,6 @@ def PLS(*args, **kwargs):
     #     pls_method = "mct"
     #     kwargs["pls_method"] = pls_method
 
-    print(kwargs)
+    # print(kwargs)
     # return finished PLS class with user-specified method
-    return pls_classes.PLSBase.create(pls_method, *args, **kwargs)
+    return pls_classes.PLSBase._create(pls_method, *args, **kwargs)
