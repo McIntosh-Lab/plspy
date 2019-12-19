@@ -1,8 +1,9 @@
 __pycache__/
-pls/__pycache__/
+src/__pycache__/
 *.py[cod]
-pls/*.py[cod]
-pls/*.sw[op]
+src/.*.py[cod]
+src/.*.sw[op]
+src/.nfs*
 
 example_*/
 *-info/

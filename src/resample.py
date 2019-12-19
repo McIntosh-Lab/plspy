@@ -7,7 +7,7 @@ import exceptions
 
 
 def resample_without_replacement(
-    matrix, C=None, group_num=1, return_indices=False
+    matrix, cond_order, C=None, group_num=0, return_indices=False
 ):
     """Resamples input matrix without replacement. This implementation
     uses condition array `C` to shuffle the rows of `matrix` within
@@ -41,19 +41,26 @@ def resample_without_replacement(
                 conditions list.
     """
 
-    # initialize C to be one condition if not otherwise specified
+    # initialize C based on cond_order unless otherwise specified
     if C is None:
-        C = np.ones((matrix.shape[0],))
-
+        # C = np.ones((len(matrix), matrix[0].shape[0]))
+        C = []
+        for i in range(len(cond_order[group_num])):
+            # tmp = []
+            # for j in range(len(cond_order[i])):
+            C.extend([i] * cond_order[group_num][i])
+        C = np.array(C)
     # print(C)
     # select C array corresponding to group number
-    C = np.array(C[group_num - 1])
+    resampled = np.empty(matrix.shape)
+
+    # C = np.array(C[group_num])
     # print(C)
     # print(C.shape)
-    if len(C.shape) > 1:
+    if len(C.shape) > 2:
         raise exceptions.ConditionMatrixMalformedError(
             "Condition matrix has improper dimensions."
-            "Must be of dimension (n,). Was {} instead.".format(C.shape)
+            "Must be of dimension (g, n,). Was {} instead.".format(C.shape)
         )
     # extract unique condition numbers
     C_vals = np.unique(C)
@@ -83,7 +90,7 @@ def resample_without_replacement(
 
 
 def resample_with_replacement(
-    matrix, C=None, group_num=1, return_indices=False
+    matrix, cond_order, C=None, group_num=1, return_indices=False
 ):
     """Resamples input matrix with replacement. This implementation
     uses condition array `C` to shuffle the rows of `matrix` within
@@ -117,12 +124,23 @@ def resample_with_replacement(
                 conditions list.
     """
 
-    # initialize C to be one condition if not otherwise specified
+    # initialize C based on cond_order unless otherwise specified
     if C is None:
-        C = np.ones(matrix.shape[0])
+        # C = np.ones((len(matrix), matrix[0].shape[0]))
+        C = []
+        for i in range(len(cond_order[group_num])):
+            # tmp = []
+            # for j in range(len(cond_order[i])):
+            C.extend([i] * cond_order[group_num][i])
+        C = np.array(C)
+
+    ## initialize C to be one condition if not otherwise specified
+
+    # if C is None:
+    #     C = np.ones(matrix.shape[0])
 
     # select C array corresponding to group number
-    C = np.array(C[group_num - 1])
+    # C = np.array(C[group_num - 1])
 
     if len(C.shape) > 1:
         raise exceptions.ConditionMatrixMalformedError(
@@ -139,6 +157,7 @@ def resample_with_replacement(
     # for number of unique conditions
     for idx in range(len(C_vals)):
         # extract indices corresponding to current condition and shuffle them
+        np.random.seed(idx)
         tmp = shuf_indices[C == C_vals[idx]]
         # shuffle with replacement
         rand_inds = np.random.randint(len(tmp), size=len(tmp))

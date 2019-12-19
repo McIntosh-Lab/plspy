@@ -16,6 +16,13 @@ class InputMatrixDimensionMismatchError(Error):
     pass
 
 
+class ImproperShapeError(Error):
+    """Exception raised when a matrix has the incorrect shape.
+    """
+
+    pass
+
+
 class ConditionMatrixMalformedError(Error):
     """Raised when the Condition matrix is not of shape (n,).
     """

@@ -143,6 +143,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         )
         self.conf_ints, self.std_errs, self.boot_ratios = self._bootstrap_test(
             X,
+            U,
             s,
             V,
             cond_order,
@@ -159,35 +160,50 @@ class _ResampleTestTaskPLS(ResampleTest):
     ):
         """Run permutation test on X. Resamples X (without replacement) based
         on condition order, runs PLS on resampled matrix, and computes the
-        permutation ratio ((number of times permutation > observation)/`niter`.
+        element-wise permutation ratio ((number of times permutation > observation)/`niter`.
         """
-        if ngroups > 1:
-            raise exceptions.NotImplementedError(
-                "Multi-group MCT-PLS is not yet implemented."
-            )
+        # if ngroups > 1:
+        #     raise exceptions.NotImplementedError(
+        #         "Multi-group MCT-PLS is not yet implemented."
+        #     )
 
         # singvals = np.empty((s.shape[0], niter))
-        greatersum = 0
+        greatersum = np.zeros(s.shape)
         print("----Running Permutation Test----\n")
         for i in range(niter):
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
-            X_new, resampled_indices = resample.resample_without_replacement(
-                X, C=cond_order, return_indices=True
-            )
+            X_new = np.empty(X.shape)
+            resampled_indices = []
+            group_sums = np.array([np.sum(i) for i in cond_order])
+            idx = 0
+            for i in range(ngroups):
+                (
+                    X_new[idx : idx + group_sums[i],],
+                    res_ind,
+                ) = resample.resample_without_replacement(
+                    X[idx : idx + group_sums[i],], cond_order, return_indices=True
+                )
+                resampled_indices.append(res_ind)
+                idx += group_sums[i]
+            resampled_indices = np.array(resampled_indices)
+
+            # X_new, resampled_indices = resample.resample_without_replacement(
+            #     X, cond_order, return_indices=True
+            # )
 
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
-            X_new_means, X_new_mc = preprocess(X_new, ngroups=ngroups)
+            X_new_means, X_new_mc = preprocess(X_new, cond_order=cond_order)
 
             # run GSVD on mean-centered, resampled matrix
             U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
             # insert s_hat into singvals tracking matrix
             # singvals[:, i] = s_hat
             # count number of times sampled singular values are
-            # greater than observed singular values
-            greatersum += sum(s_hat > s)
+            # greater than observed singular values, element-wise
+            greatersum += s_hat > s
 
         permute_ratio = greatersum / niter
         return permute_ratio
@@ -195,6 +211,7 @@ class _ResampleTestTaskPLS(ResampleTest):
     @staticmethod
     def _bootstrap_test(
         X,
+        U,
         s,
         V,
         cond_order,
@@ -209,14 +226,14 @@ class _ResampleTestTaskPLS(ResampleTest):
         resampled X matrices, and computes `conf_int`, `std_errs`, and
         `boot_ratios`.
         """
-        if ngroups > 1:
-            raise exceptions.NotImplementedError(
-                "Multi-group MCT-PLS is not yet implemented."
-            )
+        # if ngroups > 1:
+        #     raise exceptions.NotImplementedError(
+        #         "Multi-group MCT-PLS is not yet implemented."
+        #     )
 
         # allocate memory for sampled values
-        left_sv_sampled = np.empty((niter, X.shape[0], X.shape[0]))
-        right_sv_sampled = np.empty((niter, X.shape[1], X.shape[1]))
+        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[0]))
+        right_sv_sampled = np.empty((niter, V.shape[0], V.shape[0]))
 
         # right_sum = np.zeros(X.shape[1], X.shape[1])
         # right_squares = np.zeros(X.shape[1], X.shape[1])
@@ -226,13 +243,27 @@ class _ResampleTestTaskPLS(ResampleTest):
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
-            X_new, resampled_indices = resample.resample_with_replacement(
-                X, C=cond_order, return_indices=True
-            )
+            # resample within-group using cond_order for group size info
+            X_new = np.empty(X.shape)
+            resampled_indices = []
+            group_sums = np.array([np.sum(i) for i in cond_order])
+            idx = 0
+            for i in range(ngroups):
+                (
+                    X_new[idx : idx + group_sums[i],],
+                    res_ind,
+                ) = resample.resample_with_replacement(
+                    X[idx : idx + group_sums[i],], cond_order, return_indices=True
+                )
+                resampled_indices.append(res_ind)
+                idx += group_sums[i]
+            resampled_indices = np.array(resampled_indices)
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling
-            X_new_means, X_new_mc = preprocess(X_new, ngroups=ngroups)
+            X_new_means, X_new_mc = preprocess(
+                X_new, cond_order=cond_order
+            )  # , ngroups=ngroups)
 
             # run GSVD on mean-centered, resampled matrix
             U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
