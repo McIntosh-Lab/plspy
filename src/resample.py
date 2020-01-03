@@ -123,7 +123,7 @@ def resample_with_replacement(
                 If set to True, returns the ordering of the shuffled
                 conditions list.
     """
-
+    group_num = len(cond_order) - 1
     # initialize C based on cond_order unless otherwise specified
     if C is None:
         # C = np.ones((len(matrix), matrix[0].shape[0]))

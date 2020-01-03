@@ -18,10 +18,16 @@ def PLS(*args, **kwargs):
 
     try:
         pls_method = kwargs.pop("pls_method")
+        kwargs["pls_alg"] = pls_method
     except KeyError:
         pls_method = "mct"
         kwargs["pls_alg"] = pls_method
 
+    # TODO: find a cleaner way to do this
+    # if args[1] is not None:
+    #     if args[1]
+
+    # print(len(args))
     # pls_method = kwargs.get("pls_method")
     # if pls_method is None:
     #     pls_method = "mct"

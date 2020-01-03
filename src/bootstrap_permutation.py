@@ -59,6 +59,7 @@ class ResampleTest(abc.ABC):
 
 
 @ResampleTest._register_subclass("mct")
+@ResampleTest._register_subclass("rb")
 class _ResampleTestTaskPLS(ResampleTest):
     """Class that runs permutation and bootstrap tests for Task PLS. When run,
     this class generates fields for permutation test information
@@ -119,6 +120,7 @@ class _ResampleTestTaskPLS(ResampleTest):
     def __init__(
         self,
         X,
+        Y,
         U,
         s,
         V,
@@ -134,6 +136,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         self.permute_ratio = self._permutation_test(
             X,
+            Y,
             s,
             cond_order,
             ngroups,
@@ -143,6 +146,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         )
         self.conf_ints, self.std_errs, self.boot_ratios = self._bootstrap_test(
             X,
+            Y,
             U,
             s,
             V,
@@ -156,7 +160,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
     @staticmethod
     def _permutation_test(
-        X, s, cond_order, ngroups, niter, preprocess=None, nonrotated=None
+        X, Y, s, cond_order, ngroups, niter, preprocess=None, nonrotated=None
     ):
         """Run permutation test on X. Resamples X (without replacement) based
         on condition order, runs PLS on resampled matrix, and computes the
@@ -175,6 +179,8 @@ class _ResampleTestTaskPLS(ResampleTest):
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
             X_new = np.empty(X.shape)
+            if Y is not None:
+                Y_new = np.empty(Y.shape)
             resampled_indices = []
             group_sums = np.array([np.sum(i) for i in cond_order])
             idx = 0
@@ -185,6 +191,11 @@ class _ResampleTestTaskPLS(ResampleTest):
                 ) = resample.resample_without_replacement(
                     X[idx : idx + group_sums[i],], cond_order, return_indices=True
                 )
+
+                if Y is not None:
+                    Y_new[idx : idx + group_sums[i],] = Y[idx : idx + group_sums[i],][
+                        res_ind,
+                    ]
                 resampled_indices.append(res_ind)
                 idx += group_sums[i]
             resampled_indices = np.array(resampled_indices)
@@ -195,10 +206,14 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
-            X_new_means, X_new_mc = preprocess(X_new, cond_order=cond_order)
+            if Y is None:
+                X_new_means, X_new_mc = preprocess(X_new, cond_order=cond_order)
 
-            # run GSVD on mean-centered, resampled matrix
-            U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+                # run GSVD on mean-centered, resampled matrix
+                U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+            else:
+                R_new = preprocess(X_new, Y_new, cond_order)
+                U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
             # insert s_hat into singvals tracking matrix
             # singvals[:, i] = s_hat
             # count number of times sampled singular values are
@@ -211,6 +226,7 @@ class _ResampleTestTaskPLS(ResampleTest):
     @staticmethod
     def _bootstrap_test(
         X,
+        Y,
         U,
         s,
         V,
@@ -245,6 +261,8 @@ class _ResampleTestTaskPLS(ResampleTest):
             # create resampled X matrix and get resampled indices
             # resample within-group using cond_order for group size info
             X_new = np.empty(X.shape)
+            if Y is not None:
+                Y_new = np.empty(Y.shape)
             resampled_indices = []
             group_sums = np.array([np.sum(i) for i in cond_order])
             idx = 0
@@ -255,18 +273,29 @@ class _ResampleTestTaskPLS(ResampleTest):
                 ) = resample.resample_with_replacement(
                     X[idx : idx + group_sums[i],], cond_order, return_indices=True
                 )
+                # use same resampled indices for Y if applicable
+                if Y is not None:
+                    Y_new[idx : idx + group_sums[i],] = Y[idx : idx + group_sums[i],][
+                        res_ind
+                    ]
                 resampled_indices.append(res_ind)
                 idx += group_sums[i]
             resampled_indices = np.array(resampled_indices)
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling
-            X_new_means, X_new_mc = preprocess(
-                X_new, cond_order=cond_order
-            )  # , ngroups=ngroups)
+            if Y is None:
+                X_new_means, X_new_mc = preprocess(
+                    X_new, cond_order=cond_order
+                )  # , ngroups=ngroups)
 
-            # run GSVD on mean-centered, resampled matrix
-            U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+                # run GSVD on mean-centered, resampled matrix
+                U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+            else:
+                # compute condition-wise correlation matrices of resampled
+                # input matrices and run GSVD
+                R_new = preprocess(X_new, Y_new, cond_order)
+                U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
 
             # insert left singular vector into tracking np_array
             left_sv_sampled[i] = U_hat
