@@ -525,7 +525,9 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
         for i in range(len(order_all)):
             # X and Y zscored within each condition
             Xc_zsc = scipy.stats.zscore(X[start : order_all[i] + start,])
+            Xc_zsc /= np.sqrt(order_all[i])
             Yc_zsc = scipy.stats.zscore(Y[start : order_all[i] + start,])
+            Yc_zsc /= np.sqrt(order_all[i])
             np.nan_to_num(Xc_zsc, copy=False)
             np.nan_to_num(Yc_zsc, copy=False)
             # print(Xc_zsc)

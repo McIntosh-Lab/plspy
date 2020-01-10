@@ -46,6 +46,7 @@ def resample_without_replacement(
         # C = np.ones((len(matrix), matrix[0].shape[0]))
         C = []
         for i in range(len(cond_order[group_num])):
+            # for k in range(len(cond_order[i])):
             # tmp = []
             # for j in range(len(cond_order[i])):
             C.extend([i] * cond_order[group_num][i])
@@ -57,10 +58,10 @@ def resample_without_replacement(
     # C = np.array(C[group_num])
     # print(C)
     # print(C.shape)
-    if len(C.shape) > 2:
+    if len(C.shape) > 1:
         raise exceptions.ConditionMatrixMalformedError(
             "Condition matrix has improper dimensions."
-            "Must be of dimension (g, n,). Was {} instead.".format(C.shape)
+            "Must be of dimension (n,). Was {} instead.".format(C.shape)
         )
     # extract unique condition numbers
     C_vals = np.unique(C)
@@ -90,7 +91,7 @@ def resample_without_replacement(
 
 
 def resample_with_replacement(
-    matrix, cond_order, C=None, group_num=1, return_indices=False
+    matrix, cond_order, C=None, group_num=0, return_indices=False
 ):
     """Resamples input matrix with replacement. This implementation
     uses condition array `C` to shuffle the rows of `matrix` within
@@ -123,12 +124,14 @@ def resample_with_replacement(
                 If set to True, returns the ordering of the shuffled
                 conditions list.
     """
-    group_num = len(cond_order) - 1
+    # group_num = len(cond_order) - 1
     # initialize C based on cond_order unless otherwise specified
     if C is None:
         # C = np.ones((len(matrix), matrix[0].shape[0]))
         C = []
+        # cond_flat = cond_order.reshape(-1)
         for i in range(len(cond_order[group_num])):
+            # for i in range(len(cond_flat)):
             # tmp = []
             # for j in range(len(cond_order[i])):
             C.extend([i] * cond_order[group_num][i])
@@ -157,7 +160,6 @@ def resample_with_replacement(
     # for number of unique conditions
     for idx in range(len(C_vals)):
         # extract indices corresponding to current condition and shuffle them
-        np.random.seed(idx)
         tmp = shuf_indices[C == C_vals[idx]]
         # shuffle with replacement
         rand_inds = np.random.randint(len(tmp), size=len(tmp))
