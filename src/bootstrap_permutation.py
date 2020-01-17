@@ -131,18 +131,22 @@ class _ResampleTestTaskPLS(ResampleTest):
         ngroups=1,
         nonrotated=None,
         dist=(0.05, 0.95),
+        full_svd=True,
     ):
         self.dist = dist
 
         self.permute_ratio = self._permutation_test(
             X,
             Y,
+            U,
             s,
+            V,
             cond_order,
             ngroups,
             nperm,
             preprocess=preprocess,
             nonrotated=nonrotated,
+            full_svd=full_svd,
         )
         self.conf_ints, self.std_errs, self.boot_ratios = self._bootstrap_test(
             X,
@@ -156,11 +160,23 @@ class _ResampleTestTaskPLS(ResampleTest):
             preprocess=preprocess,
             nonrotated=nonrotated,
             dist=self.dist,
+            full_svd=full_svd,
         )
 
     @staticmethod
     def _permutation_test(
-        X, Y, s, cond_order, ngroups, niter, preprocess=None, nonrotated=None
+        X,
+        Y,
+        U,
+        s,
+        V,
+        cond_order,
+        ngroups,
+        niter,
+        preprocess=None,
+        nonrotated=None,
+        full_svd=False,
+        threshold=1e-12,
     ):
         """Run permutation test on X. Resamples X (without replacement) based
         on condition order, runs PLS on resampled matrix, and computes the
@@ -173,6 +189,8 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # singvals = np.empty((s.shape[0], niter))
         greatersum = np.zeros(s.shape)
+        s[np.abs(s) < threshold] = 0
+
         print("----Running Permutation Test----\n")
         for i in range(niter):
             if (i + 1) % 50 == 0:
@@ -189,7 +207,10 @@ class _ResampleTestTaskPLS(ResampleTest):
                     X_new[idx : idx + group_sums[i],],
                     res_ind,
                 ) = resample.resample_without_replacement(
-                    X[idx : idx + group_sums[i],], cond_order, return_indices=True
+                    X[idx : idx + group_sums[i],],
+                    cond_order,
+                    group_num=i,
+                    return_indices=True,
                 )
 
                 if Y is not None:
@@ -207,20 +228,61 @@ class _ResampleTestTaskPLS(ResampleTest):
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
             if Y is None:
-                X_new_means, X_new_mc = preprocess(X_new, cond_order=cond_order)
+                X_new_means, X_new_mc = preprocess(
+                    X_new, cond_order=cond_order
+                )  # , ngroups=ngroups)
 
-                # run GSVD on mean-centered, resampled matrix
-                U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+                if full_svd:
+                    # run GSVD on mean-centered, resampled matrix
+                    U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+                else:
+                    # use derivation equations to compute permuted singular values
+                    US_hat = X_new_mc @ V
+                    s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+                    s_hat[np.abs(s_hat) < threshold] = 0
+
+                    # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
+
+                    # gd = [float("{:.5f}".format(i)) for i in s_hat_]
+                    # der = [float("{:.5f}".format(i)) for i in s_hat]
+
+                    # print(f"GSVD: {gd}")
+                    # print(f"Derived: {der}")
+
+                    # U_hat = US_hat / s_hat
+                    # V_hat = np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)
+
             else:
+                # compute condition-wise correlation matrices of resampled
+                # input matrices and run GSVD
                 R_new = preprocess(X_new, Y_new, cond_order)
-                U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
+
+                if full_svd:
+                    U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
+                else:
+                    # use derivation equations to compute permuted singular values
+                    US_hat = R_new @ V
+                    s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+                    s_hat[np.abs(s_hat) < threshold] = 0
+
+                    # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(R_new)
+                    # gd = [float("{:.5f}".format(i)) for i in s_hat_]
+                    # der = [float("{:.5f}".format(i)) for i in s_hat]
+
+                    # print(f"GSVD: {gd}")
+                    # print(f"Derived: {der}")
+                    # U_hat = US_hat / s_hat
+                    # V_hat = np.linalg.inv(np.siag(s_hat)) @ (U.T @ X_new_mc)
             # insert s_hat into singvals tracking matrix
             # singvals[:, i] = s_hat
             # count number of times sampled singular values are
             # greater than observed singular values, element-wise
-            greatersum += s_hat > s
+            # greatersum += s >= s_hat
+            # print(s_hat >= s)
+            greatersum += s_hat >= s
 
         permute_ratio = greatersum / niter
+        # print(f"Actual: {s}")
         return permute_ratio
 
     @staticmethod
@@ -236,6 +298,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         preprocess=None,
         nonrotated=None,
         dist=(0.05, 0.95),
+        full_svd=False,
     ):
         """Runs a bootstrap estimation on X matrix. Resamples X with
         replacement according to the condition order, runs PLS on the
@@ -248,8 +311,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         #     )
 
         # allocate memory for sampled values
-        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[0]))
-        right_sv_sampled = np.empty((niter, V.shape[0], V.shape[0]))
+        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
+        right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
 
         # right_sum = np.zeros(X.shape[1], X.shape[1])
         # right_squares = np.zeros(X.shape[1], X.shape[1])
@@ -271,7 +334,10 @@ class _ResampleTestTaskPLS(ResampleTest):
                     X_new[idx : idx + group_sums[i],],
                     res_ind,
                 ) = resample.resample_with_replacement(
-                    X[idx : idx + group_sums[i],], cond_order, return_indices=True
+                    X[idx : idx + group_sums[i],],
+                    cond_order,
+                    group_num=i,
+                    return_indices=True,
                 )
                 # use same resampled indices for Y if applicable
                 if Y is not None:
@@ -289,15 +355,49 @@ class _ResampleTestTaskPLS(ResampleTest):
                     X_new, cond_order=cond_order
                 )  # , ngroups=ngroups)
 
-                # run GSVD on mean-centered, resampled matrix
-                U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+                if full_svd:
+                    # run GSVD on mean-centered, resampled matrix
+                    U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
+                else:
+                    # use derivation equations to compute permuted singular values
+                    US_hat = X_new_mc @ V
+                    # US_hat = V.T @ X_new_mc.T
+                    s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+                    U_hat_der = US_hat / s_hat
+                    # V_hat = (np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)).T
+                    V_hat = (X_new_mc.T @ U_hat_der) / s_hat
+                    # potential fix for sign issues
+                    U_hat = (X_new_mc @ V_hat) / s_hat
+                    # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
+
+                    # print("DERIVED\n")
+                    # print(U_hat_der)
+                    # print("=====================")
+                    # print("DOUBLE DERIVED\n")
+                    # print(s_hat)
+                    # print("----------------------")
+                    # print(s_hat_)
+                    # print("++++++++++++++++++++++")
+
             else:
                 # compute condition-wise correlation matrices of resampled
                 # input matrices and run GSVD
                 R_new = preprocess(X_new, Y_new, cond_order)
-                U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
+
+                if full_svd:
+                    U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
+                else:
+                    US_hat = R_new @ V
+                    s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+                    U_hat_der = US_hat / s_hat
+                    V_hat = (R_new.T @ U_hat_der) / s_hat
+                    # V_hat = (np.linalg.inv(np.diag(s_hat)) @ (U.T @ R_new)).T
+                    # potential fix for sign issues
+                    U_hat = (R_new @ V_hat) / s_hat
+                    # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(R_new)
 
             # insert left singular vector into tracking np_array
+            # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
             left_sv_sampled[i] = U_hat
             right_sv_sampled[i] = V_hat
             # right_sum += V_hat

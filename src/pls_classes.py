@@ -100,14 +100,18 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
-    num_perm : int
+    num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
         otherwise specified by the user.
-    num_boot : int
+    num_boot : int, optional
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    full_svd : boolean, optional
+        Optional value specifying whether or not full GSVD should be used
+        during bootstrap and permutation tests. If False, singular values
+        will be derived.
 
     Attributes
     ----------
@@ -165,6 +169,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
+        full_svd: bool = False,
         **kwargs,
     ):
 
@@ -222,6 +227,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
             nboot=self.num_boot,
             ngroups=self.num_groups,
             nonrotated=None,
+            full_svd=full_svd,
         )
         print("\nDone.")
 
@@ -426,6 +432,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
+        full_svd: bool = False,
         **kwargs,
     ):
 
@@ -488,6 +495,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
             nboot=self.num_boot,
             ngroups=self.num_groups,
             nonrotated=None,
+            full_svd=full_svd,
         )
         print("\nDone.")
 
@@ -518,7 +526,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
         """
         R = np.empty((np.product(cond_order.shape) * Y.shape[1], X.shape[1]))
         # flatten ordering for easier iteration
-        print(f"R shape: {R.shape}")
+        # print(f"R shape: {R.shape}")
         order_all = cond_order.reshape(-1)
         start = 0
         start_R = 0

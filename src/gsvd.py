@@ -4,7 +4,7 @@ from scipy.linalg import lapack
 import exceptions
 
 
-def gsvd(A, M=None, W=None, exp=0.5):
+def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False):
     """Performs Generalized Singular Value Decomposition given an
     input matrix `A`, row-wise constraint matrix `M`, column-wise
     constraint matrix `W`, and an exponent value `exp`.
@@ -20,6 +20,9 @@ def gsvd(A, M=None, W=None, exp=0.5):
     exp : float, optional
           Exponent value with with to raise `M` and `W` while transforming `A`
           and computing `Uhat`, `Vhat`. Defaults to `0.5`.
+    full_matrices : boolean
+        Flag to specify whether full or partial U,V matrices should
+        be returned.
 
     Returns
     -------
@@ -78,7 +81,7 @@ def gsvd(A, M=None, W=None, exp=0.5):
 
     # use LAPACK call to save computation overhead
     # U,S,Vt = np.linalg.svd(Ahat)
-    U, S, Vt, i = lapack.dgesdd(Ahat)
+    U, S, Vt, i = lapack.dgesdd(Ahat, full_matrices=full_matrices)
 
     # obtain matrices of generalized eigenvectors
     Uhat = np.matmul(matpow(M, -exp), U)
