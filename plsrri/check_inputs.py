@@ -17,3 +17,4 @@ def check_input_cond_order_match(X, cond_order, groups_sizes):
         # properties and subject info mismatch
         # raise exceptions.InputMatrixDimensionMismatchError(
         #     "")
+        pass

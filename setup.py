@@ -8,7 +8,7 @@ import setuptools
 #    long_description = fh.read()
 
 setuptools.setup(
-    name="PLS-rotman",  # Replace with your own username
+    name="plsrri",  # Replace with your own username
     version="0.1a1",
     author="Noah Frazier-Logue",
     author_email="nfrazier-logue@research.baycrest.org",

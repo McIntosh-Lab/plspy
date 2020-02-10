@@ -9,8 +9,8 @@ class Error(Exception):
 
 
 class InputMatrixDimensionMismatchError(Error):
-    """Exception raised when the dimensions of M and W don't match
-    the dimensions of M and W.
+    """Exception raised when the input dimensions of M and W don't match
+    the expected dimensions of M and W.
     """
 
     pass

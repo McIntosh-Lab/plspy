@@ -87,7 +87,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
     Parameters
     ----------
     X : np_array
-        Input neural matrix/matrices for use with PLS. Each participant's
+        Input neural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
     Y: None
@@ -108,15 +108,15 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    full_svd : boolean, optional
+    rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests. If False, singular values
-        will be derived.
+        during bootstrap and permutation tests ("rotated" method). 
+        If `rotate_method == 2`, singular values will be derived.
 
     Attributes
     ----------
     X : np_array
-        Input neural matrix/matrices for use with PLS. Each participant's
+        Input neural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
     groups_sizes : tuple
@@ -169,7 +169,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        full_svd: bool = False,
+        rotate_method: int = 0,
         **kwargs,
     ):
 
@@ -226,13 +226,12 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
             nperm=self.num_perm,
             nboot=self.num_boot,
             ngroups=self.num_groups,
-            nonrotated=None,
-            full_svd=full_svd,
+            rotate_method=rotate_method,
         )
         print("\nDone.")
 
     @staticmethod
-    def _mean_centre(X, cond_order, mctype=0):  # , ngroups=1):
+    def _mean_centre(X, cond_order, mctype=0, return_means=True):
         """Single-group preprocessing for `X`. Generates `X_means` and
         `X_mc` for use with `run_pls`
 
@@ -240,8 +239,14 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         ---------
         X : np_array
             Input matrix for use with PLS.
-        ngroups: int
-            Number of groups in input data.
+        cond_order: array-like
+            List/array where each entry holds the number of subjects per
+            condition for each group in the input matrix.
+        mctype : int, optional
+            Specify which mean-centring method to use. TODO: add other types
+        return_means : boolean, optional
+            Optionally specify whether or not to return the means along
+            with the mean-centred matrix.
             
         Returns
         -------
@@ -270,8 +275,11 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         # subtract condition-wise means from condition grand means
         # (within group)
         X_mc = np.repeat(group_means, repeats, axis=0) - X_means
-        X_mc /= np.linalg.norm(X_mc)
-        return (X_means, X_mc)
+        # X_mc /= np.linalg.norm(X_mc)
+        if return_means:
+            return (X_means, X_mc)
+        else:
+            return X_mc
 
         # if ngroups == 1:
         #     X_means = np.empty((len(cond_order), X.shape[-1]))
@@ -333,7 +341,8 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
             right singular vectors.
         """
         # if ngroups == 1:
-        U, s, V = gsvd.gsvd(mc)
+        # U, s, V = gsvd.gsvd(mc)
+        U, s, V = np.linalg.svd(mc, full_matrices=False)
         return (U, s, V)
         # else:
         #     raise exceptions.NotImplementedError(
@@ -423,6 +432,93 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
 
 @PLSBase._register_subclass("rb")
 class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
+    """Driver class for Behavioural Task PLS.
+
+    Class called for Behavioural Task PLS. TODO: add more here.
+
+    Parameters
+    ----------
+    X : np_array
+        Input neural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    num_perm : int, optional
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int, optional
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    nonrotated : boolean, optional
+        Optional value specifying whether or not full GSVD should be used
+        during bootstrap and permutation tests ("rotated" method). 
+        If False, singular values will be derived.
+
+    Attributes
+    ----------
+    X : np_array
+        Input neural matrix/matrices for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y : np_array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_groups : int
+        Value specifying the number of groups in the input data.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    cond_order : array-like
+        List/array where each entry holds the number of subjects per condition
+        for each group in the input matrix.
+    num_perm : int
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    X_means: np_array
+        Mean-values of X array on axis-0 (column-wise).
+    X_mc: np_array
+        Mean-centred values corresponding to input matrix X.
+    U: np_array
+        Eigenvectors of matrix `X_mc`*`X_mc`^T;
+        left singular vectors.
+    s: np_array
+        Vector containing diagonal of the singular values.
+    V: np_array
+        Eigenvectors of matrix `X_mc`^T*`X_mc`;
+        right singular vectors.
+     Y_latent : np_array
+        Latent variables for contrasts.
+     X_latent : np_array
+        Latent variables of input X; dot-product of X_mc and V.
+    resample_tests : class
+        Class containing results for permutation and bootstrap tests. See
+        documentation on Resample Tests for more information.
+    """
+
     def __init__(
         self,
         X: np.array,
@@ -432,7 +528,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        full_svd: bool = False,
+        rotate_method: int = 0,
         **kwargs,
     ):
 
@@ -481,7 +577,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = self._compute_latents(self.X, self.V)
         self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
-        print("resample time")
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -494,8 +589,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             ngroups=self.num_groups,
-            nonrotated=None,
-            full_svd=full_svd,
+            rotate_method=rotate_method,
         )
         print("\nDone.")
 

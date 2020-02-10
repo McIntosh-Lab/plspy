@@ -4,7 +4,7 @@ from scipy.linalg import lapack
 import exceptions
 
 
-def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False):
+def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False, compute_uv=True):
     """Performs Generalized Singular Value Decomposition given an
     input matrix `A`, row-wise constraint matrix `M`, column-wise
     constraint matrix `W`, and an exponent value `exp`.
@@ -34,15 +34,20 @@ def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False):
           Eigenvectors of matrix `A`^T*`A`; right singular vectors
     """
 
+    user_spec_m = True
+    user_spec_w = True
+
     A = np.array(A)
     # if no M/W matrix specified, use identity matrix
     if M is None or M == []:
         M = np.identity(A.shape[0])
+        user_spec_m = False
     # cast to numpy array
     else:
         M = np.array(M)
     if W is None or W == []:
         W = np.identity(A.shape[1])
+        user_spec_w = False
     else:
         W = np.array(W)
 
@@ -81,7 +86,9 @@ def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False):
 
     # use LAPACK call to save computation overhead
     # U,S,Vt = np.linalg.svd(Ahat)
-    U, S, Vt, i = lapack.dgesdd(Ahat, full_matrices=full_matrices)
+    U, S, Vt, i = lapack.dgesdd(
+        Ahat, full_matrices=full_matrices, compute_uv=compute_uv
+    )
 
     # obtain matrices of generalized eigenvectors
     Uhat = np.matmul(matpow(M, -exp), U)

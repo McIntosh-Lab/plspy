@@ -10,19 +10,22 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+# import os
+# import sys
+# sys.path.insert(0, os.path.abspath('.'))
+
 autodoc_mock_imports = ["pybuilder", "numpy", "scipy", "scipy.stats"]
 
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../src/"))
-sys.path.insert(0, os.path.abspath(".."))
-
+sys.path.insert(0, os.path.abspath("../../plsrri"))
+sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "PartialLeastSquares"
-copyright = "2019, Noah Frazier-Logue"
+project = "plsrri"
+copyright = "2020, Noah Frazier-Logue"
 author = "Noah Frazier-Logue"
 
 # The full version, including alpha/beta/rc tags

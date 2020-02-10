@@ -6,12 +6,12 @@ use_plugin("python.install_dependencies")
 use_plugin("python.coverage")
 use_plugin("python.distutils")
 
-name = "PartialLeastSquares"
+name = "plsrri"
 default_task = ["install_dependencies", "analyze", "publish"]
 # version = 0.1
 summary = (
-    "Partial Least Squares implementation in Python, courtesy"
-    "of Baycrest Health Sciences' Rotman Institute"
+    "Partial Least Squares implementation in Python, developed by"
+    "Rotman Research Institute at Baycrest Health Sciences"
 )
 authors = [Author("Noah Frazier-Logue", "nfrazier-logue@research.baycrest.org")]
 
