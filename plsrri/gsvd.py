@@ -80,6 +80,7 @@ def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False, compute_uv=True):
     # raise matrices to exponent provided
     Mexp = matpow(M, exp)
     Wexp = matpow(W, exp)
+    print(Wexp)
 
     # create A-hat according to formula:
     Ahat = np.matmul(np.matmul(Mexp, A), Wexp)

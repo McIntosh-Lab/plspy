@@ -230,7 +230,7 @@ def resample_with_replacement(
 
     # shuff = np.random.permutation(np.random.permutation(grp.T).T)
     # flatten
-    shuf_indices = shuff.ravel()
+    shuf_indices = shuf_cond.ravel()
 
     resampled = matrix[shuf_indices, :]
 

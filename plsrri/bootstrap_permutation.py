@@ -247,7 +247,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
                 # s_hat = gsvd.gsvd(permuted, compute_uv=False)
                 s_hat = np.linalg.svd(permuted, compute_uv=False)
-                print(s_hat)
+                # print(s_hat)
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
                 U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
@@ -261,7 +261,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 permuted_rot = permuted @ V_rot
                 s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
                 s_hat = np.copy(s_rot)
-                print(s_hat)
+                # print(s_hat)
             elif rotate_method == 2:
                 # use derivation equations to compute permuted singular values
                 US_hat = permuted @ V
@@ -277,7 +277,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
                 # U_hat = US_hat / s_hat
                 # V_hat = np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)
-                print(s_hat)
+                # print(s_hat)
             else:
                 raise exceptions.NotImplementedError(
                     f"Specified rotation method ({rotate_method}) "
@@ -412,7 +412,8 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # run GSVD on mean-centered, resampled matrix
 
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_bar, s_bar, V_bar = np.linalg.svd(permuted, full_matrices=False)
+                U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                V_hat = V_hat.T
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
                 U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)

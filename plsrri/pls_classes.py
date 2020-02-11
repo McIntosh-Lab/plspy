@@ -342,8 +342,9 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         """
         # if ngroups == 1:
         # U, s, V = gsvd.gsvd(mc)
+        # return (U, s, V)
         U, s, V = np.linalg.svd(mc, full_matrices=False)
-        return (U, s, V)
+        return (U, s, V.T)
         # else:
         #     raise exceptions.NotImplementedError(
         #         "Multi-group MCT-PLS not yet implemented."
