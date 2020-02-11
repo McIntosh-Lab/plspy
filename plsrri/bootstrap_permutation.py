@@ -134,7 +134,7 @@ class _ResampleTestTaskPLS(ResampleTest):
     ):
         self.dist = dist
 
-        self.permute_ratio = self._permutation_test(
+        self.permute_ratio, self.s_list = self._permutation_test(
             X,
             Y,
             U,
@@ -186,6 +186,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         # singvals = np.empty((s.shape[0], niter))
         greatersum = np.zeros(s.shape)
         # s[np.abs(s) < threshold] = 0
+        s_list = np.empty((niter, s.shape[0]))
+        ret_slist = True
 
         print("----Running Permutation Test----\n")
         for i in range(niter):
@@ -251,14 +253,16 @@ class _ResampleTestTaskPLS(ResampleTest):
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
                 U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                V_hat = V_hat.T
                 # procustes
                 # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
                 U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
 
                 # print(X_new_mc.shape)
                 rot = U_bar @ V.T
-                V_rot = V_hat @ rot
-                permuted_rot = permuted @ V_rot
+                V_rot = V_hat.T @ rot.T
+                # permuted_rot = permuted @ V_rot
+                permuted_rot = V_rot @ permuted
                 s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
                 s_hat = np.copy(s_rot)
                 # print(s_hat)
@@ -324,11 +328,14 @@ class _ResampleTestTaskPLS(ResampleTest):
             # print(s_hat >= s)
             # s_hat[np.abs(s_hat) < threshold] = 0
             greatersum += s_hat >= s
+            s_list[i:,] = s_hat
 
         permute_ratio = greatersum / niter
 
         print(f"real s: {s}")
         print(f"ratio: {permute_ratio}")
+        if ret_slist:
+            return (permute_ratio, s_list)
         return permute_ratio
 
     @staticmethod
@@ -417,10 +424,18 @@ class _ResampleTestTaskPLS(ResampleTest):
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
                 U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                V_hat = V_hat.T
                 # procustes
                 # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
                 U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-                s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
+                # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
+                # print(X_new_mc.shape)
+                rot = U_bar @ V.T
+                V_rot = V_hat.T @ rot.T
+                # permuted_rot = permuted @ V_rot
+                permuted_rot = V_rot @ permuted
+                s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
+                s_hat = np.copy(s_rot)
 
             elif rotate_method == 2:
                 # use derivation equations to compute permuted singular values
