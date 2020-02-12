@@ -274,7 +274,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         repeats = np.array([len(i) for i in cond_order])
         # subtract condition-wise means from condition grand means
         # (within group)
-        X_mc = np.repeat(group_means, repeats, axis=0) - X_means
+        X_mc = X_means - np.repeat(group_means, repeats, axis=0)
         # X_mc /= np.linalg.norm(X_mc)
         if return_means:
             return (X_means, X_mc)

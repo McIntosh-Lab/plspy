@@ -91,6 +91,8 @@ def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False, compute_uv=True):
         Ahat, full_matrices=full_matrices, compute_uv=compute_uv
     )
 
+    if not compute_uv:
+        return S
     # obtain matrices of generalized eigenvectors
     Uhat = np.matmul(matpow(M, -exp), U)
     Vhat = np.matmul(matpow(W, -exp), np.transpose(Vt))
