@@ -7,6 +7,7 @@ import scipy.stats
 import gsvd
 import resample
 import exceptions
+import class_functions
 
 
 class ResampleTest(abc.ABC):
@@ -146,7 +147,14 @@ class _ResampleTestTaskPLS(ResampleTest):
             preprocess=preprocess,
             rotate_method=rotate_method,
         )
-        self.conf_ints, self.std_errs, self.boot_ratios = self._bootstrap_test(
+        (
+            self.conf_ints,
+            self.std_errs,
+            self.boot_ratios,
+            self.LVcorr,
+            self.llcorr,
+            self.ulcorr,
+        ) = self._bootstrap_test(
             X,
             Y,
             U,
@@ -185,7 +193,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # singvals = np.empty((s.shape[0], niter))
         greatersum = np.zeros(s.shape)
-        # s[np.abs(s) < threshold] = 0
+        s[np.abs(s) < threshold] = 0
         debug = True
         debug_dict = {}
         if debug:
@@ -204,35 +212,6 @@ class _ResampleTestTaskPLS(ResampleTest):
             if Y is not None:
                 Y_new = resample.resample_without_replacement(Y, cond_order)
 
-            # X_new = np.empty(X.shape)
-            # if Y is not None:
-            #     Y_new = np.empty(Y.shape)
-            # resampled_indices = []
-            # group_sums = np.array([np.sum(i) for i in cond_order])
-            # idx = 0
-            # for i in range(ngroups):
-            #     (
-            #         X_new[idx : idx + group_sums[i],],
-            #         res_ind,
-            #     ) = resample.resample_without_replacement(
-            #         X[idx : idx + group_sums[i],],
-            #         cond_order,
-            #         group_num=i,
-            #         return_indices=True,
-            #     )
-
-            #     if Y is not None:
-            #         Y_new[idx : idx + group_sums[i],] = Y[idx : idx + group_sums[i],][
-            #             res_ind,
-            #         ]
-            #     resampled_indices.append(res_ind)
-            #     idx += group_sums[i]
-            # resampled_indices = np.array(resampled_indices)
-
-            # X_new, resampled_indices = resample.resample_without_replacement(
-            #     X, cond_order, return_indices=True
-            # )
-
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
 
@@ -244,10 +223,6 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             if debug:
                 sum_perm[i] = np.sum(np.power(permuted, 2))
-            # if Y is None:
-            #    X_new_means, X_new_mc = preprocess(
-            #        X_new, cond_order=cond_order
-            #    )  # , ngroups=ngroups)
 
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
@@ -296,45 +271,14 @@ class _ResampleTestTaskPLS(ResampleTest):
                     "has not been implemented."
                 )
 
-            # else:
-            #     # compute condition-wise correlation matrices of resampled
-            #     # input matrices and run GSVD
-            #     R_new = preprocess(X_new, Y_new, cond_order)
-
-            #     if rotate_method == 0:
-            #         U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
-            #     elif rotate_method == 1:
-            #         U_hat, s_hat, V_hat = gsvd.gsvd(X_new_mc)
-            #         # procustes
-            #         U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-            #         s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
-            #         s_hat = np.copy(s_pro)
-            #     elif rotate_method == 2:
-            #         # use derivation equations to compute permuted singular values
-            #         US_hat = R_new @ V
-            #         s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
-            #         s_hat[np.abs(s_hat) < threshold] = 0
-
-            #         # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(R_new)
-            #         # gd = [float("{:.5f}".format(i)) for i in s_hat_]
-            #         # der = [float("{:.5f}".format(i)) for i in s_hat]
-
-            #         # print(f"GSVD: {gd}")
-            #         # print(f"Derived: {der}")
-            #         # U_hat = US_hat / s_hat
-            #         # V_hat = np.linalg.inv(np.siag(s_hat)) @ (U.T @ X_new_mc)
-            #     else:
-            #         raise exceptions.NotImplementedError(
-            #             f"Specified rotation method ({rotate_method}) "
-            #             "has not been implemented."
-            #         )
             # insert s_hat into singvals tracking matrix
             # singvals[:, i] = s_hat
             # count number of times sampled singular values are
             # greater than observed singular values, element-wise
             # greatersum += s >= s_hat
             # print(s_hat >= s)
-            # s_hat[np.abs(s_hat) < threshold] = 0
+            s_hat[np.abs(s_hat) < threshold] = 0
+            # greatersum += s_hat >= np.mean(s)
             greatersum += s_hat >= s
             if debug:
                 s_list[i:,] = s_hat
@@ -376,6 +320,16 @@ class _ResampleTestTaskPLS(ResampleTest):
         left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
 
+        if Y is not None:
+            # LVcorr = np.empty((niter, Y.shape[0], V.shape[1]))
+            LVcorr = np.empty(
+                (
+                    niter,
+                    np.product(cond_order.shape) * Y.shape[1],
+                    np.product(cond_order.shape) * Y.shape[1],
+                )
+            )
+
         # right_sum = np.zeros(X.shape[1], X.shape[1])
         # right_squares = np.zeros(X.shape[1], X.shape[1])
         print("----Running Bootstrap Test----\n")
@@ -383,32 +337,6 @@ class _ResampleTestTaskPLS(ResampleTest):
             # print out iteration number every 50 iterations
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
-            # create resampled X matrix and get resampled indices
-            # resample within-group using cond_order for group size info
-            # X_new = np.empty(X.shape)
-            # if Y is not None:
-            #     Y_new = np.empty(Y.shape)
-            # resampled_indices = []
-            # group_sums = np.array([np.sum(i) for i in cond_order])
-            # idx = 0
-            # for i in range(ngroups):
-            #     (
-            #         X_new[idx : idx + group_sums[i],],
-            #         res_ind,
-            #     ) = resample.resample_with_replacement(
-            #         X[idx : idx + group_sums[i],],
-            #         cond_order,
-            #         group_num=i,
-            #         return_indices=True,
-            #     )
-            #     # use same resampled indices for Y if applicable
-            #     if Y is not None:
-            #         Y_new[idx : idx + group_sums[i],] = Y[idx : idx + group_sums[i],][
-            #             res_ind
-            #         ]
-            #     resampled_indices.append(res_ind)
-            #     idx += group_sums[i]
-            # resampled_indices = np.array(resampled_indices)
 
             X_new = resample.resample_with_replacement(X, cond_order)
 
@@ -441,26 +369,32 @@ class _ResampleTestTaskPLS(ResampleTest):
                 V_hat = V_hat.T
                 # procustes
                 # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-                U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
+                # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
+                U_bar, s_bar, V_bar = np.linalg.svd(U.T @ U_hat, full_matrices=False)
                 # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
                 # print(X_new_mc.shape)
-                rot = U_bar @ V.T
-                V_rot = V_hat.T @ rot.T
+                # rot = U_bar @ V.T
+                # V_rot = V_hat.T @ rot.T
+
+                rot = V_bar @ U_bar.T
+                U_rot = (U_hat * s_hat) @ rot
                 # permuted_rot = permuted @ V_rot
-                permuted_rot = V_rot @ permuted
+                permuted_rot = U_rot @ permuted
                 s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
                 s_hat = np.copy(s_rot)
 
             elif rotate_method == 2:
                 # use derivation equations to compute permuted singular values
                 # US_hat = X_new_mc @ V
-                US_hat = V.T @ permuted.T
-                s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
-                U_hat_der = US_hat / s_hat
-                V_hat = (np.linalg.inv(np.diag(s_hat)) @ (U.T @ permuted)).T
+                VS_hat = permuted.T @ U
+                s_hat = np.sqrt(np.sum(np.power(VS_hat, 2), axis=0))
+                # US_hat = V.T @ permuted.T
+                # s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+                V_hat_der = VS_hat / s_hat
+                U_hat = (np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)).T
                 # V_hat = (X_new_mc.T @ U_hat_der) / s_hat
                 # potential fix for sign issues
-                U_hat = U_hat_der
+                V_hat = V_hat_der
                 # U_hat = (X_new_mc @ V_hat) / s_hat
                 # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
 
@@ -478,46 +412,34 @@ class _ResampleTestTaskPLS(ResampleTest):
                     "has not been implemented."
                 )
 
-            # else:
-            #     # compute condition-wise correlation matrices of resampled
-            #     # input matrices and run GSVD
-            #     R_new = preprocess(X_new, Y_new, cond_order)
-
-            #     if rotate_method == 0:
-            #         U_hat, s_hat, V_hat = gsvd.gsvd(R_new)
-
-            #     elif rotate_method == 1:
-            #         pass
-
-            #     elif rotate_method == 2:
-            #         US_hat = R_new @ V
-            #         s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
-            #         U_hat_der = US_hat / s_hat
-            #         V_hat = (R_new.T @ U_hat_der) / s_hat
-            #         # V_hat = (np.linalg.inv(np.diag(s_hat)) @ (U.T @ R_new)).T
-            #         # potential fix for sign issues
-            #         U_hat = (R_new @ V_hat) / s_hat
-            #         # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(R_new)
-            #     else:
-            #         raise exceptions.NotImplementedError(
-            #             f"Specified rotation method ({rotate_method}) "
-            #             "has not been implemented."
-            #         )
-
             # insert left singular vector into tracking np_array
             # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
             left_sv_sampled[i] = U_hat
-            right_sv_sampled[i] = V_hat
+            right_sv_sampled[i] = V_hat * s_hat
+            if Y is not None:
+                # compute X latents for use in correlation computation
+                X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
+                LVcorr[i] = class_functions._compute_corr(
+                    X_hat_latent, Y_new, cond_order
+                )
+                # LVcorr[:, 1:] = LVcorr[:, 1:] * -1  # temp sign change fix
             # right_sum += V_hat
             # right_squares += np.power(V_hat, 2)
 
         # compute confidence intervals of U sampled
-        conf_int = resample.confidence_interval(left_sv_sampled)
+        conf_int = resample.confidence_interval(left_sv_sampled, conf=dist)
+
         # compute standard error of left singular vector
         std_errs = scipy.stats.sem(right_sv_sampled, axis=0)
         # compute bootstrap ratios
         boot_ratios = np.divide(std_errs, V)
-        return (conf_int, std_errs, boot_ratios)
+        # TODO: find more elegant solution to returning arbitrary # of vals
+        # maybe tokenizing a dictionary?
+        if Y is None:
+            return (conf_int, std_errs, boot_ratios, None)
+        else:
+            llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
+            return (conf_int, std_errs, boot_ratios, LVcorr, llcorr, ulcorr)
 
     def __repr__(self):
         stg = ""

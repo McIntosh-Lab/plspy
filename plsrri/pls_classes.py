@@ -5,8 +5,10 @@ import scipy.stats
 # project imports
 import bootstrap_permutation
 import gsvd
-import helpers
+
+# import helpers
 import exceptions
+import class_functions
 
 
 class PLSBase(abc.ABC):
@@ -21,32 +23,25 @@ class PLSBase(abc.ABC):
     # maps abbreviated user-specified classnames to full PLS variant names
     _pls_types = {
         "mct": "Mean-Centring Task PLS",
-        "nrt": "Non-Rotated Task PLS",
         "rb": "Regular Behaviour PLS",
+        "cst": "Contrast Task PLS",
+        "csb": "Contrast Behaviour PLS",
         "mb": "Multiblock PLS",
-        "nrb": "Non-Rotated Behaviour PLS",
         "nrmb": "Non-Rotated Multiblock PLS",
     }
 
-    # force existence of preprocess function
+    # force existence of run function
     # @abc.abstractmethod
-    # def preprocess(self):
+    # def _run_pls(self):
     #     pass
 
-    # force existence of run function
     @abc.abstractmethod
-    def _run_pls(self):
+    def _get_groups_info(self):
         pass
 
-    # force existence of bootstrap function
-    # @abc.abstractmethod
-    # def bootstrap(self):
-    #     pass
-
-    # force existence of permutation function
-    # @abc.abstractmethod
-    # def permutation(self):
-    #     pass
+    @abc.abstractmethod
+    def _get_cond_order(self):
+        pass
 
     @abc.abstractmethod
     def __str__(self):
@@ -207,13 +202,18 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+        # assign functions to class
+        self._mean_centre = class_functions._mean_centre
+        self._run_pls = class_functions._run_pls
+        self._compute_X_latents = class_functions._compute_X_latents
+
         # compute X means and X mean-centred values
         self.X_means, self.X_mc = self._mean_centre(
             self.X, self.cond_order  # , ngroups=self.num_groups
         )
         self.U, self.s, self.V = self._run_pls(self.X_mc, ngroups=self.num_groups)
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_latents(self.X_mc, self.V)
+        self.X_latent = self._compute_X_latents(self.X_mc, self.V)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -229,152 +229,6 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
             rotate_method=rotate_method,
         )
         print("\nDone.")
-
-    @staticmethod
-    def _mean_centre(X, cond_order, mctype=0, return_means=True):
-        """Single-group preprocessing for `X`. Generates `X_means` and
-        `X_mc` for use with `run_pls`
-
-        Parameters
-        ---------
-        X : np_array
-            Input matrix for use with PLS.
-        cond_order: array-like
-            List/array where each entry holds the number of subjects per
-            condition for each group in the input matrix.
-        mctype : int, optional
-            Specify which mean-centring method to use. TODO: add other types
-        return_means : boolean, optional
-            Optionally specify whether or not to return the means along
-            with the mean-centred matrix.
-            
-        Returns
-        -------
-        X_means: np_array
-            Mean-values of X array on axis-0 (column-wise).
-        X_mc: np_array
-            Mean-centred values corresponding to input matrix X.
-
-
-        """
-        X_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
-        group_means = helpers.get_group_means(X, cond_order)
-        group_sums = np.sum(cond_order, axis=1)
-        # index counters for X_means and X, respectively
-        mc = 0
-        xc = 0
-
-        for i in range(len(cond_order)):
-            X_means[mc : mc + len(cond_order[i]),] = helpers.mean_single_group(
-                X[xc : xc + group_sums[i],], cond_order[i]
-            )
-            mc += len(cond_order[i])
-            xc += group_sums[i]
-
-        repeats = np.array([len(i) for i in cond_order])
-        # subtract condition-wise means from condition grand means
-        # (within group)
-        X_mc = X_means - np.repeat(group_means, repeats, axis=0)
-        # X_mc /= np.linalg.norm(X_mc)
-        if return_means:
-            return (X_means, X_mc)
-        else:
-            return X_mc
-
-        # if ngroups == 1:
-        #     X_means = np.empty((len(cond_order), X.shape[-1]))
-        #     X_mc = np.empty(X_means.shape)
-        #
-
-        #     prod = np.dot(
-        #         np.ones((X.shape[0], 1)), np.mean(X, axis=0).reshape((1, X.shape[1])),
-        #     )
-
-        #     X_means = X - prod
-        #     X_mc = X_means / np.linalg.norm(X_means)
-        #     return (X_means, X_mc)
-        # # in case groups need to be separated
-        # else:
-        #     # raise exceptions.NotImplementedError(
-        #     #     "Multi-group MCT-PLS " "not yet implemented."
-        #     # )
-        #     X_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
-        #     X_mc = np.empty(X_means.shape)
-
-        #     for i in range(ngroups):
-        #         X_means[i] = helpers.mean_single_group(X[i], cond_order[i])
-        #         centred = X_means[i] - np.mean(X[i], axis=0)
-        #         X_mc[i] = centred / np.linalg.norm(centred)
-
-        #     # reshape X_means and X_mc so groups are concatenated
-        #     # into one np_array
-        #     xs = X_means.shape
-        #     X_means = X_means.reshape(xs[0] * xs[1], xs[2])
-        #     xms = X_mc.shape
-        #     X_mc = X_mc.reshape(xms[0] * xms[1], xms[2])
-        #     return (X_means, X_mc)
-
-    @staticmethod
-    def _run_pls(mc, ngroups=1):
-        """Runs and returns results of Generalized SVD on `mc`,
-        mean-centred input matrix `X`.
-
-        Mostly just a wrapper for gsvd.gsvd right now, but may integrate
-        other features in the future.
-
-        Parameters
-        ----------
-        mc: np_array
-            Mean-centred values corresponding to input matrix X.
-        ngroups: int
-            Number of groups in input data.
-
-        Returns
-        -------
-        U: np_array
-            Eigenvectors of matrix `mc`*`mc`^T;
-            left singular vectors.
-        s: np_array
-            vector containing diagonal of the singular values.
-        V: np_array
-            Eigenvectors of matrix `mc`^T*`mc`;
-            right singular vectors.
-        """
-        # if ngroups == 1:
-        # U, s, V = gsvd.gsvd(mc)
-        # return (U, s, V)
-        U, s, V = np.linalg.svd(mc, full_matrices=False)
-        return (U, s, V.T)
-        # else:
-        #     raise exceptions.NotImplementedError(
-        #         "Multi-group MCT-PLS not yet implemented."
-        #     )
-
-    @staticmethod
-    def _compute_latents(I, EV, ngroups=1):
-        """Computes latent values of original mxn input matrix `I`
-        and corresponding nxn eigenvector `EV` by performing a dot-product.
-
-        Parameters
-        ----------
-        I : np_array
-            Input matrix of shape mxn.
-        EV : np_array
-            Corresponding eigenvector of shape nxn.
-        ngroups: int
-            Number of groups in input data.
-        Returns
-        -------
-        dotp: np_array
-            Computed dot-product of I and EV.
-        """
-        # if ngroups == 1:
-        dotp = np.dot(I, EV)
-        return dotp
-        # else:
-        #     raise exceptions.NotImplementedError(
-        #         "Multi-group MCT-PLS not yet implemented."
-        #     )
 
     @staticmethod
     def _get_groups_info(groups_tuple):
@@ -564,6 +418,102 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
                     "up to the number of rows in the input matrices."
                 )
             self.cond_order = cond_order
+
+        self.num_perm = num_perm
+        self.num_boot = num_boot
+        # TODO: catch extraneous keyword args
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        # assign functions to class
+        # TODO: decide whether or not these should be applied
+        # or if users should import from class_functions module
+        self._compute_R = class_functions._compute_corr
+        self._run_pls = class_functions._run_pls
+        self._compute_X_latents = class_functions._compute_X_latents
+        self._compute_Y_latents = class_functions._compute_Y_latents
+
+        # compute R correlation matrix
+        self.R = self._compute_R(self.X, self.Y, self.cond_order)
+
+        self.U, self.s, self.V = self._run_pls(self.R, ngroups=self.num_groups)
+        # self.X_latent = np.dot(self.X_mc, self.V)
+        self.X_latent = self._compute_X_latents(self.X, self.V)
+        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        # compute latent variable correlation matrix for V using compute_R
+        self.lvcorrs = self._compute_R(self.X_latent, self.Y, self.cond_order)
+
+        self.resample_tests = bootstrap_permutation.ResampleTest._create(
+            self.pls_alg,
+            self.X,
+            self.Y,
+            self.U,
+            self.s,
+            self.V,
+            self.cond_order,
+            preprocess=self._compute_R,
+            nperm=self.num_perm,
+            nboot=self.num_boot,
+            ngroups=self.num_groups,
+            rotate_method=rotate_method,
+        )
+        print("\nDone.")
+
+
+@PLSBase._register_subclass("cst")
+class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
+    """
+    """
+
+    def __init__(
+        self,
+        X: np.array,
+        Y: None,
+        groups_sizes: tuple,
+        num_conditions: int,
+        cond_order: list = None,
+        num_perm: int = 1000,
+        num_boot: int = 1000,
+        rotate_method: int = 0,
+        contrast: list = None,
+        **kwargs,
+    ):
+
+        if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+        self.X = X
+        self.Y = Y
+
+        if Y is not None:
+            raise ValueError(
+                "For {self.pls_types[self.pls_alg]},"
+                "Y must be of type None. Y = \n{Y}"
+            )
+        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.num_conditions = num_conditions
+        # if no user-specified condition list, generate one
+        if cond_order is None:
+            self.cond_order = self._get_cond_order(
+                self.X.shape, self.groups_sizes, self.num_conditions
+            )
+        else:
+            # TODO: adjust input size and move input error
+            # checking to pls.py
+            # if len(cond_order.shape) != len(self.X.shape):
+            # check calculated size matches input length
+            calc_len = sum(groups_sizes) * num_conditions
+            if calc_len != self.X.shape[0] or calc_len != self.Y.shape[0]:
+                raise exceptions.InputMatrixDimensionMismatchError(
+                    "Dimension of condition orders does not match "
+                    "dimension of input matrix X and/or Y. Please make sure "
+                    "that the sum of the conditions in all groups adds "
+                    "up to the number of rows in the input matrices."
+                )
+            self.cond_order = cond_order
+
+        if contrast is None:
+            raise exceptions.MissingParameterError("Please provide a contrast matrix.")
+        self.contast = contrast
 
         self.num_perm = num_perm
         self.num_boot = num_boot

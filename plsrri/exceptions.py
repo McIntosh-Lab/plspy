@@ -35,3 +35,10 @@ class NotImplementedError(Error):
     """
 
     pass
+
+
+class MissingParameterError(Error):
+    """Raised when a required parameter is not passed in.
+    """
+
+    pass
