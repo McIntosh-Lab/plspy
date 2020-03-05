@@ -21,11 +21,11 @@ class ResampleTest(abc.ABC):
     _pls_types = {
         "mct": "Mean-Centering Task PLS",
         # "mct_mg": "Mean-Centering Task PLS - Multi-Group",
-        "nrt": "Non-Rotated Task PLS",
+        "cst": "Contrast Task PLS",
         "rb": "Regular Behaviour PLS",
         "mb": "Multiblock PLS",
-        "nrb": "Non-Rotated Behaviour PLS",
-        "nrmb": "Non-Rotated Multiblock PLS",
+        "csb": "Contrast Behaviour PLS",
+        "cmb": "Contrast Multiblock PLS",
     }
 
     @abc.abstractmethod
@@ -61,6 +61,10 @@ class ResampleTest(abc.ABC):
 
 @ResampleTest._register_subclass("mct")
 @ResampleTest._register_subclass("rb")
+@ResampleTest._register_subclass("cst")
+@ResampleTest._register_subclass("csb")
+@ResampleTest._register_subclass("mb")
+@ResampleTest._register_subclass("cmb")
 class _ResampleTestTaskPLS(ResampleTest):
     """Class that runs permutation and bootstrap tests for Task PLS. When run,
     this class generates fields for permutation test information
@@ -126,6 +130,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         s,
         V,
         cond_order,
+        contrast=None,
         preprocess=None,
         nperm=1000,
         nboot=1000,
@@ -146,6 +151,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             nperm,
             preprocess=preprocess,
             rotate_method=rotate_method,
+            contrast=contrast,
         )
         (
             self.conf_ints,
@@ -166,6 +172,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             preprocess=preprocess,
             rotate_method=rotate_method,
             dist=self.dist,
+            contrast=contrast,
         )
 
     @staticmethod
@@ -179,6 +186,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         ngroups,
         niter,
         preprocess=None,
+        contrast=None,
         rotate_method=0,
         threshold=1e-12,
     ):
@@ -224,6 +232,11 @@ class _ResampleTestTaskPLS(ResampleTest):
             if debug:
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
+            if contrast is not None:
+                mult = contrast
+            else:
+                mult = U
+
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
@@ -233,8 +246,13 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # print(s_hat)
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
-                V_hat = V_hat.T
+                if contrast is not None:
+                    U_hat, s_hat, V_hat = class_functions._run_pls_contrast(
+                        permuted, contrast
+                    )
+                else:
+                    U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                    V_hat = V_hat.T
                 # procustes
                 # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
                 # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
@@ -309,6 +327,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         preprocess=None,
         rotate_method=0,
         dist=(0.05, 0.95),
+        contrast=None,
     ):
         """Runs a bootstrap estimation on X matrix. Resamples X with
         replacement according to the condition order, runs PLS on the
@@ -338,10 +357,14 @@ class _ResampleTestTaskPLS(ResampleTest):
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
 
-            X_new = resample.resample_with_replacement(X, cond_order)
+            # also return indices to use with Y_new
+            X_new, inds = resample.resample_with_replacement(
+                X, cond_order, return_indices=True
+            )
 
             if Y is not None:
-                Y_new = resample.resample_with_replacement(Y, cond_order)
+                # Y_new = resample.resample_with_replacement(Y, cond_order)
+                Y_new = Y[inds, :]
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling
@@ -356,6 +379,11 @@ class _ResampleTestTaskPLS(ResampleTest):
             #     X_new_means, X_new_mc = preprocess(
             #         X_new, cond_order=cond_order
             #     )  # , ngroups=ngroups)
+
+            if contrast is not None:
+                mult = contrast
+            else:
+                mult = U
 
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
@@ -419,10 +447,12 @@ class _ResampleTestTaskPLS(ResampleTest):
             if Y is not None:
                 # compute X latents for use in correlation computation
                 X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
+                print(X_hat_latent.shape)
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
                 # LVcorr[:, 1:] = LVcorr[:, 1:] * -1  # temp sign change fix
+                # LVcorr[:, 0] = np.abs(LVcorr[:, 0])
             # right_sum += V_hat
             # right_squares += np.power(V_hat, 2)
 

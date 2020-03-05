@@ -27,7 +27,7 @@ class PLSBase(abc.ABC):
         "cst": "Contrast Task PLS",
         "csb": "Contrast Behaviour PLS",
         "mb": "Multiblock PLS",
-        "nrmb": "Non-Rotated Multiblock PLS",
+        "cmb": "Contrast Multiblock PLS",
     }
 
     # force existence of run function
@@ -74,7 +74,7 @@ class PLSBase(abc.ABC):
 
 
 @PLSBase._register_subclass("mct")
-class _MeanCentreTaskSingleGroupPLS(PLSBase):
+class _MeanCentreTaskPLS(PLSBase):
     """Driver class for Mean-Centred Task PLS.
 
     Classed called for Mean-Centred Task PLS. TODO: add more here.
@@ -211,7 +211,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
         self.X_means, self.X_mc = self._mean_centre(
             self.X, self.cond_order  # , ngroups=self.num_groups
         )
-        self.U, self.s, self.V = self._run_pls(self.X_mc, ngroups=self.num_groups)
+        self.U, self.s, self.V = self._run_pls(self.X_mc)
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = self._compute_X_latents(self.X_mc, self.V)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
@@ -233,7 +233,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
     @staticmethod
     def _get_groups_info(groups_tuple):
         """Returns tuple of groups tuple passed into class and
-        number of subjects.
+        number of groups.
         """
         # return empty tuple and 0-length if None type
         if groups_tuple is None:
@@ -286,7 +286,7 @@ class _MeanCentreTaskSingleGroupPLS(PLSBase):
 
 
 @PLSBase._register_subclass("rb")
-class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
+class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     """Driver class for Behavioural Task PLS.
 
     Class called for Behavioural Task PLS. TODO: add more here.
@@ -436,12 +436,14 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
         # compute R correlation matrix
         self.R = self._compute_R(self.X, self.Y, self.cond_order)
 
-        self.U, self.s, self.V = self._run_pls(self.R, ngroups=self.num_groups)
+        self.U, self.s, self.V = self._run_pls(self.R)
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = self._compute_X_latents(self.X, self.V)
         self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_R(self.X_latent, self.Y, self.cond_order)
+        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
+        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
 
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
@@ -461,7 +463,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskSingleGroupPLS):
 
 
 @PLSBase._register_subclass("cst")
-class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
+class _ContrastTaskPLS(_MeanCentreTaskPLS):
     """
     """
 
@@ -475,7 +477,103 @@ class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
         num_perm: int = 1000,
         num_boot: int = 1000,
         rotate_method: int = 0,
-        contrast: list = None,
+        contrasts: list = None,
+        **kwargs,
+    ):
+
+        if len(X.shape) != 2:  #  or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError("Input matrix must be 2-dimensional.")
+        self.X = X
+
+        if Y is not None:
+            raise ValueError(
+                "For {self.pls_types[self.pls_alg]},"
+                "Y must be of type None. Y = \n{Y}"
+            )
+        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.num_conditions = num_conditions
+        # if no user-specified condition list, generate one
+        if cond_order is None:
+            self.cond_order = self._get_cond_order(
+                self.X.shape, self.groups_sizes, self.num_conditions
+            )
+        else:
+            # TODO: adjust input size and move input error
+            # checking to pls.py
+            # if len(cond_order.shape) != len(self.X.shape):
+            # check calculated size matches input length
+            calc_len = sum(groups_sizes) * num_conditions
+            if calc_len != self.X.shape[0]:
+                raise exceptions.InputMatrixDimensionMismatchError(
+                    "Dimension of condition orders does not match "
+                    "dimension of input matrix X and/or Y. Please make sure "
+                    "that the sum of the conditions in all groups adds "
+                    "up to the number of rows in the input matrices."
+                )
+            self.cond_order = cond_order
+
+        if contrasts is None:
+            raise exceptions.MissingParameterError("Please provide a contrast matrix.")
+        self.contasts = contrasts
+
+        self.num_perm = num_perm
+        self.num_boot = num_boot
+        # TODO: catch extraneous keyword args
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        self._mean_centre = class_functions._mean_centre
+        self._run_pls_contrast = class_functions._run_pls_contrast
+        self._compute_X_latents = class_functions._compute_X_latents
+        self._compute_Y_latents = class_functions._compute_Y_latents
+        # compute R correlation matrix
+        self.R = self._mean_centre(self.X, self.cond_order)
+
+        self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
+        # norm lvintercorrs if rotate method is
+        # Procrustes or derived
+        if rotate_method in [1, 2]:
+            U_normed = U / np.linalg.norm(U)
+            self.lvintercorrs = U_normed.T @ U_normed
+        else:
+            self.lvintercorrs = U.T @ U
+        # self.X_latent = np.dot(self.X_mc, self.V)
+        self.X_latent = self._compute_latents(self.X, self.V)
+        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.resample_tests = bootstrap_permutation.ResampleTest._create(
+            self.pls_alg,
+            self.X,
+            self.Y,
+            self.U,
+            self.s,
+            self.V,
+            self.cond_order,
+            preprocess=self._mean_centre,
+            nperm=self.num_perm,
+            nboot=self.num_boot,
+            ngroups=self.num_groups,
+            rotate_method=rotate_method,
+            contrast=self.contrasts,
+        )
+        print("\nDone.")
+
+
+@PLSBase._register_subclass("csb")
+class _ContrastBehaviourPLS(_ContrastTaskPLS):
+    """
+    """
+
+    def __init__(
+        self,
+        X: np.array,
+        Y: None,
+        groups_sizes: tuple,
+        num_conditions: int,
+        cond_order: list = None,
+        num_perm: int = 1000,
+        num_boot: int = 1000,
+        rotate_method: int = 0,
+        contrasts: list = None,
         **kwargs,
     ):
 
@@ -484,10 +582,10 @@ class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
         self.X = X
         self.Y = Y
 
-        if Y is not None:
+        if Y is None:
             raise ValueError(
                 "For {self.pls_types[self.pls_alg]},"
-                "Y must be of type None. Y = \n{Y}"
+                "Y must NOT be of type None. Y = \n{Y}"
             )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
@@ -511,9 +609,9 @@ class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
                 )
             self.cond_order = cond_order
 
-        if contrast is None:
+        if contrasts is None:
             raise exceptions.MissingParameterError("Please provide a contrast matrix.")
-        self.contast = contrast
+        self.contrasts = contrasts
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -521,12 +619,24 @@ class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+        self._compute_R = class_functions._compute_corr
+        self._run_pls_contrast = class_functions._run_pls_contrast
+        self._compute_X_latents = class_functions._compute_X_latents
+        self._compute_Y_latents = class_functions._compute_Y_latents
+
         # compute R correlation matrix
         self.R = self._compute_R(self.X, self.Y, self.cond_order)
 
-        self.U, self.s, self.V = self._run_pls(self.R, ngroups=self.num_groups)
+        self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
+        # norm lvintercorrs if rotate method is
+        # Procrustes or derived
+        if rotate_method in [1, 2]:
+            U_normed = self.U / np.linalg.norm(self.U)
+            self.lvintercorrs = U_normed.T @ U_normed
+        else:
+            self.lvintercorrs = self.U.T @ self.U
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_latents(self.X, self.V)
+        self.X_latent = self._compute_X_latents(self.X, self.V)
         self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
@@ -541,80 +651,201 @@ class _ContrastTaskPLS(_MeanCentreTaskSingleGroupPLS):
             nboot=self.num_boot,
             ngroups=self.num_groups,
             rotate_method=rotate_method,
+            contrast=self.contrasts,
         )
         print("\nDone.")
 
-    @staticmethod
-    def _compute_R(X, Y, cond_order):
-        """Compute per-condition correlation matrices (concatenated as R)
-        to pass into GSVD.
 
-        This algorithm uses neural input matrix X and behavioural matrix Y to
-        compute per-condition correlation matrices. It then concatenates them
-        and returns R for use in GSVD.
+@PLSBase._register_subclass("mb")
+class _MultiblockPLS(_RegularBehaviourPLS):
+    """
+    """
 
-        Parameters
-        ----------
-        X : np.array
-            Neural matrix passed into PLS class.
-        Y : np.array
-            Behavioural matrix passed into PLS class.
-        cond_order: np.array
-            2-d np array containing number of subjects per condition in
-            each group.
+    def __init__(
+        self,
+        X: np.array,
+        Y: np.array,
+        groups_sizes: tuple,
+        num_conditions: int,
+        cond_order: list = None,
+        num_perm: int = 1000,
+        num_boot: int = 1000,
+        rotate_method: int = 0,
+        **kwargs,
+    ):
 
-        Returns
-        -------
-        R : np.array
-            Concatenated computed correlation matrices for each condition
-            in X/Y.
-        """
-        R = np.empty((np.product(cond_order.shape) * Y.shape[1], X.shape[1]))
-        # flatten ordering for easier iteration
-        # print(f"R shape: {R.shape}")
-        order_all = cond_order.reshape(-1)
-        start = 0
-        start_R = 0
-        for i in range(len(order_all)):
-            # X and Y zscored within each condition
-            Xc_zsc = scipy.stats.zscore(X[start : order_all[i] + start,])
-            Xc_zsc /= np.sqrt(order_all[i])
-            Yc_zsc = scipy.stats.zscore(Y[start : order_all[i] + start,])
-            Yc_zsc /= np.sqrt(order_all[i])
-            np.nan_to_num(Xc_zsc, copy=False)
-            np.nan_to_num(Yc_zsc, copy=False)
-            # print(Xc_zsc)
-            # print(Yc_zsc)
-            # print("----------")
-            # print(f"ydim: {Yc_zsc.shape}")
-            # R_n = Y^T_n * X_n
-            R[start_R : Y.shape[1] + start_R,] = np.matmul(Yc_zsc.T, Xc_zsc)
-            start += order_all[i]
-            start_R += Y.shape[1]
-        # print("+++++++++++++++")
+        if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+        self.X = X
+        self.Y = Y
 
-        return R
-
-    @staticmethod
-    def _compute_Y_latents(Y, U, cond_order):
-        """Compute latent variables per behavioural condition by breaking
-        up Y and U into their corresponding blocks.
-        """
-        print(f"Y shape: {Y.shape}")
-        print(f"co shape: {cond_order.shape}")
-        print(f"U shape: {U.shape}")
-        Y_latent = np.empty((Y.shape[0], U.shape[1]))
-        start = 0
-        start_R = 0
-        start_U = 0
-        order_all = cond_order.reshape(-1)
-
-        for i in range(len(order_all)):
-            Y_latent[start : order_all[i] + start,] = np.matmul(
-                Y[start : order_all[i] + start,], U[start_U : Y.shape[1] + start_U,]
+        if Y is None:
+            raise ValueError(
+                "For {self.pls_types[self.pls_alg]},"
+                "Y must NOT be of type None. Y = \n{Y}"
             )
-            start += order_all[i]
-            start_R += Y.shape[0]
-            start_U += Y.shape[1]
+        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.num_conditions = num_conditions
+        # if no user-specified condition list, generate one
+        if cond_order is None:
+            self.cond_order = self._get_cond_order(
+                self.X.shape, self.groups_sizes, self.num_conditions
+            )
+        else:
+            # TODO: adjust input size and move input error
+            # checking to pls.py
+            # if len(cond_order.shape) != len(self.X.shape):
+            # check calculated size matches input length
+            calc_len = sum(groups_sizes) * num_conditions
+            if calc_len != self.X.shape[0] or calc_len != self.Y.shape[0]:
+                raise exceptions.InputMatrixDimensionMismatchError(
+                    "Dimension of condition orders does not match "
+                    "dimension of input matrix X and/or Y. Please make sure "
+                    "that the sum of the conditions in all groups adds "
+                    "up to the number of rows in the input matrices."
+                )
+            self.cond_order = cond_order
 
-        return Y_latent
+        self.num_perm = num_perm
+        self.num_boot = num_boot
+        # TODO: catch extraneous keyword args
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        # assign functions to class
+        # TODO: decide whether or not these should be applied
+        # or if users should import from class_functions module
+        self._create_multiblock = class_functions._create_multiblock
+        self._compute_corr = class_functions._compute_corr
+        self._run_pls = class_functions._run_pls
+        self._compute_X_latents = class_functions._compute_X_latents
+        self._compute_Y_latents = class_functions._compute_Y_latents
+
+        # compute R correlation matrix
+        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order,)
+
+        self.U, self.s, self.V = self._run_pls(self.multiblock)
+        # self.X_latent = np.dot(self.X_mc, self.V)
+        self.X_latent = self._compute_X_latents(self.X, self.V)
+        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        # compute latent variable correlation matrix for V using compute_R
+        self.lvcorrs = self._compute_corr(self.X_latent, self.Y, self.cond_order)
+        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
+        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
+
+        self.resample_tests = bootstrap_permutation.ResampleTest._create(
+            self.pls_alg,
+            self.X,
+            self.Y,
+            self.U,
+            self.s,
+            self.V,
+            self.cond_order,
+            preprocess=self._create_multiblock,
+            nperm=self.num_perm,
+            nboot=self.num_boot,
+            ngroups=self.num_groups,
+            rotate_method=rotate_method,
+        )
+        print("\nDone.")
+
+
+@PLSBase._register_subclass("cmb")
+class _ContrastMultiblockPLS(_MultiblockPLS):
+    """
+    """
+
+    def __init__(
+        self,
+        X: np.array,
+        Y: np.array,
+        groups_sizes: tuple,
+        num_conditions: int,
+        cond_order: list = None,
+        num_perm: int = 1000,
+        num_boot: int = 1000,
+        rotate_method: int = 0,
+        **kwargs,
+    ):
+
+        if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+        self.X = X
+        self.Y = Y
+
+        if Y is None:
+            raise ValueError(
+                "For {self.pls_types[self.pls_alg]},"
+                "Y must NOT be of type None. Y = \n{Y}"
+            )
+        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.num_conditions = num_conditions
+        # if no user-specified condition list, generate one
+        if cond_order is None:
+            self.cond_order = self._get_cond_order(
+                self.X.shape, self.groups_sizes, self.num_conditions
+            )
+        else:
+            # TODO: adjust input size and move input error
+            # checking to pls.py
+            # if len(cond_order.shape) != len(self.X.shape):
+            # check calculated size matches input length
+            calc_len = sum(groups_sizes) * num_conditions
+            if calc_len != self.X.shape[0] or calc_len != self.Y.shape[0]:
+                raise exceptions.InputMatrixDimensionMismatchError(
+                    "Dimension of condition orders does not match "
+                    "dimension of input matrix X and/or Y. Please make sure "
+                    "that the sum of the conditions in all groups adds "
+                    "up to the number of rows in the input matrices."
+                )
+            self.cond_order = cond_order
+
+        self.num_perm = num_perm
+        self.num_boot = num_boot
+        # TODO: catch extraneous keyword args
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        # assign functions to class
+        # TODO: decide whether or not these should be applied
+        # or if users should import from class_functions module
+        self._create_multiblock = class_functions._create_multiblock
+        self._compute_corr = class_functions._compute_corr
+        self._run_pls_contrast = class_functions._run_pls_contrast
+        self._compute_X_latents = class_functions._compute_X_latents
+        self._compute_Y_latents = class_functions._compute_Y_latents
+
+        # compute R correlation matrix
+        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order,)
+
+        self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
+        # norm lvintercorrs if rotate method is
+        # Procrustes or derived
+        if rotate_method in [1, 2]:
+            U_normed = self.U / np.linalg.norm(self.U)
+            self.lvintercorrs = U_normed.T @ U_normed
+        else:
+            self.lvintercorrs = self.U.T @ self.U
+        # self.X_latent = np.dot(self.X_mc, self.V)
+        self.X_latent = self._compute_X_latents(self.X, self.V)
+        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        # compute latent variable correlation matrix for V using compute_R
+        self.lvcorrs = self._compute_corr(self.X_latent, self.Y, self.cond_order)
+        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
+        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
+
+        self.resample_tests = bootstrap_permutation.ResampleTest._create(
+            self.pls_alg,
+            self.X,
+            self.Y,
+            self.U,
+            self.s,
+            self.V,
+            self.cond_order,
+            preprocess=self._create_multiblock,
+            nperm=self.num_perm,
+            nboot=self.num_boot,
+            ngroups=self.num_groups,
+            rotate_method=rotate_method,
+        )
+        print("\nDone.")
