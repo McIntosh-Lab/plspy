@@ -16,6 +16,8 @@ class ResampleTest(abc.ABC):
     """
 
     _subclasses = {}
+    pls_alg = None
+    # _algs_larger_lvcorr = {"mb", "cmb"}
 
     # maps abbreviated user-specified classnames to full PLS variant names
     _pls_types = {
@@ -56,6 +58,7 @@ class ResampleTest(abc.ABC):
             )
         elif pls_method not in cls._subclasses:
             raise ValueError(f"Invalid PLS/Resample method {pls_method}")
+        cls.pls_alg = pls_method
         return cls._subclasses[pls_method](*args, **kwargs)
 
 
@@ -94,9 +97,6 @@ class _ResampleTestTaskPLS(ResampleTest):
     nboot : int, optional
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 1000.
-    ngroups : int, optional
-        Value specifying the number of groups used in PLS. Specified by PLS
-        class; defaults to 1.
     nonrotated : boolean, optional
         Not implememted yet.
     dist : 2-tuple of floats, optional
@@ -134,46 +134,69 @@ class _ResampleTestTaskPLS(ResampleTest):
         preprocess=None,
         nperm=1000,
         nboot=1000,
-        ngroups=1,
         dist=(0.05, 0.95),
         rotate_method=0,
     ):
         self.dist = dist
 
-        self.permute_ratio, self.debug_dict = self._permutation_test(
-            X,
-            Y,
-            U,
-            s,
-            V,
-            cond_order,
-            ngroups,
-            nperm,
-            preprocess=preprocess,
-            rotate_method=rotate_method,
-            contrast=contrast,
-        )
-        (
-            self.conf_ints,
-            self.std_errs,
-            self.boot_ratios,
-            self.LVcorr,
-            self.llcorr,
-            self.ulcorr,
-        ) = self._bootstrap_test(
-            X,
-            Y,
-            U,
-            s,
-            V,
-            cond_order,
-            ngroups,
-            nboot,
-            preprocess=preprocess,
-            rotate_method=rotate_method,
-            dist=self.dist,
-            contrast=contrast,
-        )
+        print(f"PLS ALG: {self.pls_alg}")
+        if nperm > 0:
+            self.permute_ratio, self.debug_dict = self._permutation_test(
+                X,
+                Y,
+                U,
+                s,
+                V,
+                cond_order,
+                nperm,
+                self.pls_alg,
+                preprocess=preprocess,
+                rotate_method=rotate_method,
+                contrast=contrast,
+            )
+
+        if nboot > 0:
+            if Y is not None:
+                (
+                    self.conf_ints,
+                    self.std_errs,
+                    self.boot_ratios,
+                    self.LVcorr,
+                    self.llcorr,
+                    self.ulcorr,
+                ) = self._bootstrap_test(
+                    X,
+                    Y,
+                    U,
+                    s,
+                    V,
+                    cond_order,
+                    nboot,
+                    self.pls_alg,
+                    preprocess=preprocess,
+                    rotate_method=rotate_method,
+                    dist=self.dist,
+                    contrast=contrast,
+                )
+            else:
+                (
+                    self.conf_ints,
+                    self.std_errs,
+                    self.boot_ratios,
+                ) = self._bootstrap_test(
+                    X,
+                    Y,
+                    U,
+                    s,
+                    V,
+                    cond_order,
+                    nboot,
+                    self.pls_alg,
+                    preprocess=preprocess,
+                    rotate_method=rotate_method,
+                    dist=self.dist,
+                    contrast=contrast,
+                )
 
     @staticmethod
     def _permutation_test(
@@ -183,8 +206,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         s,
         V,
         cond_order,
-        ngroups,
         niter,
+        pls_alg,
         preprocess=None,
         contrast=None,
         rotate_method=0,
@@ -232,17 +255,15 @@ class _ResampleTestTaskPLS(ResampleTest):
             if debug:
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
-            if contrast is not None:
-                mult = contrast
-            else:
-                mult = U
-
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
 
                 # s_hat = gsvd.gsvd(permuted, compute_uv=False)
-                s_hat = np.linalg.svd(permuted, compute_uv=False)
+                if contrast is None:
+                    s_hat = np.linalg.svd(permuted, compute_uv=False)
+                else:
+                    s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
                 # print(s_hat)
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
@@ -322,8 +343,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         s,
         V,
         cond_order,
-        ngroups,
         niter,
+        pls_alg,
         preprocess=None,
         rotate_method=0,
         dist=(0.05, 0.95),
@@ -341,11 +362,17 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         if Y is not None:
             # LVcorr = np.empty((niter, Y.shape[0], V.shape[1]))
+            # change LVcorr column dimension if using multi-block
+            ncols = np.product(cond_order.shape) * Y.shape[1]
+            if pls_alg in ["mb", "cmb"]:
+                ncols = X.shape[1]
+
             LVcorr = np.empty(
                 (
                     niter,
                     np.product(cond_order.shape) * Y.shape[1],
-                    np.product(cond_order.shape) * Y.shape[1],
+                    # np.product(cond_order.shape) * Y.shape[1],
+                    ncols,
                 )
             )
 
@@ -379,11 +406,6 @@ class _ResampleTestTaskPLS(ResampleTest):
             #     X_new_means, X_new_mc = preprocess(
             #         X_new, cond_order=cond_order
             #     )  # , ngroups=ngroups)
-
-            if contrast is not None:
-                mult = contrast
-            else:
-                mult = U
 
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
@@ -447,7 +469,11 @@ class _ResampleTestTaskPLS(ResampleTest):
             if Y is not None:
                 # compute X latents for use in correlation computation
                 X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
-                print(X_hat_latent.shape)
+                # print(f"XHL shape: {X_hat_latent.shape}")
+                # print(f"U shape: {U.shape}")
+                # print(f"V shape: {V.shape}")
+                # print(f"U_hat shape: {U_hat.shape}")
+                # print(f"V_hat shape: {V_hat.shape}")
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
@@ -466,7 +492,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         # TODO: find more elegant solution to returning arbitrary # of vals
         # maybe tokenizing a dictionary?
         if Y is None:
-            return (conf_int, std_errs, boot_ratios, None)
+            return (conf_int, std_errs, boot_ratios)
         else:
             llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
             return (conf_int, std_errs, boot_ratios, LVcorr, llcorr, ulcorr)

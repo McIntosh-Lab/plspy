@@ -208,9 +208,7 @@ class _MeanCentreTaskPLS(PLSBase):
         self._compute_X_latents = class_functions._compute_X_latents
 
         # compute X means and X mean-centred values
-        self.X_means, self.X_mc = self._mean_centre(
-            self.X, self.cond_order  # , ngroups=self.num_groups
-        )
+        self.X_means, self.X_mc = self._mean_centre(self.X, self.cond_order)
         self.U, self.s, self.V = self._run_pls(self.X_mc)
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = self._compute_X_latents(self.X_mc, self.V)
@@ -225,7 +223,6 @@ class _MeanCentreTaskPLS(PLSBase):
             preprocess=self._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            ngroups=self.num_groups,
             rotate_method=rotate_method,
         )
         print("\nDone.")
@@ -456,7 +453,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             preprocess=self._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            ngroups=self.num_groups,
             rotate_method=rotate_method,
         )
         print("\nDone.")
@@ -514,7 +510,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
         if contrasts is None:
             raise exceptions.MissingParameterError("Please provide a contrast matrix.")
-        self.contasts = contrasts
+        self.contrasts = contrasts
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -525,25 +521,25 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         self._mean_centre = class_functions._mean_centre
         self._run_pls_contrast = class_functions._run_pls_contrast
         self._compute_X_latents = class_functions._compute_X_latents
-        self._compute_Y_latents = class_functions._compute_Y_latents
+        # self._compute_Y_latents = class_functions._compute_Y_latents
         # compute R correlation matrix
-        self.R = self._mean_centre(self.X, self.cond_order)
+        self.R = self._mean_centre(self.X, self.cond_order, return_means=False)
 
         self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
-            U_normed = U / np.linalg.norm(U)
+            U_normed = self.U / np.linalg.norm(self.U)
             self.lvintercorrs = U_normed.T @ U_normed
         else:
-            self.lvintercorrs = U.T @ U
+            self.lvintercorrs = self.U.T @ self.U
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_latents(self.X, self.V)
-        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.X_latent = self._compute_X_latents(self.X, self.V)
+        # self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
-            self.Y,
+            None,
             self.U,
             self.s,
             self.V,
@@ -551,7 +547,6 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             preprocess=self._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            ngroups=self.num_groups,
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
@@ -649,7 +644,6 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             preprocess=self._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            ngroups=self.num_groups,
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
@@ -744,7 +738,6 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            ngroups=self.num_groups,
             rotate_method=rotate_method,
         )
         print("\nDone.")
@@ -818,7 +811,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order,)
 
-        self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
+        self.U, self.s, self.V = self._run_pls_contrast(self.multiblock, self.contrasts)
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
@@ -845,7 +838,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            ngroups=self.num_groups,
             rotate_method=rotate_method,
         )
         print("\nDone.")

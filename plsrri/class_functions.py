@@ -106,6 +106,8 @@ def _run_pls_contrast(M, C):
     s = np.sqrt(np.sum(np.power(CB, 2), axis=0))
     V = CB.T
     U = C
+    # U = CB.T
+    # V = C
     # V = VS / s
 
     # U = (np.linalg.inv(np.diag(s)) @ (V.T @ M.T)).T
@@ -167,11 +169,11 @@ def _compute_corr(X, Y, cond_order):
         Xc_zsc = scipy.stats.zscore(X[start : order_all[i] + start,])
         Xc_zsc /= np.sqrt(order_all[i])
         # Xc_zsc *= -1
-        print(f"Xc_zsc: \n{Xc_zsc.shape}\n")
+        # print(f"Xc_zsc: \n{Xc_zsc.shape}\n")
         Yc_zsc = scipy.stats.zscore(Y[start : order_all[i] + start,])
         Yc_zsc /= np.sqrt(order_all[i])
         # Yc_zsc *= -1
-        print(f"Yc_zsc: \n{Yc_zsc.shape}\n")
+        # print(f"Yc_zsc: \n{Yc_zsc.shape}\n")
         np.nan_to_num(Xc_zsc, copy=False)
         np.nan_to_num(Yc_zsc, copy=False)
         R[start_R : Y.shape[1] + start_R,] = np.matmul(Yc_zsc.T, Xc_zsc)
