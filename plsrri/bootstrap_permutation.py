@@ -141,7 +141,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         print(f"PLS ALG: {self.pls_alg}")
         if nperm > 0:
-            self.permute_ratio, self.debug_dict = self._permutation_test(
+            self.permute_ratio, self.perm_debug_dict = self._permutation_test(
                 X,
                 Y,
                 U,
@@ -164,6 +164,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     self.LVcorr,
                     self.llcorr,
                     self.ulcorr,
+                    self.boot_debug_dict,
                 ) = self._bootstrap_test(
                     X,
                     Y,
@@ -183,6 +184,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     self.conf_ints,
                     self.std_errs,
                     self.boot_ratios,
+                    self.boot_debug_dict,
                 ) = self._bootstrap_test(
                     X,
                     Y,
@@ -263,7 +265,9 @@ class _ResampleTestTaskPLS(ResampleTest):
                 if contrast is None:
                     s_hat = np.linalg.svd(permuted, compute_uv=False)
                 else:
-                    s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
+                    inpt = contrast.T @ permuted
+                    # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
+                    s_hat = np.linalg.svd(inpt, compute_uv=False)
                 # print(s_hat)
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
@@ -290,8 +294,13 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # print(s_hat)
             elif rotate_method == 2:
                 # use derivation equations to compute permuted singular values
-                US_hat = permuted.T @ U
-                s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+                if pls_alg in ["cst", "csb", "cmb"]:
+                    s_hat = class_functions._run_pls_contrast(
+                        permuted, contrast, compute_uv=False
+                    )
+                else:
+                    US_hat = permuted.T @ U
+                    s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
 
                 # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
 
@@ -355,9 +364,12 @@ class _ResampleTestTaskPLS(ResampleTest):
         resampled X matrices, and computes `conf_int`, `std_errs`, and
         `boot_ratios`.
         """
+        debug = True
+        debug_dict = {}
 
         # allocate memory for sampled values
-        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
+        # left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
+        left_sv_sampled = np.empty((niter, X.shape[0], U.shape[1]))
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
 
         if Y is not None:
@@ -464,7 +476,8 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             # insert left singular vector into tracking np_array
             # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
-            left_sv_sampled[i] = U_hat
+            # left_sv_sampled[i] = U_hat * s_hat
+            left_sv_sampled[i] = class_functions._compute_X_latents(X_new, V_hat)
             right_sv_sampled[i] = V_hat * s_hat
             if Y is not None:
                 # compute X latents for use in correlation computation
@@ -483,7 +496,14 @@ class _ResampleTestTaskPLS(ResampleTest):
             # right_squares += np.power(V_hat, 2)
 
         # compute confidence intervals of U sampled
-        conf_int = resample.confidence_interval(left_sv_sampled, conf=dist)
+
+        # compute iteration-wise, then column-wise means to compute
+        # grand mean of
+        left_grand_mean = np.mean(np.mean(left_sv_sampled, axis=0), axis=0)
+
+        conf_int = resample.confidence_interval(
+            left_sv_sampled - left_grand_mean, conf=dist
+        )
 
         # compute standard error of left singular vector
         std_errs = scipy.stats.sem(right_sv_sampled, axis=0)
@@ -491,11 +511,17 @@ class _ResampleTestTaskPLS(ResampleTest):
         boot_ratios = np.divide(std_errs, V)
         # TODO: find more elegant solution to returning arbitrary # of vals
         # maybe tokenizing a dictionary?
+
+        if debug:
+            debug_dict["left_sv_sampled"] = left_sv_sampled
+            debug_dict["right_sv_sampled"] = right_sv_sampled
+            debug_dict["left_grand_mean"] = left_grand_mean
+
         if Y is None:
-            return (conf_int, std_errs, boot_ratios)
+            return (conf_int, std_errs, boot_ratios, debug_dict)
         else:
             llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
-            return (conf_int, std_errs, boot_ratios, LVcorr, llcorr, ulcorr)
+            return (conf_int, std_errs, boot_ratios, LVcorr, llcorr, ulcorr, debug_dict)
 
     def __repr__(self):
         stg = ""

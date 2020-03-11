@@ -80,7 +80,7 @@ def _run_pls(M):
     return (U, s, V.T)
 
 
-def _run_pls_contrast(M, C):
+def _run_pls_contrast(M, C, compute_uv=True):
     """Derives U,s,V using input matrix M and contrast matrix C.
 
     Parameters
@@ -89,6 +89,8 @@ def _run_pls_contrast(M, C):
         Input matrix whose U,s,V will be derived.
     C: np.array
         Contrast matrix used during derivation.
+    compute_uv: boolean, optional
+        Specifies whether or not to compute and return Defaults to True.
 
     Returns
     -------
@@ -103,15 +105,19 @@ def _run_pls_contrast(M, C):
 
     """
     CB = C.T @ M
-    s = np.sqrt(np.sum(np.power(CB, 2), axis=0))
-    V = CB.T
-    U = C
-    # U = CB.T
-    # V = C
-    # V = VS / s
+    s = np.sqrt(np.sum(np.power(CB, 2), axis=1))
 
-    # U = (np.linalg.inv(np.diag(s)) @ (V.T @ M.T)).T
-    return (U, s, V)
+    if compute_uv:
+        V = CB.T
+        U = C
+        # U = CB.T
+        # V = C
+        # V = VS / s
+
+        # U = (np.linalg.inv(np.diag(s)) @ (V.T @ M.T)).T
+        return (U, s, V)
+    else:
+        return s
 
 
 def _compute_X_latents(I, EV, ngroups=1):
@@ -293,8 +299,10 @@ def _create_multiblock(X, Y, cond_order, mctype=0):
 
     """
     mc = _mean_centre(X, cond_order, mctype, return_means=False)
+    mc_norm = mc / np.linalg.norm(mc, axis=0)
     R = _compute_corr(X, Y, cond_order)
+    R_norm = R / np.linalg.norm(R, axis=0)
 
     # stack mc and R
-    mb = np.array([mc, R]).reshape(mc.shape[0] + R.shape[0], -1)
+    mb = np.array([mc_norm, R_norm]).reshape(mc_norm.shape[0] + R_norm.shape[0], -1)
     return mb
