@@ -3,7 +3,7 @@ import scipy
 import scipy.stats
 
 # project imports
-import exceptions
+# import exceptions
 
 
 def resample_without_replacement(
@@ -265,10 +265,28 @@ def confidence_interval(matrix, conf=(0.05, 0.95)):
                 to the lower interval and  the second array corresponds to
                 the higher interval.
     """
-    n = len(matrix)
-    m = scipy.mean(matrix, axis=0)
-    std_err = scipy.stats.sem(matrix, axis=0)
-    h_upper = std_err * scipy.stats.t.ppf((1 + conf[1]) / 2, n - 1)
-    h_lower = std_err * scipy.stats.t.ppf((conf[0]) / 2, n - 1)
-    conf_ints = (m + h_lower, m + h_upper)
-    return conf_ints
+
+    # TODO: update the documentation to reflect new changes
+
+    nrow = matrix.shape[1]
+    ncol = matrix.shape[2]
+
+    lower = np.empty((nrow, ncol))
+    upper = np.empty((nrow, ncol))
+
+    for i in range(matrix.shape[1]):
+        for j in range(matrix.shape[2]):
+            # use percentile function to match Matlab output
+            # multiply confidence values by 100 to match
+            # NumPy's required input (0,100)
+            lower[i, j] = np.percentile(matrix[:, i, j], conf[0] * 100)
+            upper[i, j] = np.percentile(matrix[:, i, j], conf[1] * 100)
+
+    return (lower, upper)
+    # n = len(matrix)
+    # m = scipy.mean(matrix, axis=0)
+    # std_err = scipy.stats.sem(matrix, axis=0)
+    # h_upper = std_err * scipy.stats.t.ppf((1 + conf[1]) / 2, n - 1)
+    # h_lower = std_err * scipy.stats.t.ppf((conf[0]) / 2, n - 1)
+    # conf_ints = (m - h_upper, m + h_upper)
+    # return conf_ints

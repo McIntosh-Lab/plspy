@@ -2,12 +2,13 @@ import abc
 import numpy as np
 import scipy
 import scipy.stats
+import scipy.io as sio
 
 # project imports
-import gsvd
-import resample
-import exceptions
-import class_functions
+# from . import gsvd
+# import resample
+# import exceptions
+# import class_functions
 
 
 class ResampleTest(abc.ABC):
@@ -229,6 +230,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         s[np.abs(s) < threshold] = 0
         debug = True
         debug_dict = {}
+        indices = np.empty((niter, X.shape[0]))
         if debug:
             sum_perm = np.empty(niter)
             sum_s = np.empty(niter)
@@ -240,10 +242,14 @@ class _ResampleTestTaskPLS(ResampleTest):
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
 
-            X_new = resample.resample_without_replacement(X, cond_order)
+            X_new, inds = resample.resample_without_replacement(
+                X, cond_order, return_indices=True
+            )
+            indices[i] = inds
 
             if Y is not None:
-                Y_new = resample.resample_without_replacement(Y, cond_order)
+                Y_new = Y[inds, :]
+                # Y_new = resample.resample_without_replacement(Y, cond_order)
 
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
@@ -340,6 +346,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             debug_dict["s_list"] = s_list
             debug_dict["sum_s"] = sum_perm
             debug_dict["sum_perm"] = sum_s
+            debug_dict["indices"] = indices
             # debug_dict[""] =
             return (permute_ratio, debug_dict)
         return permute_ratio
@@ -371,6 +378,10 @@ class _ResampleTestTaskPLS(ResampleTest):
         # left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
         left_sv_sampled = np.empty((niter, X.shape[0], U.shape[1]))
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
+        indices = np.empty((niter, X.shape[0]))
+
+        m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
+        print(f"MATLAB SHAPE: {m_inds.shape}")
 
         if Y is not None:
             # LVcorr = np.empty((niter, Y.shape[0], V.shape[1]))
@@ -397,13 +408,19 @@ class _ResampleTestTaskPLS(ResampleTest):
                 print(f"Iteration {i + 1}")
 
             # also return indices to use with Y_new
-            X_new, inds = resample.resample_with_replacement(
-                X, cond_order, return_indices=True
-            )
+            # X_new, inds = resample.resample_with_replacement(
+            #     X, cond_order, return_indices=True
+            # )
+
+            X_new = X[m_inds[i], :]
+
+            # indices[i] = inds
+            indices[i] = m_inds[i]
 
             if Y is not None:
                 # Y_new = resample.resample_with_replacement(Y, cond_order)
-                Y_new = Y[inds, :]
+                # Y_new = Y[inds, :]
+                Y_new = Y[m_inds[i], :]
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling
@@ -487,6 +504,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # print(f"V shape: {V.shape}")
                 # print(f"U_hat shape: {U_hat.shape}")
                 # print(f"V_hat shape: {V_hat.shape}")
+                X_hat_latent[:, 1:] *= -1
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
@@ -516,6 +534,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             debug_dict["left_sv_sampled"] = left_sv_sampled
             debug_dict["right_sv_sampled"] = right_sv_sampled
             debug_dict["left_grand_mean"] = left_grand_mean
+            debug_dict["indices"] = indices
 
         if Y is None:
             return (conf_int, std_errs, boot_ratios, debug_dict)

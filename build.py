@@ -10,7 +10,7 @@ name = "plsrri"
 default_task = ["install_dependencies", "analyze", "publish"]
 # version = 0.1
 summary = (
-    "Partial Least Squares implementation in Python, developed by"
+    "Partial Least Squares implementation in Python, developed by "
     "Rotman Research Institute at Baycrest Health Sciences"
 )
 authors = [Author("Noah Frazier-Logue", "nfrazier-logue@research.baycrest.org")]
@@ -24,4 +24,4 @@ def set_properties(project):
     project.depends_on("scipy")
     project.set_property("flake8_include_scripts", True)
     project.set_property("flake8_include_test_sources", True)
-    project.set_property("flake8_break_build", True)
+    project.set_property("flake8_break_build", False)

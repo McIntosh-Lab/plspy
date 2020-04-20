@@ -299,7 +299,7 @@ def _create_multiblock(X, Y, cond_order, mctype=0):
 
     """
     mc = _mean_centre(X, cond_order, mctype, return_means=False)
-    mc_norm = mc / np.linalg.norm(mc, axis=0)
+    mc_norm = mc / np.linalg.norm(mc, axis=1)
     R = _compute_corr(X, Y, cond_order)
     R_norm = R / np.linalg.norm(R, axis=0)
 

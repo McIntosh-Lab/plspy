@@ -15,6 +15,8 @@ Welcome to plsrri's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   modules
+   plsrri
 
 Indices and tables
 ==================
