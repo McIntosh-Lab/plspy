@@ -268,8 +268,9 @@ class _MeanCentreTaskPLS(PLSBase):
         info = f"\nAlgorithm: {self._pls_types[self.pls_alg]}\n\n"
         stg += info
         for k, v in self.__dict__.items():
-            stg += f"\n{k}:\n\t"
-            stg += str(v).replace("\n", "\n\t")
+            if k[0] != "_"
+                stg += f"\n{k}:\n\t"
+                stg += str(v).replace("\n", "\n\t")
         return stg
 
     def __str__(self):
@@ -277,8 +278,9 @@ class _MeanCentreTaskPLS(PLSBase):
         info = f"\nAlgorithm: {self._pls_types[self.pls_alg]}\n\n"
         stg += info
         for k, v in self.__dict__.items():
-            stg += f"\n{k}:\n\t"
-            stg += str(v).replace("\n", "\n\t")
+            if k[0] != "_"
+                stg += f"\n{k}:\n\t"
+                stg += str(v).replace("\n", "\n\t")
         return stg
 
 
