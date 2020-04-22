@@ -3,7 +3,7 @@ import scipy
 import scipy.stats
 
 # project imports
-# import exceptions
+import .exceptions
 
 
 def resample_without_replacement(

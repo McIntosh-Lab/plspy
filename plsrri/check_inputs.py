@@ -1,4 +1,4 @@
-# import exceptions
+import .exceptions
 
 
 def check_input_cond_order_match(X, cond_order, groups_sizes):

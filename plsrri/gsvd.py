@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import fractional_matrix_power
 from scipy.linalg import lapack
 
-# import exceptions
+import .exceptions
 
 
 def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False, compute_uv=True):

@@ -5,10 +5,10 @@ import scipy.stats
 import scipy.io as sio
 
 # project imports
-# from . import gsvd
-# import resample
-# import exceptions
-# import class_functions
+import .gsvd
+import .resample
+import .exceptions
+import .class_functions
 
 
 class ResampleTest(abc.ABC):
@@ -504,7 +504,6 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # print(f"V shape: {V.shape}")
                 # print(f"U_hat shape: {U_hat.shape}")
                 # print(f"V_hat shape: {V_hat.shape}")
-                X_hat_latent[:, 1:] *= -1
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
