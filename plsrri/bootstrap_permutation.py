@@ -380,8 +380,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
         indices = np.empty((niter, X.shape[0]))
 
-        m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
-        print(f"MATLAB SHAPE: {m_inds.shape}")
+        # m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
+        # print(f"MATLAB SHAPE: {m_inds.shape}")
 
         if Y is not None:
             # LVcorr = np.empty((niter, Y.shape[0], V.shape[1]))
@@ -408,19 +408,18 @@ class _ResampleTestTaskPLS(ResampleTest):
                 print(f"Iteration {i + 1}")
 
             # also return indices to use with Y_new
-            # X_new, inds = resample.resample_with_replacement(
-            #     X, cond_order, return_indices=True
-            # )
+            X_new, inds = resample.resample_with_replacement(
+                X, cond_order, return_indices=True
+            )
 
-            X_new = X[m_inds[i], :]
+            # X_new = X[m_inds[i], :]
 
-            # indices[i] = inds
-            indices[i] = m_inds[i]
+            indices[i] = inds
+            # indices[i] = m_inds[i]
 
             if Y is not None:
-                # Y_new = resample.resample_with_replacement(Y, cond_order)
-                # Y_new = Y[inds, :]
-                Y_new = Y[m_inds[i], :]
+                Y_new = Y[inds, :]
+                # Y_new = Y[m_inds[i], :]
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling
