@@ -5,10 +5,10 @@ import scipy.stats
 import scipy.io as sio
 
 # project imports
-import .gsvd
-import .resample
-import .exceptions
-import .class_functions
+from . import gsvd
+from . import resample
+from . import exceptions
+from . import class_functions
 
 
 class ResampleTest(abc.ABC):

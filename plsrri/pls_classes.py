@@ -3,12 +3,12 @@ import numpy as np
 import scipy.stats
 
 # project imports
-import .bootstrap_permutation
-import .gsvd
+from . import bootstrap_permutation
+from . import gsvd
 
 # import helpers
-import .exceptions
-import .class_functions
+from . import exceptions
+from . import class_functions
 
 
 class PLSBase(abc.ABC):
