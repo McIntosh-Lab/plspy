@@ -1,7 +1,7 @@
 # import numpy as np
 
 # project imports
-import pls_classes
+# import pls_classes
 
 
 def PLS(*args, **kwargs):
