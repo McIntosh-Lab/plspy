@@ -268,7 +268,7 @@ class _MeanCentreTaskPLS(PLSBase):
         info = f"\nAlgorithm: {self._pls_types[self.pls_alg]}\n\n"
         stg += info
         for k, v in self.__dict__.items():
-            if k[0] != "_"
+            if k[0] != "_":
                 stg += f"\n{k}:\n\t"
                 stg += str(v).replace("\n", "\n\t")
         return stg
@@ -278,7 +278,7 @@ class _MeanCentreTaskPLS(PLSBase):
         info = f"\nAlgorithm: {self._pls_types[self.pls_alg]}\n\n"
         stg += info
         for k, v in self.__dict__.items():
-            if k[0] != "_"
+            if k[0] != "_":
                 stg += f"\n{k}:\n\t"
                 stg += str(v).replace("\n", "\n\t")
         return stg
@@ -760,6 +760,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         num_perm: int = 1000,
         num_boot: int = 1000,
         rotate_method: int = 0,
+        contrasts: list = None,
         **kwargs,
     ):
 
@@ -794,6 +795,10 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                     "up to the number of rows in the input matrices."
                 )
             self.cond_order = cond_order
+
+        if contrasts is None:
+            raise exceptions.MissingParameterError("Please provide a contrast matrix.")
+        self.contrasts = contrasts
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -841,5 +846,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            contrast=self.contrasts,
         )
         print("\nDone.")
