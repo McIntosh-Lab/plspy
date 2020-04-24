@@ -818,6 +818,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order,)
 
+        self.contrasts = self.contrasts / np.linalg.norm(self.contrasts, axis=0)
+        print(self.contrasts)
+
         self.U, self.s, self.V = self._run_pls_contrast(self.multiblock, self.contrasts)
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
