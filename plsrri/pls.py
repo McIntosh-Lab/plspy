@@ -3,6 +3,15 @@
 # project imports
 from . import pls_classes
 
+methods = {
+            "mct" : pls_classes._MeanCentreTaskPLS,
+            "rb" : pls_classes._RegularBehaviourPLS,
+            "cst" : pls_classes._ContrastTaskPLS,
+            "csb" : pls_classes._ContrastBehaviourPLS,
+            "mb" : pls_classes._MultiblockPLS,
+            "cmb" : pls_classes._ContrastMultiblockPLS
+            }
+
 
 def PLS(*args, **kwargs):
     """Front-facing wrapper function for PLS that captures user input
