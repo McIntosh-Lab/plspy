@@ -2,7 +2,9 @@
 
 # project imports
 from . import pls_classes
+from . import __docs__
 
+# dictionary holding PLS methods; used with help()
 methods = {
             "mct" : pls_classes._MeanCentreTaskPLS,
             "rb" : pls_classes._RegularBehaviourPLS,
@@ -14,14 +16,6 @@ methods = {
 
 
 def PLS(*args, **kwargs):
-    """Front-facing wrapper function for PLS that captures user input
-    and extracts user-specified PLS method. If no method is specified,
-    default PLS is used.
-
-    TODO: implement first version of PLS and document required values here
-
-    """
-
     # TODO: handle first argument being pls method
     # print(f"arg1:{args[0]}")
 
@@ -45,3 +39,8 @@ def PLS(*args, **kwargs):
     # print(kwargs)
     # return finished PLS class with user-specified method
     return pls_classes.PLSBase._create(pls_method, *args, **kwargs)
+
+# __init__.py docstring assembled using blocks also used in
+# other files. Docstrings found in __docs__.py
+PLS.__doc__ =  __docs__.pls_wrapper_header
+PLS.__doc__ += __docs__.plsrri_body
