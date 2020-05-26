@@ -1,5 +1,7 @@
 import scipy.stats
+import numpy as np
 
+from . import exceptions
 
 def _mean_centre(X, cond_order, mctype=0, return_means=True):
     """Single-group preprocessing for `X`. Generates `X_means` and
@@ -17,7 +19,7 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
     return_means : boolean, optional
         Optionally specify whether or not to return the means along
         with the mean-centred matrix.
-        
+            
     Returns
     -------
     X_means: np_array
@@ -27,29 +29,52 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
 
 
     """
-    X_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
-    group_means = _get_group_means(X, cond_order)
-    group_sums = np.sum(cond_order, axis=1)
-    # index counters for X_means and X, respectively
-    mc = 0
-    xc = 0
+    # within each group remove group means from condition means
+    if mctype == 0:
+        X_means = _get_group_condition_means(X, cond_order)
+        group_means = _get_group_means(X, cond_order)
 
-    for i in range(len(cond_order)):
-        X_means[mc : mc + len(cond_order[i]),] = _mean_single_group(
-            X[xc : xc + group_sums[i],], cond_order[i]
+        repeats = np.array([len(i) for i in cond_order])
+        # subtract condition-wise means from condition grand means
+        # (within group)
+        X_mc = X_means - np.repeat(group_means, repeats, axis=0)
+        # X_mc /= np.linalg.norm(X_mc)
+
+    # reomve grand condition means from each group condition mean
+    elif mctype == 1:
+        X_means = _get_group_condition_means(X, cond_order)
+        grand_cond_means = _get_grand_condition_means(X, cond_order)
+        ngrps = cond_order.shape[0]
+
+        # tile condition means so it's applied to both groups of X_means
+        gcm-tiled = np.tile(A = grand_cond_means, reps = (ngrps,1))
+
+        X_mc = X_means - tiled
+
+    # remove grand mean (over all subjects and conditions)
+    elif mctype == 2:
+        X_means = np.mean(X, axis=0)
+        X_mc = X - X_means
+
+    # remove all main effects
+    # subtract condition and group means (group by condition)
+    elif mctype == 3:
+        X_means = _get_group_condition_means(X, cond_order)
+        group_means = _get_group_means(X, cond_order)
+
+        repeats = np.array([len(i) for i in cond_order])
+        gm_repeats = np.repeat(group_means, repeats, axis=0) 
+        X_mc = X - X_means - gm_repeats
+    else:
+        raise exceptions.NotImplementedError(
+            "Specified mean-centring method is either not implemented "
+            "or is invalid."
         )
-        mc += len(cond_order[i])
-        xc += group_sums[i]
-
-    repeats = np.array([len(i) for i in cond_order])
-    # subtract condition-wise means from condition grand means
-    # (within group)
-    X_mc = X_means - np.repeat(group_means, repeats, axis=0)
-    # X_mc /= np.linalg.norm(X_mc)
     if return_means:
         return (X_means, X_mc)
     else:
         return X_mc
+
 
 
 def _run_pls(M):
@@ -94,13 +119,11 @@ def _run_pls_contrast(M, C, compute_uv=True):
     Returns
     -------
     U: np_array
-        Eigenvectors of matrix `M`*`M`^T;
-        left singular vectors.
+        Contrast matrix.
     s: np_array
         vector containing diagonal of the singular values.
     V: np_array
-        Eigenvectors of matrix `M`^T*`M`;
-        right singular vectors.
+        Result of contrasts applied to input.
 
     """
     CB = C.T @ M
@@ -119,7 +142,7 @@ def _run_pls_contrast(M, C, compute_uv=True):
         return s
 
 
-def _compute_X_latents(I, EV, ngroups=1):
+def _compute_X_latents(I, EV):
     """Computes latent values of original mxn input matrix `I`
     and corresponding nxn eigenvector `EV` by performing a dot-product.
 
@@ -129,8 +152,7 @@ def _compute_X_latents(I, EV, ngroups=1):
         Input matrix of shape mxn.
     EV : np_array
         Corresponding eigenvector of shape nxn.
-    ngroups: int
-        Number of groups in input data.
+
     Returns
     -------
     dotp: np_array
@@ -270,6 +292,51 @@ def _get_group_means(X, cond_order):
         group_means[i,] = np.mean(X[start : start + group_sums[i],], axis=0)
         start += group_sums[i]
     return group_means
+
+
+def _get_group_condition_means(X, cond_order):
+    """
+    """
+
+    grp_cond_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
+    group_means = _get_group_means(X, cond_order)
+    group_sums = np.sum(cond_order, axis=1)
+    # index counters for X_means and X, respectively
+    mc = 0
+    xc = 0
+
+    for i in range(len(cond_order)):
+        grp_cond_means[mc : mc + len(cond_order[i]),] = _mean_single_group(
+            X[xc : xc + group_sums[i],], cond_order[i]
+        )
+        mc += len(cond_order[i])
+        xc += group_sums[i]
+    return grp_cond_means
+
+
+def _get_grand_condition_means(X, cond_order):
+    """
+    """
+    ngrp = cond_order.shape[0]
+    ncond = cond_order.shape[1]
+
+    # get group condition means and use
+    # to compute grand condition means
+    # (conditions must all have same number of subjects)
+    # (change if this needs to be more flexible)
+    grp_cond_means = _get_group_condition_means(X, cond_order)
+
+    grand_cond_means = np.empty((cond_order.shape[1], X.shape[-1]))
+
+    for cond in range(ncond):
+        # create sets of indices that correspond to all
+        # instances of a condition in all groups
+        inds = [cond + grp * ncond for grp in range(ngrp)]
+
+        # mean the selected indices and add to result array
+        grand_cond_means[cond] = np.mean(grp_cond_means[inds, :], axis=0)
+
+    return grand_cond_means
 
 
 def _create_multiblock(X, Y, cond_order, mctype=0):

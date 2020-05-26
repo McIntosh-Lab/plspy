@@ -86,7 +86,7 @@ class _MeanCentreTaskPLS(PLSBase):
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
     Y: None
-        Not used in MCT-PLS.
+        Not used in Mean-Centred Task PLS.
     groups_sizes : tuple
         Tuple containing sizes of conditions, where each entry in the tuple
         corresponds to a group and each value in the entry corresponds to
@@ -147,7 +147,7 @@ class _MeanCentreTaskPLS(PLSBase):
     V: np_array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-     X_latent : np_array
+    X_latent : np_array
         Latent variables of input X; dot-product of X_mc and V.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
@@ -286,9 +286,9 @@ class _MeanCentreTaskPLS(PLSBase):
 
 @PLSBase._register_subclass("rb")
 class _RegularBehaviourPLS(_MeanCentreTaskPLS):
-    """Driver class for Behavioural Task PLS.
+    """Driver class for Behavioural PLS.
 
-    Class called for Behavioural Task PLS. TODO: add more here.
+    Class called for Behavioural PLS. TODO: add more here.
 
     Parameters
     ----------
@@ -364,10 +364,12 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     V: np_array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-     Y_latent : np_array
+    Y_latent : np_array
         Latent variables for contrasts.
-     X_latent : np_array
+    X_latent : np_array
         Latent variables of input X; dot-product of X_mc and V.
+    lvcorrs : np.array
+        Computed latent variable correlations
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
@@ -462,7 +464,95 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
 
 @PLSBase._register_subclass("cst")
 class _ContrastTaskPLS(_MeanCentreTaskPLS):
-    """
+    """Driver class for Contrast Task PLS.
+
+    Class called for Contrast Task PLS. TODO: add more here.
+
+    Parameters
+    ----------
+    X : np.array
+        Input neural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y: None
+        Not used in Contrast Task PLS.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    num_perm : int, optional
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int, optional
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    nonrotated : boolean, optional
+        Optional value specifying whether or not full GSVD should be used
+        during bootstrap and permutation tests ("rotated" method). 
+        If False, singular values will be derived.
+    contrasts: np.array
+        contrast matrix for use in Contrast Task PLS. Used to create
+        different methods of comparison.
+        
+
+    Attributes
+    ----------
+    X : np_array
+        Input neural matrix/matrices for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y : np_array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_groups : int
+        Value specifying the number of groups in the input data.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    cond_order : array-like
+        List/array where each entry holds the number of subjects per condition
+        for each group in the input matrix.
+    num_perm : int
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    X_means: np_array
+        Mean-values of X array on axis-0 (column-wise).
+    X_mc: np_array
+        Mean-centred values corresponding to input matrix X.
+    U: np_array
+        Eigenvectors of matrix `X_mc`*`X_mc`^T;
+        left singular vectors.
+    s: np_array
+        Vector containing diagonal of the singular values.
+    V: np_array
+        Eigenvectors of matrix `X_mc`^T*`X_mc`;
+        right singular vectors.
+    Y_latent : np_array
+        Latent variables for contrasts.
+    X_latent : np_array
+        Latent variables of input X; dot-product of X_mc and V.
+    lvintercorrs : np.array
+        U.T * U. Optionally normed if rotate in [1,2].
+    resample_tests : class
+        Class containing results for permutation and bootstrap tests. See
+        documentation on Resample Tests for more information.
     """
 
     def __init__(
@@ -557,7 +647,97 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
 @PLSBase._register_subclass("csb")
 class _ContrastBehaviourPLS(_ContrastTaskPLS):
-    """
+    """Driver class for Contrast Behaviour PLS.
+
+    Class called for Contrast Behaviour PLS. TODO: add more here.
+
+    Parameters
+    ----------
+    X : np.array
+        Input neural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    num_perm : int, optional
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int, optional
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    nonrotated : boolean, optional
+        Optional value specifying whether or not full GSVD should be used
+        during bootstrap and permutation tests ("rotated" method). 
+        If False, singular values will be derived.
+    contrasts: np.array
+        contrast matrix for use in Contrast Task PLS. Used to create
+        different methods of comparison.
+        
+
+    Attributes
+    ----------
+    X : np_array
+        Input neural matrix/matrices for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y : np_array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_groups : int
+        Value specifying the number of groups in the input data.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    cond_order : array-like
+        List/array where each entry holds the number of subjects per condition
+        for each group in the input matrix.
+    num_perm : int
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    X_means: np_array
+        Mean-values of X array on axis-0 (column-wise).
+    X_mc: np_array
+        Mean-centred values corresponding to input matrix X.
+    U: np_array
+        Eigenvectors of matrix `X_mc`*`X_mc`^T;
+        left singular vectors.
+    s: np_array
+        Vector containing diagonal of the singular values.
+    V: np_array
+        Eigenvectors of matrix `X_mc`^T*`X_mc`;
+        right singular vectors.
+    Y_latent : np_array
+        Latent variables for contrasts.
+    X_latent : np_array
+        Latent variables of input X; dot-product of X_mc and V.
+    lvintercorrs : np.array
+        U.T * U. Optionally normed if rotate in [1,2].
+    resample_tests : class
+        Class containing results for permutation and bootstrap tests. See
+        documentation on Resample Tests for more information.
     """
 
     def __init__(
@@ -654,7 +834,92 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
 
 @PLSBase._register_subclass("mb")
 class _MultiblockPLS(_RegularBehaviourPLS):
-    """
+    """Driver class for Multiblock PLS.
+
+    Class called for Multiblock PLS. TODO: add more here.
+
+    Parameters
+    ----------
+    X : np_array
+        Input neural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    num_perm : int, optional
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int, optional
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    nonrotated : boolean, optional
+        Optional value specifying whether or not full GSVD should be used
+        during bootstrap and permutation tests ("rotated" method). 
+        If False, singular values will be derived.
+
+    Attributes
+    ----------
+    X : np_array
+        Input neural matrix/matrices for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y : np_array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_groups : int
+        Value specifying the number of groups in the input data.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    cond_order : array-like
+        List/array where each entry holds the number of subjects per condition
+        for each group in the input matrix.
+    num_perm : int
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    X_means: np_array
+        Mean-values of X array on axis-0 (column-wise).
+    X_mc: np_array
+        Mean-centred values corresponding to input matrix X.
+    U: np_array
+        Eigenvectors of matrix `X_mc`*`X_mc`^T;
+        left singular vectors.
+    s: np_array
+        Vector containing diagonal of the singular values.
+    V: np_array
+        Eigenvectors of matrix `X_mc`^T*`X_mc`;
+        right singular vectors.
+    Y_latent : np_array
+        Latent variables for contrasts.
+    X_latent : np_array
+    lvcorrs : np.array
+        Computed latent variable correlations
+    resample_tests : class
+        Class containing results for permutation and bootstrap tests. See
+        documentation on Resample Tests for more information.
     """
 
     def __init__(
@@ -718,7 +983,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self._compute_Y_latents = class_functions._compute_Y_latents
 
         # compute R correlation matrix
-        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order,)
+        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order)
 
         self.U, self.s, self.V = self._run_pls(self.multiblock)
         # self.X_latent = np.dot(self.X_mc, self.V)
@@ -747,7 +1012,95 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
 @PLSBase._register_subclass("cmb")
 class _ContrastMultiblockPLS(_MultiblockPLS):
-    """
+    """Driver class for Multiblock PLS.
+
+    Class called for Multiblock PLS. TODO: add more here.
+
+    Parameters
+    ----------
+    X : np_array
+        Input neural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    num_perm : int, optional
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int, optional
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    nonrotated : boolean, optional
+        Optional value specifying whether or not full GSVD should be used
+        during bootstrap and permutation tests ("rotated" method). 
+        If False, singular values will be derived.
+
+    Attributes
+    ----------
+    X : np_array
+        Input neural matrix/matrices for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    Y : np_array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
+    groups_sizes : tuple
+        Tuple containing sizes of conditions, where each entry in the tuple
+        corresponds to a group and each value in the entry corresponds to
+        the number of participants in that group. E.g. in (7,6,5), group 1
+        would have 7 participants and group 3 would have 5 participants.
+    num_groups : int
+        Value specifying the number of groups in the input data.
+    num_conditions : int
+        Number of conditions in each matrix. For example, if input matrix `X`
+        contained 7 participants and 3 conditions, it would be of length 21.
+    cond_order : array-like
+        List/array where each entry holds the number of subjects per condition
+        for each group in the input matrix.
+    num_perm : int
+        Optional value specifying the number of iterations for the permutation
+        test. Defaults to 0, meaning no permutation test will be run unless
+        otherwise specified by the user.
+    num_boot : int
+        Optional value specifying the number of iterations for the bootstrap
+        test. Defaults to 0, meaning no bootstrap test will be run unless
+        otherwise specified by the user.
+    X_means: np_array
+        Mean-values of X array on axis-0 (column-wise).
+    X_mc: np_array
+        Mean-centred values corresponding to input matrix X.
+    U: np_array
+        Eigenvectors of matrix `X_mc`*`X_mc`^T;
+        left singular vectors.
+    s: np_array
+        Vector containing diagonal of the singular values.
+    V: np_array
+        Eigenvectors of matrix `X_mc`^T*`X_mc`;
+        right singular vectors.
+    Y_latent : np_array
+        Latent variables for contrasts.
+    X_latent : np_array
+        Latent variables of input X; dot-product of X_mc and V.
+    lvcorrs : np.array
+        Computed latent variable correlations
+    lvintercorrs : np.array
+        U.T * U. Optionally normed if rotate in [1,2].
+    resample_tests : class
+        Class containing results for permutation and bootstrap tests. See
+        documentation on Resample Tests for more information.
     """
 
     def __init__(
@@ -816,7 +1169,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self._compute_Y_latents = class_functions._compute_Y_latents
 
         # compute R correlation matrix
-        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order,)
+        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order)
 
         self.contrasts = self.contrasts / np.linalg.norm(self.contrasts, axis=0)
         print(self.contrasts)
