@@ -82,7 +82,6 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">plsrri</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plsrri.html">plsrri package</a></li>
 </ul>
 
             
@@ -149,25 +148,90 @@
             
   <div class="section" id="module-plsrri">
 <span id="welcome-to-plsrri-s-documentation"></span><h1>Welcome to plsrri’s documentation!<a class="headerlink" href="#module-plsrri" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="plsrri">
+<h2>plsrri<a class="headerlink" href="#plsrri" title="Permalink to this headline">¶</a></h2>
+<p>plsrri is a Partial Least Squares package developed at the Rotman
+Research Institute at Baycrest Health Sciences.</p>
+<p>In addition to core PLS functionality, this package also contains the following modules:</p>
+<dl class="simple">
+<dt>class_functions</dt><dd><p>core PLS functions, such as mean-centring, calling SVD/GSVD, etc.</p>
+</dd>
+<dt>gsvd</dt><dd><p>Implementation of GSVD that uses NumPy’s Fortran SVD function</p>
+</dd>
+<dt>resample</dt><dd><p>Functions used for resampling in permutation and bootstrap</p>
+</dd>
+<dt>bootstrap_permutation</dt><dd><p>Houses the bootstrap and permutation object (called by PLS)</p>
+</dd>
+<dt>pls_classes</dt><dd><p>Source code for each PLS version</p>
+</dd>
+<dt>exceptions</dt><dd><p>Houses custom exceptions used within PLS</p>
+</dd>
+</dl>
+<p>Basic usage examples:</p>
+<blockquote>
+<div><p>Note: There are 3 required arguments, used in the following order:</p>
+<ol class="arabic simple">
+<li><p>X - 2-d task matrix</p></li>
+<li><p>a list/tuple object containing the number of subjects in each group</p></li>
+<li><p>argument 3 is an int indicating the number of conditions</p></li>
+</ol>
+<p>Example arguments are used below.</p>
+<p>Mean-Centred Task PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">num_perm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>  <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mct&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Behavioural PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Contrast Task PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;cst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Contrast Behavioural PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;csb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Multiblock PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To see documentation on additional arguments and fields available,
+call help on a specific PLS method (see below for details).</p>
+<p>Documentation is available both in help() form and will also be available
+in website form. More information on how to access online documentation is
+forthcoming. Information on how to use help() is below.</p>
+<p>To get help documentation on a particular version of PLS, type the following
+in a Python interpreter after loading the module:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">plsrri</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="s2">&quot;&lt;methodname&gt;&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Where &lt;method&gt; is the string of one of the PLS versions shown below.</p>
+<p>Available methods:</p>
+<blockquote>
+<div><p>“mct” - Mean-Centred Task PLS</p>
+<p>“rb”  - Regular Behaviour PLS</p>
+<p>“cst” - Contrast Task PLS</p>
+<p>“csb” - Contrast Behaviour PLS</p>
+<p>“mb”  - Multiblock PLS</p>
+<p>“cmb” - Contrast Multiblock PLS (under construction)</p>
+</div></blockquote>
+<dl>
+<dt>Note: calling</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>will show you this same help page.</p>
+<p>Author: Noah Frazier-Logue</p>
+</div>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">plsrri</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="plsrri.html">plsrri package</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="plsrri.html">plsrri package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri">Module contents</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.bootstrap_permutation">plsrri.bootstrap_permutation module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.check_inputs">plsrri.check_inputs module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.decorators">plsrri.decorators module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.exceptions">plsrri.exceptions module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.gsvd">plsrri.gsvd module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.helpers">plsrri.helpers module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.pls">plsrri.pls module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.pls_classes">plsrri.pls_classes module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html#module-plsrri.resample">plsrri.resample module</a></li>
 </ul>
 </li>
 </ul>

@@ -53,14 +53,6 @@ plsrri.gsvd module
    :undoc-members:
    :show-inheritance:
 
-plsrri.helpers module
----------------------
-
-.. automodule:: plsrri.helpers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 plsrri.pls module
 -----------------
 
@@ -74,7 +66,7 @@ plsrri.pls\_classes module
 
 .. automodule:: plsrri.pls_classes
    :private-members:
-   :members: _MeanCentreTaskSingleGroupPLS, _RegularBehaviourPLS
+   :members: _MeanCentreTaskSingleGroupPLS, _RegularBehaviourPLS, _ContrastTaskPLS,  _ContrastBehaviourPLS, _MultiblockPLS, _ContrastMultiblockPLS
    :undoc-members:
    :show-inheritance:
 

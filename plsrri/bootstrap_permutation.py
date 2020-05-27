@@ -2,7 +2,7 @@ import abc
 import numpy as np
 import scipy
 import scipy.stats
-import scipy.io as sio
+# import scipy.io as sio
 
 # project imports
 from . import gsvd
@@ -77,14 +77,14 @@ class _ResampleTestTaskPLS(ResampleTest):
 
     Parameters
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix/matrices for use with PLS. This matrix is passed
         in from the PLS class.
-    U : np_array
+    U : np.array
         Left singular vectors of X.
-    s : np_array
+    s : np.array
         Singular values for X. Used to compute permutation ratio.
-    V : np_array
+    V : np.array
         Right singular vectors of X.
     cond_order : array-like
         Order vector(s) for conditions in X.
@@ -113,12 +113,12 @@ class _ResampleTestTaskPLS(ResampleTest):
         Ratio of resampled values greater than observed values, divided by
         the number of iterations in the permutation test. A higher ratio
         indicates a higher level of randomness.
-    conf_ints : 2-tuple of np_arrays
+    conf_ints : 2-tuple of np.arrays
         Upper and lower element-wise confidence intervals for the resampled
         left singular vectors in a tuple.
-    std_errs : np_array
+    std_errs : np.array
         Element-wise standard errors for the resampled right singular vectors.
-    boot_ratios : np_array
+    boot_ratios : np.array
         NumPy array containing element-wise ratios of 
 
     """
@@ -137,6 +137,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         nboot=1000,
         dist=(0.05, 0.95),
         rotate_method=0,
+        mctype=0,
     ):
         self.dist = dist
 
@@ -153,6 +154,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 self.pls_alg,
                 preprocess=preprocess,
                 rotate_method=rotate_method,
+                mctype=mctype,
                 contrast=contrast,
             )
 
@@ -197,6 +199,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     self.pls_alg,
                     preprocess=preprocess,
                     rotate_method=rotate_method,
+                    mctype=mctype,
                     dist=self.dist,
                     contrast=contrast,
                 )
@@ -214,6 +217,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         preprocess=None,
         contrast=None,
         rotate_method=0,
+        mctype=0,
         threshold=1e-12,
     ):
         """Run permutation test on X. Resamples X (without replacement) based
@@ -255,7 +259,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             # after sampling
 
             if Y is None:
-                permuted = preprocess(X_new, cond_order, return_means=False)
+                permuted = preprocess(X_new, cond_order, mctype=mctype, return_means=False)
 
             else:
                 permuted = preprocess(X_new, Y_new, cond_order)
@@ -263,6 +267,8 @@ class _ResampleTestTaskPLS(ResampleTest):
             if debug:
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
+            # print(f"permuted shape: {permuted.shape}")
+            
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
@@ -270,6 +276,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # s_hat = gsvd.gsvd(permuted, compute_uv=False)
                 if contrast is None:
                     s_hat = np.linalg.svd(permuted, compute_uv=False)
+                    # print(f"s_hat shape: {s_hat.shape}\n")
                 else:
                     inpt = contrast.T @ permuted
                     # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
@@ -363,6 +370,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         pls_alg,
         preprocess=None,
         rotate_method=0,
+        mctype=0,
         dist=(0.05, 0.95),
         contrast=None,
     ):
@@ -425,7 +433,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             # after sampling
 
             if Y is None:
-                permuted = preprocess(X_new, cond_order, return_means=False)
+                permuted = preprocess(X_new, cond_order, mctype=mctype, return_means=False)
 
             else:
                 permuted = preprocess(X_new, Y_new, cond_order)
@@ -490,7 +498,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     "has not been implemented."
                 )
 
-            # insert left singular vector into tracking np_array
+            # insert left singular vector into tracking np.array
             # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
             # left_sv_sampled[i] = U_hat * s_hat
             left_sv_sampled[i] = class_functions._compute_X_latents(X_new, V_hat)

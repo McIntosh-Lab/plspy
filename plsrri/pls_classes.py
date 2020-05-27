@@ -81,12 +81,10 @@ class _MeanCentreTaskPLS(PLSBase):
 
     Parameters
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y: None
-        Not used in Mean-Centred Task PLS.
     groups_sizes : tuple
         Tuple containing sizes of conditions, where each entry in the tuple
         corresponds to a group and each value in the entry corresponds to
@@ -95,6 +93,8 @@ class _MeanCentreTaskPLS(PLSBase):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
+    Y: None
+        Not used in Mean-Centred Task PLS.
     num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
@@ -106,11 +106,29 @@ class _MeanCentreTaskPLS(PLSBase):
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
         during bootstrap and permutation tests ("rotated" method). 
-        If `rotate_method == 2`, singular values will be derived.
+        rotate_method options:
+        
+        0 - compute s using SVD/GSVD
+
+        1 - compute s using Procrustes rotation
+
+        2 - compute s by derivation
+
+    mctype : int, optional
+        mctype options:
+    
+        0 - within each group remove group means from condition means (default)
+
+        1 - remove grand condition means from each group condition mean
+
+        2 - remove grand mean (over all subjects and conditions)
+
+        3 - remove all main effects - subtract condition and group means (group by condition)
+        
 
     Attributes
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
@@ -135,19 +153,19 @@ class _MeanCentreTaskPLS(PLSBase):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    X_means: np_array
+    X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `X_mc`*`X_mc`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         Vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-    X_latent : np_array
+    X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
@@ -158,15 +176,19 @@ class _MeanCentreTaskPLS(PLSBase):
     def __init__(
         self,
         X: np.array,
-        Y: None,
+        # Y: None,
         groups_sizes: tuple,
         num_conditions: int,
+        Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
         rotate_method: int = 0,
+        mctype: int = 0,
         **kwargs,
     ):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
         if len(X.shape) != 2:  #  or len(X.shape) < 2:
             raise exceptions.ImproperShapeError("Input matrix must be 2-dimensional.")
@@ -174,8 +196,14 @@ class _MeanCentreTaskPLS(PLSBase):
 
         if Y is not None:
             raise ValueError(
-                "For {self.pls_types[self.pls_alg]},"
-                "Y must be of type None. Y = \n{Y}"
+                f"Do not provide a Y/behavioural matrix "
+                f"for {self._pls_types[self.pls_alg]}."
+            )
+
+        if "contrasts" in kwargs:
+            raise ValueError(
+                f"Do not provide a contrast matrix "
+                f"for {self._pls_types[self.pls_alg]}."
             )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
@@ -199,8 +227,7 @@ class _MeanCentreTaskPLS(PLSBase):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        self.mctype = mctype
 
         # assign functions to class
         self._mean_centre = class_functions._mean_centre
@@ -208,8 +235,11 @@ class _MeanCentreTaskPLS(PLSBase):
         self._compute_X_latents = class_functions._compute_X_latents
 
         # compute X means and X mean-centred values
-        self.X_means, self.X_mc = self._mean_centre(self.X, self.cond_order)
+        self.X_means, self.X_mc = self._mean_centre(
+            self.X, self.cond_order, mctype=self.mctype
+        )
         self.U, self.s, self.V = self._run_pls(self.X_mc)
+        print(f"X_mc shape: {self.X_mc.shape}")
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = self._compute_X_latents(self.X_mc, self.V)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
@@ -224,6 +254,7 @@ class _MeanCentreTaskPLS(PLSBase):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            mctype=self.mctype,
         )
         print("\nDone.")
 
@@ -292,12 +323,8 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
 
     Parameters
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix for use with PLS. Each participant's
-        data must be flattened and concatenated to form a single 2-dimensional
-        matrix, separated by condition, for each group.
-    Y: np.array
-        Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
     groups_sizes : tuple
@@ -308,6 +335,10 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
     num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
@@ -316,18 +347,25 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    nonrotated : boolean, optional
+    rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
         during bootstrap and permutation tests ("rotated" method). 
-        If False, singular values will be derived.
+        rotate_method options:
+        
+        0 - compute s using SVD/GSVD
+
+        1 - compute s using Procrustes rotation
+
+        2 - compute s by derivation
+
 
     Attributes
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix/matrices for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y : np_array
+    Y : np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
@@ -352,21 +390,21 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    X_means: np_array
+    X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `X_mc`*`X_mc`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         Vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-    Y_latent : np_array
+    Y_latent : np.array
         Latent variables for contrasts.
-    X_latent : np_array
+    X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvcorrs : np.array
         Computed latent variable correlations
@@ -378,9 +416,9 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     def __init__(
         self,
         X: np.array,
-        Y: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
@@ -388,16 +426,28 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         **kwargs,
     ):
 
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        if Y is None:
+            raise exceptions.MissingParameterError(
+                "Please provide a Y/behavioural matrix."
+            )
+            # raise ValueError(
+            #     f"For {self._pls_types[self.pls_alg]}, " f"Y must NOT be of type None."
+            # )
+
+        if "contrasts" in kwargs:
+            raise ValueError(
+                f"Do not provide a contrast matrix "
+                f"for {self._pls_types[self.pls_alg]}."
+            )
+
         if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
             raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
         self.X = X
         self.Y = Y
 
-        if Y is None:
-            raise ValueError(
-                "For {self.pls_types[self.pls_alg]},"
-                "Y must NOT be of type None. Y = \n{Y}"
-            )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
@@ -423,8 +473,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         self.num_perm = num_perm
         self.num_boot = num_boot
         # TODO: catch extraneous keyword args
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
@@ -474,8 +522,6 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Input neural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y: None
-        Not used in Contrast Task PLS.
     groups_sizes : tuple
         Tuple containing sizes of conditions, where each entry in the tuple
         corresponds to a group and each value in the entry corresponds to
@@ -484,6 +530,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
+    Y: None
+        Not used in Contrast Task PLS.
     num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
@@ -492,10 +540,28 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    nonrotated : boolean, optional
+    rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
         during bootstrap and permutation tests ("rotated" method). 
-        If False, singular values will be derived.
+        rotate_method options:
+        
+        0 - compute s using SVD/GSVD
+
+        1 - compute s using Procrustes rotation
+
+        2 - compute s by derivation
+
+    mctype : int, optional
+        mctype options:
+    
+        0 - within each group remove group means from condition means (default)
+
+        1 - remove grand condition means from each group condition mean
+
+        2 - remove grand mean (over all subjects and conditions)
+
+        3 - remove all main effects - subtract condition and group means (group by condition)
+
     contrasts: np.array
         contrast matrix for use in Contrast Task PLS. Used to create
         different methods of comparison.
@@ -503,11 +569,11 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
     Attributes
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix/matrices for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y : np_array
+    Y : np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
@@ -532,21 +598,21 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    X_means: np_array
+    X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `X_mc`*`X_mc`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         Vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-    Y_latent : np_array
+    Y_latent : np.array
         Latent variables for contrasts.
-    X_latent : np_array
+    X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvintercorrs : np.array
         U.T * U. Optionally normed if rotate in [1,2].
@@ -558,26 +624,31 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     def __init__(
         self,
         X: np.array,
-        Y: None,
         groups_sizes: tuple,
         num_conditions: int,
+        Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
         rotate_method: int = 0,
+        mctype: int = 0,
         contrasts: list = None,
         **kwargs,
     ):
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        if Y is not None:
+            raise ValueError(
+                f"Do not provide a Y/behavioural matrix "
+                f"for {self._pls_types[self.pls_alg]}."
+            )
 
         if len(X.shape) != 2:  #  or len(X.shape) < 2:
             raise exceptions.ImproperShapeError("Input matrix must be 2-dimensional.")
         self.X = X
 
-        if Y is not None:
-            raise ValueError(
-                "For {self.pls_types[self.pls_alg]},"
-                "Y must be of type None. Y = \n{Y}"
-            )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
@@ -606,16 +677,17 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.mctype = mctype
         # TODO: catch extraneous keyword args
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
         self._mean_centre = class_functions._mean_centre
         self._run_pls_contrast = class_functions._run_pls_contrast
         self._compute_X_latents = class_functions._compute_X_latents
         # self._compute_Y_latents = class_functions._compute_Y_latents
         # compute R correlation matrix
-        self.R = self._mean_centre(self.X, self.cond_order, return_means=False)
+        self.R = self._mean_centre(
+            self.X, self.cond_order, return_means=False, mctype=self.mctype
+        )
 
         self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
         # norm lvintercorrs if rotate method is
@@ -640,6 +712,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            mctype=self.mctype,
             contrast=self.contrasts,
         )
         print("\nDone.")
@@ -657,10 +730,6 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Input neural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y: np.array
-        Input behavioural matrix for use with PLS. Each participant's
-        data must be flattened and concatenated to form a single 2-dimensional
-        matrix, separated by condition, for each group.
     groups_sizes : tuple
         Tuple containing sizes of conditions, where each entry in the tuple
         corresponds to a group and each value in the entry corresponds to
@@ -669,6 +738,10 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
     num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
@@ -677,10 +750,17 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    nonrotated : boolean, optional
+    rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
         during bootstrap and permutation tests ("rotated" method). 
-        If False, singular values will be derived.
+        rotate_method options:
+        
+        0 - compute s using SVD/GSVD
+
+        1 - compute s using Procrustes rotation
+
+        2 - compute s by derivation
+
     contrasts: np.array
         contrast matrix for use in Contrast Task PLS. Used to create
         different methods of comparison.
@@ -688,11 +768,11 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
 
     Attributes
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix/matrices for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y : np_array
+    Y : np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
@@ -717,21 +797,21 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    X_means: np_array
+    X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `X_mc`*`X_mc`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         Vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-    Y_latent : np_array
+    Y_latent : np.array
         Latent variables for contrasts.
-    X_latent : np_array
+    X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvintercorrs : np.array
         U.T * U. Optionally normed if rotate in [1,2].
@@ -743,9 +823,9 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     def __init__(
         self,
         X: np.array,
-        Y: None,
         groups_sizes: tuple,
         num_conditions: int,
+        Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
@@ -754,16 +834,23 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         **kwargs,
     ):
 
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        if Y is None:
+            raise exceptions.MissingParameterError(
+                "Please provide a Y/behavioural matrix."
+            )
+            # raise ValueError(
+            #     f"For {self._pls_types[self.pls_alg]}, " f"Y must NOT be of type None."
+            # )
+
         if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
             raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+
         self.X = X
         self.Y = Y
 
-        if Y is None:
-            raise ValueError(
-                "For {self.pls_types[self.pls_alg]},"
-                "Y must NOT be of type None. Y = \n{Y}"
-            )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
@@ -840,12 +927,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
     Parameters
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix for use with PLS. Each participant's
-        data must be flattened and concatenated to form a single 2-dimensional
-        matrix, separated by condition, for each group.
-    Y: np.array
-        Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
     groups_sizes : tuple
@@ -856,6 +939,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
     num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
@@ -864,18 +951,25 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    nonrotated : boolean, optional
+    rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
         during bootstrap and permutation tests ("rotated" method). 
-        If False, singular values will be derived.
+        rotate_method options:
+        
+        0 - compute s using SVD/GSVD
+
+        1 - compute s using Procrustes rotation
+
+        2 - compute s by derivation
+
 
     Attributes
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix/matrices for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y : np_array
+    Y : np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
@@ -900,21 +994,21 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    X_means: np_array
+    X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `X_mc`*`X_mc`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         Vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-    Y_latent : np_array
+    Y_latent : np.array
         Latent variables for contrasts.
-    X_latent : np_array
+    X_latent : np.array
     lvcorrs : np.array
         Computed latent variable correlations
     resample_tests : class
@@ -925,9 +1019,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     def __init__(
         self,
         X: np.array,
-        Y: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
@@ -935,16 +1029,30 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         **kwargs,
     ):
 
+        # TODO: catch extraneous keyword args
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        if Y is None:
+            raise exceptions.MissingParameterError(
+                "Please provide a Y/behavioural matrix."
+            )
+            # raise ValueError(
+            #     f"For {self._pls_types[self.pls_alg]}, " f"Y must NOT be of type None."
+            # )
+
+        if "contrasts" in kwargs:
+            raise ValueError(
+                f"Do not provide a contrast matrix "
+                f"for {self._pls_types[self.pls_alg]}."
+            )
+
         if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
             raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+
         self.X = X
         self.Y = Y
 
-        if Y is None:
-            raise ValueError(
-                "For {self.pls_types[self.pls_alg]},"
-                "Y must NOT be of type None. Y = \n{Y}"
-            )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
@@ -969,9 +1077,6 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-        # TODO: catch extraneous keyword args
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
@@ -1010,7 +1115,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         print("\nDone.")
 
 
-@PLSBase._register_subclass("cmb")
+# deregistered for now until Randy and I work out a new implementation
+# @PLSBase._register_subclass("cmb")
 class _ContrastMultiblockPLS(_MultiblockPLS):
     """Driver class for Multiblock PLS.
 
@@ -1018,12 +1124,8 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
     Parameters
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix for use with PLS. Each participant's
-        data must be flattened and concatenated to form a single 2-dimensional
-        matrix, separated by condition, for each group.
-    Y: np.array
-        Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
     groups_sizes : tuple
@@ -1034,6 +1136,10 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
     num_conditions : int
         Number of conditions in each matrix. For example, if input matrix `X`
         contained 7 participants and 3 conditions, it would be of length 21.
+    Y: np.array
+        Input behavioural matrix for use with PLS. Each participant's
+        data must be flattened and concatenated to form a single 2-dimensional
+        matrix, separated by condition, for each group.
     num_perm : int, optional
         Optional value specifying the number of iterations for the permutation
         test. Defaults to 0, meaning no permutation test will be run unless
@@ -1042,18 +1148,25 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    nonrotated : boolean, optional
+    rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
         during bootstrap and permutation tests ("rotated" method). 
-        If False, singular values will be derived.
+        rotate_method options:
+        
+        0 - compute s using SVD/GSVD
+
+        1 - compute s using Procrustes rotation
+
+        2 - compute s by derivation
+
 
     Attributes
     ----------
-    X : np_array
+    X : np.array
         Input neural matrix/matrices for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
-    Y : np_array
+    Y : np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
         matrix, separated by condition, for each group.
@@ -1078,21 +1191,21 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    X_means: np_array
+    X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `X_mc`*`X_mc`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         Vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `X_mc`^T*`X_mc`;
         right singular vectors.
-    Y_latent : np_array
+    Y_latent : np.array
         Latent variables for contrasts.
-    X_latent : np_array
+    X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvcorrs : np.array
         Computed latent variable correlations
@@ -1106,9 +1219,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
     def __init__(
         self,
         X: np.array,
-        Y: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
@@ -1117,16 +1230,24 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         **kwargs,
     ):
 
+        # TODO: catch extraneous keyword args
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        if Y is None:
+            raise exceptions.MissingParameterError(
+                "Please provide a Y/behavioural matrix."
+            )
+            # raise ValueError(
+            #     f"For {self._pls_types[self.pls_alg]}, " f"Y must NOT be of type None."
+            # )
+
         if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
             raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+
         self.X = X
         self.Y = Y
 
-        if Y is None:
-            raise ValueError(
-                "For {self.pls_types[self.pls_alg]},"
-                "Y must NOT be of type None. Y = \n{Y}"
-            )
         self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one

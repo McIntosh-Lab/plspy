@@ -83,33 +83,21 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">plsrri</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">plsrri package</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-plsrri">Module contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-plsrri">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#plsrri">plsrri</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.bootstrap_permutation">plsrri.bootstrap_permutation module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.check_inputs">plsrri.check_inputs module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.decorators">plsrri.decorators module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.exceptions">plsrri.exceptions module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.gsvd">plsrri.gsvd module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-plsrri.helpers">plsrri.helpers module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.pls">plsrri.pls module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.pls_classes">plsrri.pls_classes module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-plsrri.resample">plsrri.resample module</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">plsrri package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri">Module contents</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.bootstrap_permutation">plsrri.bootstrap_permutation module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.check_inputs">plsrri.check_inputs module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.decorators">plsrri.decorators module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.exceptions">plsrri.exceptions module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.gsvd">plsrri.gsvd module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.helpers">plsrri.helpers module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.pls">plsrri.pls module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.pls_classes">plsrri.pls_classes module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plsrri.resample">plsrri.resample module</a></li>
 </ul>
 </li>
 </ul>
@@ -182,6 +170,85 @@
 <h1>plsrri package<a class="headerlink" href="#plsrri-package" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-plsrri">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-plsrri" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="plsrri">
+<h3>plsrri<a class="headerlink" href="#plsrri" title="Permalink to this headline">¶</a></h3>
+<p>plsrri is a Partial Least Squares package developed at the Rotman
+Research Institute at Baycrest Health Sciences.</p>
+<p>In addition to core PLS functionality, this package also contains the following modules:</p>
+<dl class="simple">
+<dt>class_functions</dt><dd><p>core PLS functions, such as mean-centring, calling SVD/GSVD, etc.</p>
+</dd>
+<dt>gsvd</dt><dd><p>Implementation of GSVD that uses NumPy’s Fortran SVD function</p>
+</dd>
+<dt>resample</dt><dd><p>Functions used for resampling in permutation and bootstrap</p>
+</dd>
+<dt>bootstrap_permutation</dt><dd><p>Houses the bootstrap and permutation object (called by PLS)</p>
+</dd>
+<dt>pls_classes</dt><dd><p>Source code for each PLS version</p>
+</dd>
+<dt>exceptions</dt><dd><p>Houses custom exceptions used within PLS</p>
+</dd>
+</dl>
+<p>Basic usage examples:</p>
+<blockquote>
+<div><p>Note: There are 3 required arguments, used in the following order:</p>
+<ol class="arabic simple">
+<li><p>X - 2-d task matrix</p></li>
+<li><p>a list/tuple object containing the number of subjects in each group</p></li>
+<li><p>argument 3 is an int indicating the number of conditions</p></li>
+</ol>
+<p>Example arguments are used below.</p>
+<p>Mean-Centred Task PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">num_perm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>  <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mct&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Behavioural PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Contrast Task PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;cst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Contrast Behavioural PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;csb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Multiblock PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To see documentation on additional arguments and fields available,
+call help on a specific PLS method (see below for details).</p>
+<p>Documentation is available both in help() form and will also be available
+in website form. More information on how to access online documentation is
+forthcoming. Information on how to use help() is below.</p>
+<p>To get help documentation on a particular version of PLS, type the following
+in a Python interpreter after loading the module:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">plsrri</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="s2">&quot;&lt;methodname&gt;&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Where &lt;method&gt; is the string of one of the PLS versions shown below.</p>
+<p>Available methods:</p>
+<blockquote>
+<div><p>“mct” - Mean-Centred Task PLS</p>
+<p>“rb”  - Regular Behaviour PLS</p>
+<p>“cst” - Contrast Task PLS</p>
+<p>“csb” - Contrast Behaviour PLS</p>
+<p>“mb”  - Multiblock PLS</p>
+<p>“cmb” - Contrast Multiblock PLS (under construction)</p>
+</div></blockquote>
+<dl>
+<dt>Note: calling</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>will show you this same help page.</p>
+<p>Author: Noah Frazier-Logue</p>
+</div>
 </div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
@@ -190,7 +257,7 @@
 <span id="plsrri-bootstrap-permutation-module"></span><h2>plsrri.bootstrap_permutation module<a class="headerlink" href="#module-plsrri.bootstrap_permutation" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="plsrri.bootstrap_permutation._ResampleTestTaskPLS">
-<em class="property">class </em><code class="sig-prename descclassname">plsrri.bootstrap_permutation.</code><code class="sig-name descname">_ResampleTestTaskPLS</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">U</em>, <em class="sig-param">s</em>, <em class="sig-param">V</em>, <em class="sig-param">cond_order</em>, <em class="sig-param">contrast=None</em>, <em class="sig-param">preprocess=None</em>, <em class="sig-param">nperm=1000</em>, <em class="sig-param">nboot=1000</em>, <em class="sig-param">dist=(0.05</em>, <em class="sig-param">0.95)</em>, <em class="sig-param">rotate_method=0</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.bootstrap_permutation._ResampleTestTaskPLS" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">plsrri.bootstrap_permutation.</code><code class="sig-name descname">_ResampleTestTaskPLS</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">U</em>, <em class="sig-param">s</em>, <em class="sig-param">V</em>, <em class="sig-param">cond_order</em>, <em class="sig-param">contrast=None</em>, <em class="sig-param">preprocess=None</em>, <em class="sig-param">nperm=1000</em>, <em class="sig-param">nboot=1000</em>, <em class="sig-param">dist=(0.05</em>, <em class="sig-param">0.95)</em>, <em class="sig-param">rotate_method=0</em>, <em class="sig-param">mctype=0</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.bootstrap_permutation._ResampleTestTaskPLS" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">plsrri.bootstrap_permutation.ResampleTest</span></code></p>
 <p>Class that runs permutation and bootstrap tests for Task PLS. When run,
 this class generates fields for permutation test information
@@ -199,11 +266,11 @@ intervals, standard errors, bootstrap ratios, etc.).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>X</strong> (<em>np_array</em>) – Input neural matrix/matrices for use with PLS. This matrix is passed
+<li><p><strong>X</strong> (<em>np.array</em>) – Input neural matrix/matrices for use with PLS. This matrix is passed
 in from the PLS class.</p></li>
-<li><p><strong>U</strong> (<em>np_array</em>) – Left singular vectors of X.</p></li>
-<li><p><strong>s</strong> (<em>np_array</em>) – Singular values for X. Used to compute permutation ratio.</p></li>
-<li><p><strong>V</strong> (<em>np_array</em>) – Right singular vectors of X.</p></li>
+<li><p><strong>U</strong> (<em>np.array</em>) – Left singular vectors of X.</p></li>
+<li><p><strong>s</strong> (<em>np.array</em>) – Singular values for X. Used to compute permutation ratio.</p></li>
+<li><p><strong>V</strong> (<em>np.array</em>) – Right singular vectors of X.</p></li>
 <li><p><strong>cond_order</strong> (<em>array-like</em>) – Order vector(s) for conditions in X.</p></li>
 <li><p><strong>preprocess</strong> (<em>function</em><em>, </em><em>optional</em>) – Preprocessing function used prior to running GSVD on X in
 PLS class. Used to preprocess resampled matrices in boostrap/
@@ -250,7 +317,7 @@ indicates a higher level of randomness.</p>
 left singular vectors in a tuple.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>2-tuple of np_arrays</p>
+<dd class="field-odd"><p>2-tuple of np.arrays</p>
 </dd>
 </dl>
 </dd></dl>
@@ -261,7 +328,7 @@ left singular vectors in a tuple.</p>
 <dd><p>Element-wise standard errors for the resampled right singular vectors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -272,7 +339,7 @@ left singular vectors in a tuple.</p>
 <dd><p>NumPy array containing element-wise ratios of</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -299,7 +366,7 @@ left singular vectors in a tuple.</p>
 
 <dl class="method">
 <dt id="plsrri.bootstrap_permutation._ResampleTestTaskPLS._bootstrap_test">
-<em class="property">static </em><code class="sig-name descname">_bootstrap_test</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">U</em>, <em class="sig-param">s</em>, <em class="sig-param">V</em>, <em class="sig-param">cond_order</em>, <em class="sig-param">niter</em>, <em class="sig-param">pls_alg</em>, <em class="sig-param">preprocess=None</em>, <em class="sig-param">rotate_method=0</em>, <em class="sig-param">dist=(0.05</em>, <em class="sig-param">0.95)</em>, <em class="sig-param">contrast=None</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.bootstrap_permutation._ResampleTestTaskPLS._bootstrap_test" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">_bootstrap_test</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">U</em>, <em class="sig-param">s</em>, <em class="sig-param">V</em>, <em class="sig-param">cond_order</em>, <em class="sig-param">niter</em>, <em class="sig-param">pls_alg</em>, <em class="sig-param">preprocess=None</em>, <em class="sig-param">rotate_method=0</em>, <em class="sig-param">mctype=0</em>, <em class="sig-param">dist=(0.05</em>, <em class="sig-param">0.95)</em>, <em class="sig-param">contrast=None</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.bootstrap_permutation._ResampleTestTaskPLS._bootstrap_test" title="Permalink to this definition">¶</a></dt>
 <dd><p>Runs a bootstrap estimation on X matrix. Resamples X with
 replacement according to the condition order, runs PLS on the
 resampled X matrices, and computes <cite>conf_int</cite>, <cite>std_errs</cite>, and
@@ -308,7 +375,7 @@ resampled X matrices, and computes <cite>conf_int</cite>, <cite>std_errs</cite>,
 
 <dl class="method">
 <dt id="plsrri.bootstrap_permutation._ResampleTestTaskPLS._permutation_test">
-<em class="property">static </em><code class="sig-name descname">_permutation_test</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">U</em>, <em class="sig-param">s</em>, <em class="sig-param">V</em>, <em class="sig-param">cond_order</em>, <em class="sig-param">niter</em>, <em class="sig-param">pls_alg</em>, <em class="sig-param">preprocess=None</em>, <em class="sig-param">contrast=None</em>, <em class="sig-param">rotate_method=0</em>, <em class="sig-param">threshold=1e-12</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.bootstrap_permutation._ResampleTestTaskPLS._permutation_test" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">_permutation_test</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">U</em>, <em class="sig-param">s</em>, <em class="sig-param">V</em>, <em class="sig-param">cond_order</em>, <em class="sig-param">niter</em>, <em class="sig-param">pls_alg</em>, <em class="sig-param">preprocess=None</em>, <em class="sig-param">contrast=None</em>, <em class="sig-param">rotate_method=0</em>, <em class="sig-param">mctype=0</em>, <em class="sig-param">threshold=1e-12</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.bootstrap_permutation._ResampleTestTaskPLS._permutation_test" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run permutation test on X. Resamples X (without replacement) based
 on condition order, runs PLS on resampled matrix, and computes the
 element-wise permutation ratio ((number of times permutation &gt; observation)/<cite>niter</cite>.</p>
@@ -422,9 +489,6 @@ be returned.</p></li>
 </dd></dl>
 
 </div>
-<div class="section" id="module-plsrri.helpers">
-<span id="plsrri-helpers-module"></span><h2>plsrri.helpers module<a class="headerlink" href="#module-plsrri.helpers" title="Permalink to this headline">¶</a></h2>
-</div>
 <div class="section" id="module-plsrri.pls">
 <span id="plsrri-pls-module"></span><h2>plsrri.pls module<a class="headerlink" href="#module-plsrri.pls" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
@@ -434,6 +498,65 @@ be returned.</p></li>
 and extracts user-specified PLS method. If no method is specified,
 default PLS is used.</p>
 <p>TODO: implement first version of PLS and document required values here</p>
+<p>Basic usage examples:</p>
+<blockquote>
+<div><p>Note: There are 3 required arguments, used in the following order:</p>
+<ol class="arabic simple">
+<li><p>X - 2-d task matrix</p></li>
+<li><p>a list/tuple object containing the number of subjects in each group</p></li>
+<li><p>argument 3 is an int indicating the number of conditions</p></li>
+</ol>
+<p>Example arguments are used below.</p>
+<p>Mean-Centred Task PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">num_perm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>  <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mct&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Behavioural PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Contrast Task PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;cst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Contrast Behavioural PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;csb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Multiblock PLS:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To see documentation on additional arguments and fields available,
+call help on a specific PLS method (see below for details).</p>
+<p>Documentation is available both in help() form and will also be available
+in website form. More information on how to access online documentation is
+forthcoming. Information on how to use help() is below.</p>
+<p>To get help documentation on a particular version of PLS, type the following
+in a Python interpreter after loading the module:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">plsrri</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="s2">&quot;&lt;methodname&gt;&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Where &lt;method&gt; is the string of one of the PLS versions shown below.</p>
+<p>Available methods:</p>
+<blockquote>
+<div><p>“mct” - Mean-Centred Task PLS</p>
+<p>“rb”  - Regular Behaviour PLS</p>
+<p>“cst” - Contrast Task PLS</p>
+<p>“csb” - Contrast Behaviour PLS</p>
+<p>“mb”  - Multiblock PLS</p>
+<p>“cmb” - Contrast Multiblock PLS (under construction)</p>
+</div></blockquote>
+<dl>
+<dt>Note: calling</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>will show you this same help page.</p>
+<p>Author: Noah Frazier-Logue</p>
 </dd></dl>
 
 </div>
@@ -441,17 +564,14 @@ default PLS is used.</p>
 <span id="plsrri-pls-classes-module"></span><h2>plsrri.pls_classes module<a class="headerlink" href="#module-plsrri.pls_classes" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="plsrri.pls_classes._RegularBehaviourPLS">
-<em class="property">class </em><code class="sig-prename descclassname">plsrri.pls_classes.</code><code class="sig-name descname">_RegularBehaviourPLS</code><span class="sig-paren">(</span><em class="sig-param">X: numpy.array</em>, <em class="sig-param">Y: numpy.array</em>, <em class="sig-param">groups_sizes: tuple</em>, <em class="sig-param">num_conditions: int</em>, <em class="sig-param">cond_order: list = None</em>, <em class="sig-param">num_perm: int = 1000</em>, <em class="sig-param">num_boot: int = 1000</em>, <em class="sig-param">rotate_method: int = 0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">plsrri.pls_classes.</code><code class="sig-name descname">_RegularBehaviourPLS</code><span class="sig-paren">(</span><em class="sig-param">X: numpy.array</em>, <em class="sig-param">groups_sizes: tuple</em>, <em class="sig-param">num_conditions: int</em>, <em class="sig-param">Y: list = None</em>, <em class="sig-param">cond_order: list = None</em>, <em class="sig-param">num_perm: int = 1000</em>, <em class="sig-param">num_boot: int = 1000</em>, <em class="sig-param">rotate_method: int = 0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">plsrri.pls_classes._MeanCentreTaskPLS</span></code></p>
-<p>Driver class for Behavioural Task PLS.</p>
-<p>Class called for Behavioural Task PLS. TODO: add more here.</p>
+<p>Driver class for Behavioural PLS.</p>
+<p>Class called for Behavioural PLS. TODO: add more here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>X</strong> (<em>np_array</em>) – Input neural matrix for use with PLS. Each participant’s
-data must be flattened and concatenated to form a single 2-dimensional
-matrix, separated by condition, for each group.</p></li>
-<li><p><strong>Y</strong> (<em>np.array</em>) – Input behavioural matrix for use with PLS. Each participant’s
+<li><p><strong>X</strong> (<em>np.array</em>) – Input neural matrix for use with PLS. Each participant’s
 data must be flattened and concatenated to form a single 2-dimensional
 matrix, separated by condition, for each group.</p></li>
 <li><p><strong>groups_sizes</strong> (<em>tuple</em>) – Tuple containing sizes of conditions, where each entry in the tuple
@@ -460,15 +580,22 @@ the number of participants in that group. E.g. in (7,6,5), group 1
 would have 7 participants and group 3 would have 5 participants.</p></li>
 <li><p><strong>num_conditions</strong> (<em>int</em>) – Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
 contained 7 participants and 3 conditions, it would be of length 21.</p></li>
+<li><p><strong>Y</strong> (<em>np.array</em>) – Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
 <li><p><strong>num_perm</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the permutation
 test. Defaults to 0, meaning no permutation test will be run unless
 otherwise specified by the user.</p></li>
 <li><p><strong>num_boot</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the bootstrap
 test. Defaults to 0, meaning no bootstrap test will be run unless
 otherwise specified by the user.</p></li>
-<li><p><strong>nonrotated</strong> (<em>boolean</em><em>, </em><em>optional</em>) – Optional value specifying whether or not full GSVD should be used
+<li><p><strong>rotate_method</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional value specifying whether or not full GSVD should be used
 during bootstrap and permutation tests (“rotated” method).
-If False, singular values will be derived.</p></li>
+rotate_method options:</p>
+<p>0 - compute s using SVD/GSVD</p>
+<p>1 - compute s using Procrustes rotation</p>
+<p>2 - compute s by derivation</p>
+</p></li>
 </ul>
 </dd>
 </dl>
@@ -480,7 +607,7 @@ data must be flattened and concatenated to form a single 2-dimensional
 matrix, separated by condition, for each group.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -493,7 +620,7 @@ data must be flattened and concatenated to form a single 2-dimensional
 matrix, separated by condition, for each group.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -579,7 +706,7 @@ otherwise specified by the user.</p>
 <dd><p>Mean-values of X array on axis-0 (column-wise).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -590,7 +717,7 @@ otherwise specified by the user.</p>
 <dd><p>Mean-centred values corresponding to input matrix X.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -602,7 +729,7 @@ otherwise specified by the user.</p>
 left singular vectors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -613,7 +740,7 @@ left singular vectors.</p>
 <dd><p>Vector containing diagonal of the singular values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -621,19 +748,44 @@ left singular vectors.</p>
 <dl class="attribute">
 <dt id="plsrri.pls_classes._RegularBehaviourPLS.V">
 <code class="sig-name descname">V</code><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS.V" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Eigenvectors of matrix <cite>X_mc`^T*`X_mc</cite>;
+<dd><p>Eigenvectors of matrix <cite>X_mc`^T*`X_mc</cite>;
 right singular vectors.</p>
-</div></blockquote>
-<dl class="simple">
-<dt>Y_latent<span class="classifier">np_array</span></dt><dd><p>Latent variables for contrasts.</p>
-</dd>
-<dt>X_latent<span class="classifier">np_array</span></dt><dd><p>Latent variables of input X; dot-product of X_mc and V.</p>
-</dd>
-</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>np_array</p>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._RegularBehaviourPLS.Y_latent">
+<code class="sig-name descname">Y_latent</code><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS.Y_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables for contrasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._RegularBehaviourPLS.X_latent">
+<code class="sig-name descname">X_latent</code><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS.X_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables of input X; dot-product of X_mc and V.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._RegularBehaviourPLS.lvcorrs">
+<code class="sig-name descname">lvcorrs</code><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS.lvcorrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computed latent variable correlations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -668,6 +820,1072 @@ documentation on Resample Tests for more information.</p>
 <dl class="attribute">
 <dt id="plsrri.pls_classes._RegularBehaviourPLS._abc_registry">
 <code class="sig-name descname">_abc_registry</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._RegularBehaviourPLS._abc_registry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="plsrri.pls_classes._ContrastTaskPLS">
+<em class="property">class </em><code class="sig-prename descclassname">plsrri.pls_classes.</code><code class="sig-name descname">_ContrastTaskPLS</code><span class="sig-paren">(</span><em class="sig-param">X: numpy.array</em>, <em class="sig-param">groups_sizes: tuple</em>, <em class="sig-param">num_conditions: int</em>, <em class="sig-param">Y: list = None</em>, <em class="sig-param">cond_order: list = None</em>, <em class="sig-param">num_perm: int = 1000</em>, <em class="sig-param">num_boot: int = 1000</em>, <em class="sig-param">rotate_method: int = 0</em>, <em class="sig-param">mctype: int = 0</em>, <em class="sig-param">contrasts: list = None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">plsrri.pls_classes._MeanCentreTaskPLS</span></code></p>
+<p>Driver class for Contrast Task PLS.</p>
+<p>Class called for Contrast Task PLS. TODO: add more here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>np.array</em>) – Input neural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>groups_sizes</strong> (<em>tuple</em>) – Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p></li>
+<li><p><strong>num_conditions</strong> (<em>int</em>) – Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p></li>
+<li><p><strong>Y</strong> (<em>None</em>) – Not used in Contrast Task PLS.</p></li>
+<li><p><strong>num_perm</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>num_boot</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>rotate_method</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional value specifying whether or not full GSVD should be used
+during bootstrap and permutation tests (“rotated” method).
+rotate_method options:</p>
+<p>0 - compute s using SVD/GSVD</p>
+<p>1 - compute s using Procrustes rotation</p>
+<p>2 - compute s by derivation</p>
+</p></li>
+<li><p><strong>mctype</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>mctype options:</p>
+<p>0 - within each group remove group means from condition means (default)</p>
+<p>1 - remove grand condition means from each group condition mean</p>
+<p>2 - remove grand mean (over all subjects and conditions)</p>
+<p>3 - remove all main effects - subtract condition and group means (group by condition)</p>
+</p></li>
+<li><p><strong>contrasts</strong> (<em>np.array</em>) – contrast matrix for use in Contrast Task PLS. Used to create
+different methods of comparison.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.X">
+<code class="sig-name descname">X</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input neural matrix/matrices for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.Y">
+<code class="sig-name descname">Y</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.Y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.groups_sizes">
+<code class="sig-name descname">groups_sizes</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.groups_sizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.num_groups">
+<code class="sig-name descname">num_groups</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.num_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value specifying the number of groups in the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.num_conditions">
+<code class="sig-name descname">num_conditions</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.num_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.cond_order">
+<code class="sig-name descname">cond_order</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.cond_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>List/array where each entry holds the number of subjects per condition
+for each group in the input matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.num_perm">
+<code class="sig-name descname">num_perm</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.num_perm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.num_boot">
+<code class="sig-name descname">num_boot</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.num_boot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.X_means">
+<code class="sig-name descname">X_means</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.X_means" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-values of X array on axis-0 (column-wise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.X_mc">
+<code class="sig-name descname">X_mc</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.X_mc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-centred values corresponding to input matrix X.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.U">
+<code class="sig-name descname">U</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.U" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <a href="#id5"><span class="problematic" id="id6">`</span></a>X_mc`*`X_mc`^T;
+left singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.s">
+<code class="sig-name descname">s</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vector containing diagonal of the singular values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.V">
+<code class="sig-name descname">V</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.V" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <cite>X_mc`^T*`X_mc</cite>;
+right singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.Y_latent">
+<code class="sig-name descname">Y_latent</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.Y_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables for contrasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.X_latent">
+<code class="sig-name descname">X_latent</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.X_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables of input X; dot-product of X_mc and V.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.lvintercorrs">
+<code class="sig-name descname">lvintercorrs</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.lvintercorrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>U.T * U. Optionally normed if rotate in [1,2].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS.resample_tests">
+<code class="sig-name descname">resample_tests</code><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS.resample_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class containing results for permutation and bootstrap tests. See
+documentation on Resample Tests for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS._abc_cache">
+<code class="sig-name descname">_abc_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS._abc_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS._abc_negative_cache">
+<code class="sig-name descname">_abc_negative_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS._abc_negative_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS._abc_negative_cache_version">
+<code class="sig-name descname">_abc_negative_cache_version</code><em class="property"> = 42</em><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS._abc_negative_cache_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastTaskPLS._abc_registry">
+<code class="sig-name descname">_abc_registry</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastTaskPLS._abc_registry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS">
+<em class="property">class </em><code class="sig-prename descclassname">plsrri.pls_classes.</code><code class="sig-name descname">_ContrastBehaviourPLS</code><span class="sig-paren">(</span><em class="sig-param">X: numpy.array</em>, <em class="sig-param">groups_sizes: tuple</em>, <em class="sig-param">num_conditions: int</em>, <em class="sig-param">Y: list = None</em>, <em class="sig-param">cond_order: list = None</em>, <em class="sig-param">num_perm: int = 1000</em>, <em class="sig-param">num_boot: int = 1000</em>, <em class="sig-param">rotate_method: int = 0</em>, <em class="sig-param">contrasts: list = None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#plsrri.pls_classes._ContrastTaskPLS" title="plsrri.pls_classes._ContrastTaskPLS"><code class="xref py py-class docutils literal notranslate"><span class="pre">plsrri.pls_classes._ContrastTaskPLS</span></code></a></p>
+<p>Driver class for Contrast Behaviour PLS.</p>
+<p>Class called for Contrast Behaviour PLS. TODO: add more here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>np.array</em>) – Input neural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>groups_sizes</strong> (<em>tuple</em>) – Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p></li>
+<li><p><strong>num_conditions</strong> (<em>int</em>) – Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p></li>
+<li><p><strong>Y</strong> (<em>np.array</em>) – Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>num_perm</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>num_boot</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>rotate_method</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional value specifying whether or not full GSVD should be used
+during bootstrap and permutation tests (“rotated” method).
+rotate_method options:</p>
+<p>0 - compute s using SVD/GSVD</p>
+<p>1 - compute s using Procrustes rotation</p>
+<p>2 - compute s by derivation</p>
+</p></li>
+<li><p><strong>contrasts</strong> (<em>np.array</em>) – contrast matrix for use in Contrast Task PLS. Used to create
+different methods of comparison.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.X">
+<code class="sig-name descname">X</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input neural matrix/matrices for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.Y">
+<code class="sig-name descname">Y</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.Y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.groups_sizes">
+<code class="sig-name descname">groups_sizes</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.groups_sizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.num_groups">
+<code class="sig-name descname">num_groups</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.num_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value specifying the number of groups in the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.num_conditions">
+<code class="sig-name descname">num_conditions</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.num_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.cond_order">
+<code class="sig-name descname">cond_order</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.cond_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>List/array where each entry holds the number of subjects per condition
+for each group in the input matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.num_perm">
+<code class="sig-name descname">num_perm</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.num_perm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.num_boot">
+<code class="sig-name descname">num_boot</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.num_boot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.X_means">
+<code class="sig-name descname">X_means</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.X_means" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-values of X array on axis-0 (column-wise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.X_mc">
+<code class="sig-name descname">X_mc</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.X_mc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-centred values corresponding to input matrix X.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.U">
+<code class="sig-name descname">U</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.U" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <a href="#id7"><span class="problematic" id="id8">`</span></a>X_mc`*`X_mc`^T;
+left singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.s">
+<code class="sig-name descname">s</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vector containing diagonal of the singular values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.V">
+<code class="sig-name descname">V</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.V" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <cite>X_mc`^T*`X_mc</cite>;
+right singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.Y_latent">
+<code class="sig-name descname">Y_latent</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.Y_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables for contrasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.X_latent">
+<code class="sig-name descname">X_latent</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.X_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables of input X; dot-product of X_mc and V.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.lvintercorrs">
+<code class="sig-name descname">lvintercorrs</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.lvintercorrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>U.T * U. Optionally normed if rotate in [1,2].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS.resample_tests">
+<code class="sig-name descname">resample_tests</code><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS.resample_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class containing results for permutation and bootstrap tests. See
+documentation on Resample Tests for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS._abc_cache">
+<code class="sig-name descname">_abc_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS._abc_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS._abc_negative_cache">
+<code class="sig-name descname">_abc_negative_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS._abc_negative_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS._abc_negative_cache_version">
+<code class="sig-name descname">_abc_negative_cache_version</code><em class="property"> = 42</em><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS._abc_negative_cache_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastBehaviourPLS._abc_registry">
+<code class="sig-name descname">_abc_registry</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastBehaviourPLS._abc_registry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="plsrri.pls_classes._MultiblockPLS">
+<em class="property">class </em><code class="sig-prename descclassname">plsrri.pls_classes.</code><code class="sig-name descname">_MultiblockPLS</code><span class="sig-paren">(</span><em class="sig-param">X: numpy.array</em>, <em class="sig-param">groups_sizes: tuple</em>, <em class="sig-param">num_conditions: int</em>, <em class="sig-param">Y: list = None</em>, <em class="sig-param">cond_order: list = None</em>, <em class="sig-param">num_perm: int = 1000</em>, <em class="sig-param">num_boot: int = 1000</em>, <em class="sig-param">rotate_method: int = 0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#plsrri.pls_classes._RegularBehaviourPLS" title="plsrri.pls_classes._RegularBehaviourPLS"><code class="xref py py-class docutils literal notranslate"><span class="pre">plsrri.pls_classes._RegularBehaviourPLS</span></code></a></p>
+<p>Driver class for Multiblock PLS.</p>
+<p>Class called for Multiblock PLS. TODO: add more here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>np.array</em>) – Input neural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>groups_sizes</strong> (<em>tuple</em>) – Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p></li>
+<li><p><strong>num_conditions</strong> (<em>int</em>) – Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p></li>
+<li><p><strong>Y</strong> (<em>np.array</em>) – Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>num_perm</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>num_boot</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>rotate_method</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional value specifying whether or not full GSVD should be used
+during bootstrap and permutation tests (“rotated” method).
+rotate_method options:</p>
+<p>0 - compute s using SVD/GSVD</p>
+<p>1 - compute s using Procrustes rotation</p>
+<p>2 - compute s by derivation</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.X">
+<code class="sig-name descname">X</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input neural matrix/matrices for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.Y">
+<code class="sig-name descname">Y</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.Y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.groups_sizes">
+<code class="sig-name descname">groups_sizes</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.groups_sizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.num_groups">
+<code class="sig-name descname">num_groups</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.num_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value specifying the number of groups in the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.num_conditions">
+<code class="sig-name descname">num_conditions</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.num_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.cond_order">
+<code class="sig-name descname">cond_order</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.cond_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>List/array where each entry holds the number of subjects per condition
+for each group in the input matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.num_perm">
+<code class="sig-name descname">num_perm</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.num_perm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.num_boot">
+<code class="sig-name descname">num_boot</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.num_boot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.X_means">
+<code class="sig-name descname">X_means</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.X_means" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-values of X array on axis-0 (column-wise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.X_mc">
+<code class="sig-name descname">X_mc</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.X_mc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-centred values corresponding to input matrix X.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.U">
+<code class="sig-name descname">U</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.U" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <a href="#id9"><span class="problematic" id="id10">`</span></a>X_mc`*`X_mc`^T;
+left singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.s">
+<code class="sig-name descname">s</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vector containing diagonal of the singular values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.V">
+<code class="sig-name descname">V</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.V" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <cite>X_mc`^T*`X_mc</cite>;
+right singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.Y_latent">
+<code class="sig-name descname">Y_latent</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.Y_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables for contrasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.X_latent">
+<code class="sig-name descname">X_latent</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.X_latent" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.lvcorrs">
+<code class="sig-name descname">lvcorrs</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.lvcorrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computed latent variable correlations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS.resample_tests">
+<code class="sig-name descname">resample_tests</code><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS.resample_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class containing results for permutation and bootstrap tests. See
+documentation on Resample Tests for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS._abc_cache">
+<code class="sig-name descname">_abc_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS._abc_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS._abc_negative_cache">
+<code class="sig-name descname">_abc_negative_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS._abc_negative_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS._abc_negative_cache_version">
+<code class="sig-name descname">_abc_negative_cache_version</code><em class="property"> = 42</em><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS._abc_negative_cache_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._MultiblockPLS._abc_registry">
+<code class="sig-name descname">_abc_registry</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._MultiblockPLS._abc_registry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS">
+<em class="property">class </em><code class="sig-prename descclassname">plsrri.pls_classes.</code><code class="sig-name descname">_ContrastMultiblockPLS</code><span class="sig-paren">(</span><em class="sig-param">X: numpy.array</em>, <em class="sig-param">groups_sizes: tuple</em>, <em class="sig-param">num_conditions: int</em>, <em class="sig-param">Y: list = None</em>, <em class="sig-param">cond_order: list = None</em>, <em class="sig-param">num_perm: int = 1000</em>, <em class="sig-param">num_boot: int = 1000</em>, <em class="sig-param">rotate_method: int = 0</em>, <em class="sig-param">contrasts: list = None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#plsrri.pls_classes._MultiblockPLS" title="plsrri.pls_classes._MultiblockPLS"><code class="xref py py-class docutils literal notranslate"><span class="pre">plsrri.pls_classes._MultiblockPLS</span></code></a></p>
+<p>Driver class for Multiblock PLS.</p>
+<p>Class called for Multiblock PLS. TODO: add more here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>np.array</em>) – Input neural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>groups_sizes</strong> (<em>tuple</em>) – Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p></li>
+<li><p><strong>num_conditions</strong> (<em>int</em>) – Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p></li>
+<li><p><strong>Y</strong> (<em>np.array</em>) – Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p></li>
+<li><p><strong>num_perm</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>num_boot</strong> (<em>int</em><em>, </em><em>optional</em>) – Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p></li>
+<li><p><strong>rotate_method</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional value specifying whether or not full GSVD should be used
+during bootstrap and permutation tests (“rotated” method).
+rotate_method options:</p>
+<p>0 - compute s using SVD/GSVD</p>
+<p>1 - compute s using Procrustes rotation</p>
+<p>2 - compute s by derivation</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.X">
+<code class="sig-name descname">X</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input neural matrix/matrices for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.Y">
+<code class="sig-name descname">Y</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.Y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input behavioural matrix for use with PLS. Each participant’s
+data must be flattened and concatenated to form a single 2-dimensional
+matrix, separated by condition, for each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.groups_sizes">
+<code class="sig-name descname">groups_sizes</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.groups_sizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple containing sizes of conditions, where each entry in the tuple
+corresponds to a group and each value in the entry corresponds to
+the number of participants in that group. E.g. in (7,6,5), group 1
+would have 7 participants and group 3 would have 5 participants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.num_groups">
+<code class="sig-name descname">num_groups</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.num_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value specifying the number of groups in the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.num_conditions">
+<code class="sig-name descname">num_conditions</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.num_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of conditions in each matrix. For example, if input matrix <cite>X</cite>
+contained 7 participants and 3 conditions, it would be of length 21.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.cond_order">
+<code class="sig-name descname">cond_order</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.cond_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>List/array where each entry holds the number of subjects per condition
+for each group in the input matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.num_perm">
+<code class="sig-name descname">num_perm</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.num_perm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the permutation
+test. Defaults to 0, meaning no permutation test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.num_boot">
+<code class="sig-name descname">num_boot</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.num_boot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional value specifying the number of iterations for the bootstrap
+test. Defaults to 0, meaning no bootstrap test will be run unless
+otherwise specified by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.X_means">
+<code class="sig-name descname">X_means</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.X_means" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-values of X array on axis-0 (column-wise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.X_mc">
+<code class="sig-name descname">X_mc</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.X_mc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mean-centred values corresponding to input matrix X.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.U">
+<code class="sig-name descname">U</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.U" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <a href="#id11"><span class="problematic" id="id12">`</span></a>X_mc`*`X_mc`^T;
+left singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.s">
+<code class="sig-name descname">s</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vector containing diagonal of the singular values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.V">
+<code class="sig-name descname">V</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.V" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigenvectors of matrix <cite>X_mc`^T*`X_mc</cite>;
+right singular vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.Y_latent">
+<code class="sig-name descname">Y_latent</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.Y_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables for contrasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.X_latent">
+<code class="sig-name descname">X_latent</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.X_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent variables of input X; dot-product of X_mc and V.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.lvcorrs">
+<code class="sig-name descname">lvcorrs</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.lvcorrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computed latent variable correlations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.lvintercorrs">
+<code class="sig-name descname">lvintercorrs</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.lvintercorrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>U.T * U. Optionally normed if rotate in [1,2].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS.resample_tests">
+<code class="sig-name descname">resample_tests</code><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS.resample_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class containing results for permutation and bootstrap tests. See
+documentation on Resample Tests for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS._abc_cache">
+<code class="sig-name descname">_abc_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS._abc_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS._abc_negative_cache">
+<code class="sig-name descname">_abc_negative_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS._abc_negative_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS._abc_negative_cache_version">
+<code class="sig-name descname">_abc_negative_cache_version</code><em class="property"> = 42</em><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS._abc_negative_cache_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="plsrri.pls_classes._ContrastMultiblockPLS._abc_registry">
+<code class="sig-name descname">_abc_registry</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#plsrri.pls_classes._ContrastMultiblockPLS._abc_registry" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

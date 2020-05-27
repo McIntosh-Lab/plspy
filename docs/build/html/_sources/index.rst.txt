@@ -16,7 +16,6 @@ Welcome to plsrri's documentation!
    :caption: Contents:
 
    modules
-   plsrri
 
 Indices and tables
 ==================

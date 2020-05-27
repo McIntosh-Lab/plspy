@@ -3,13 +3,23 @@ import numpy as np
 
 from . import exceptions
 
+
 def _mean_centre(X, cond_order, mctype=0, return_means=True):
-    """Single-group preprocessing for `X`. Generates `X_means` and
-    `X_mc` for use with `run_pls`
+    """Mean-centring method to use on `X`. Generates `X_means` and
+    `X_mc` for use with `run_pls`.
+
+    mctype options:
+
+    0 - within each group remove group means from condition means (default)
+    1 - remove grand condition means from each group condition mean
+    2 - remove grand mean (over all subjects and conditions)
+    3 - remove all main effects - subtract condition and
+        group means (group by condition)
+
 
     Parameters
     ---------
-    X : np_array
+    X : np.array
         Input matrix for use with PLS.
     cond_order: array-like
         List/array where each entry holds the number of subjects per
@@ -22,13 +32,19 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
             
     Returns
     -------
-    X_means: np_array
-        Mean-values of X array on axis-0 (column-wise).
-    X_mc: np_array
+    X_means: np.array
+        Mean-values of X array from specified mean-centring method.
+    X_mc: np.array
         Mean-centred values corresponding to input matrix X.
 
 
     """
+
+    ngrps = cond_order.shape[0]
+
+    # just grab first number of conditions from cond_order
+    # assumes there are the same number of subjects in each condition
+    nsub_per_cond = cond_order[0][0]
     # within each group remove group means from condition means
     if mctype == 0:
         X_means = _get_group_condition_means(X, cond_order)
@@ -40,16 +56,15 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
         X_mc = X_means - np.repeat(group_means, repeats, axis=0)
         # X_mc /= np.linalg.norm(X_mc)
 
-    # reomve grand condition means from each group condition mean
+    # remove grand condition means from each group condition mean
     elif mctype == 1:
         X_means = _get_group_condition_means(X, cond_order)
         grand_cond_means = _get_grand_condition_means(X, cond_order)
-        ngrps = cond_order.shape[0]
 
         # tile condition means so it's applied to both groups of X_means
-        gcm-tiled = np.tile(A = grand_cond_means, reps = (ngrps,1))
+        gcm_tiled = np.tile(A=grand_cond_means, reps=(ngrps, 1))
 
-        X_mc = X_means - tiled
+        X_mc = X_means - gcm_tiled
 
     # remove grand mean (over all subjects and conditions)
     elif mctype == 2:
@@ -62,19 +77,23 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
         X_means = _get_group_condition_means(X, cond_order)
         group_means = _get_group_means(X, cond_order)
 
-        repeats = np.array([len(i) for i in cond_order])
-        gm_repeats = np.repeat(group_means, repeats, axis=0) 
-        X_mc = X - X_means - gm_repeats
+        group_repeats = np.array([sum(i) for i in cond_order])
+        gm_repeats = np.repeat(group_means, group_repeats[0], axis=0)
+
+        # duplicate X_means so it applies to both groups
+        # x_repeats = np.tile(A=X_means, reps=(ngrps, 1))
+        x_repeats = np.repeat(X_means, ngrps * nsub_per_cond, axis=0)
+
+        X_mc = X - x_repeats - gm_repeats
     else:
         raise exceptions.NotImplementedError(
-            "Specified mean-centring method is either not implemented "
-            "or is invalid."
+            "Specified mean-centring method is either not implemented " "or is invalid."
         )
+
     if return_means:
         return (X_means, X_mc)
     else:
         return X_mc
-
 
 
 def _run_pls(M):
@@ -86,17 +105,17 @@ def _run_pls(M):
 
     Parameters
     ----------
-    M: np_array
+    M: np.array
         Input matrix for use with SVD.
 
     Returns
     -------
-    U: np_array
+    U: np.array
         Eigenvectors of matrix `M`*`M`^T;
         left singular vectors.
-    s: np_array
+    s: np.array
         vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Eigenvectors of matrix `M`^T*`M`;
         right singular vectors.
     """
@@ -118,11 +137,11 @@ def _run_pls_contrast(M, C, compute_uv=True):
 
     Returns
     -------
-    U: np_array
+    U: np.array
         Contrast matrix.
-    s: np_array
+    s: np.array
         vector containing diagonal of the singular values.
-    V: np_array
+    V: np.array
         Result of contrasts applied to input.
 
     """
@@ -148,14 +167,14 @@ def _compute_X_latents(I, EV):
 
     Parameters
     ----------
-    I : np_array
+    I : np.array
         Input matrix of shape mxn.
-    EV : np_array
+    EV : np.array
         Corresponding eigenvector of shape nxn.
 
     Returns
     -------
-    dotp: np_array
+    dotp: np.array
         Computed dot-product of I and EV.
     """
     dotp = np.dot(I, EV)
@@ -244,15 +263,15 @@ def _mean_single_group(x, sg_cond_order):
 
     Parameters
     ----------
-    x : np_array
-        2-dimensional np_array of a single group.
-    sg_cond_order : 1-dimensional np_array
+    x : np.array
+        2-dimensional np.array of a single group.
+    sg_cond_order : 1-dimensional np.array
         Single-group condition order corresponding to the input `x`. 
         Specifies the number of subjects per condition in a single group.
 
     Returns
     -------
-    meaned : np_array
+    meaned : np.array
         Condition-wise mean of a single group.
     """
     # dim of nconds by ncols
@@ -269,17 +288,21 @@ def _get_group_means(X, cond_order):
     """Computes the mean of each group and returns them.
 
     Computes the group-wise, element-wise mean of an input matrix `X` and
-    returns an np_array of the computed means. This function is usually
+    returns an np.array of the computed means. This function is usually
     called from pls_classes.py for use in the Mean-Center Task PLS algorithm.
 
     Parameters
     ----------
-    X : np_array
+    X : np.array
         2-dimensional input matrix with conditions and/or groups.
-    cond_order : np_array
+    cond_order : np.array
         Condition order for all groups in input `X`. Specifies the number
         of subjects per condition in each group.
 
+    Returns
+    -------
+    meaned : np.array
+        Condition-wise mean of a single group.
     """
 
     group_means = np.empty((len(cond_order), X.shape[-1]))
@@ -295,7 +318,24 @@ def _get_group_means(X, cond_order):
 
 
 def _get_group_condition_means(X, cond_order):
-    """
+    """Computes per-group condition means.
+
+    Computes the group-wise, condition-wise mean of an input matrix `X` and
+    returns an np.array of the computed means. This function is usually
+    called from pls_classes.py for use in the Mean-Center Task PLS algorithm.
+
+    Parameters
+    ----------
+    X : np.array
+        2-dimensional input matrix with conditions and/or groups.
+    cond_order : np.array
+        Condition order for all groups in input `X`. Specifies the number
+        of subjects per condition in each group.
+
+    Returns
+    -------
+    meaned : np.array
+        Condition-wise mean for each group.
     """
 
     grp_cond_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
@@ -315,8 +355,26 @@ def _get_group_condition_means(X, cond_order):
 
 
 def _get_grand_condition_means(X, cond_order):
+    """Computes grand condition means.
+
+    Computes the grand condition-wise mean of an input matrix `X` and
+    returns an np.array of the computed means. This function is usually
+    called from pls_classes.py for use in the Mean-Center Task PLS algorithm.
+
+    Parameters
+    ----------
+    X : np.array
+        2-dimensional input matrix with conditions and/or groups.
+    cond_order : np.array
+        Condition order for all groups in input `X`. Specifies the number
+        of subjects per condition in each group.
+
+    Returns
+    -------
+    meaned : np.array
+        Condition-wise mean across all groups.
     """
-    """
+
     ngrp = cond_order.shape[0]
     ncond = cond_order.shape[1]
 
