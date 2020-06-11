@@ -1,5 +1,6 @@
 <!-- Please describe the issue in detail here, and fill in the fields below -->
 <!-- If you're filing anything other than an issue, feel free to disregard this template-->
+<!-- Assign a label and a Project (please use plsrri-board) on the right side of the page-->
 
 ### Reproducing code example:
 
@@ -7,7 +8,7 @@
 self-contained, i.e., possible to run as-is via 'python myproblem.py' -->
 
 ```python
-import numpy as np
+import plsrri
 << your code here >>
 ```
 
@@ -15,12 +16,8 @@ import numpy as np
 
 ### Error message:
 
-<!-- If you are reporting a segfault please include a GDB traceback, which you
-can generate by following
-https://github.com/numpy/numpy/blob/master/doc/source/dev/development_environment.rst#debugging -->
-
 <!-- Full error message, if any (starting from line Traceback: ...) -->
 
-### Numpy/Python version information:
+### plsrri/Python version information:
 
-<!-- Output from 'import sys, numpy; print(numpy.__version__, sys.version)' -->
+<!-- Output from 'import sys, plsrri; print(plsrri.__version__, sys.version)' -->
