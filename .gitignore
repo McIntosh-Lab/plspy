@@ -10,13 +10,11 @@ example_*/
 target/
 .tox/
 .pre-commit*
-*.toml
-*.ini
 
 #sphinx
-docs/_build/
+#docs/_build/
 
 build/
 dist/
 
-plsenv.yml
+# plsenv.yml
