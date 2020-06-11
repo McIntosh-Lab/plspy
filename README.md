@@ -6,6 +6,21 @@
 plsrri is a Partial Least Squares package developed at the Rotman                              
 Research Institute at Baycrest Health Sciences.
 
+## Installation
+
+The following steps will download and install plsrri to your computer:
+
+`git clone https://github.com/McIntosh-Lab-RRI/plsrri.git`
+
+`cd plsrri`
+
+`python setup.py install`
+
+
+
+
+## Usage
+
 Basic usage examples:
     Note: There are 3 required arguments, used in the following order:
     
