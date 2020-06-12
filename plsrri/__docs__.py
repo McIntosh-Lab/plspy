@@ -36,7 +36,7 @@ Basic usage examples:
 
     1) X - 2-d task matrix
 
-    2) a list/tuple object containing the number of subjects in each group
+    2) a list containing the number of subjects in each group
 
     3) argument 3 is an int indicating the number of conditions
 
@@ -45,23 +45,23 @@ Basic usage examples:
 
     Mean-Centred Task PLS:
         
-        >>> result = plsrri.PLS(X, (10, 10), 3, num_perm=500, num_boot=500,  pls_method="mct")
+        >>> result = plsrri.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
 
     Behavioural PLS:
     
-        >>> result = plsrri.PLS(X, (10, 10), 3, Y=Y, pls_method="rb")
+        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, pls_method="rb")
 
     Contrast Task PLS:
         
-        >>> result = plsrri.PLS(X, (10, 10), 3, contrasts=C, pls_method="cst")
+        >>> result = plsrri.PLS(X, [10, 10], 3, contrasts=C, pls_method="cst")
 
     Contrast Behavioural PLS:
         
-        >>> result = plsrri.PLS(X, (10, 10), 3, Y=Y, contrasts=C, pls_method="csb")
+        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, contrasts=C, pls_method="csb")
 
     Multiblock PLS:
         
-        >>> result = plsrri.PLS(X, (10, 10), 3, Y=Y, pls_method="mb")
+        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
 
 To see documentation on additional arguments and fields available, 
 call help on a specific PLS method (see below for details).
@@ -101,7 +101,7 @@ will show you this same help page.
 Author: Noah Frazier-Logue
 """
 
-pls_wrapper_header ="""
+pls_wrapper_header = """
 Front-facing wrapper function for PLS that captures user input
 and extracts user-specified PLS method. If no method is specified,
 default PLS is used.
@@ -110,4 +110,3 @@ TODO: implement first version of PLS and document required values here
 
 
 """
-        
