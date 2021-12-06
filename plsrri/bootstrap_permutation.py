@@ -7,6 +7,7 @@ import scipy.stats
 
 # project imports
 from . import gsvd
+from . import impute
 from . import resample
 from . import exceptions
 from . import class_functions
@@ -140,6 +141,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         dist=(0.05, 0.95),
         rotate_method=0,
         mctype=0,
+        impute=False,
     ):
         self.dist = dist
 
@@ -221,6 +223,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         rotate_method=0,
         mctype=0,
         threshold=1e-12,
+        impute=False,
     ):
         """Run permutation test on X. Resamples X (without replacement) based
         on condition order, runs PLS on resampled matrix, and computes the
@@ -247,7 +250,8 @@ class _ResampleTestTaskPLS(ResampleTest):
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
-
+            if self.impute:
+                X = impute(X)
             X_new, inds = resample.resample_without_replacement(
                 X, cond_order, return_indices=True
             )
@@ -418,6 +422,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # print out iteration number every 50 iterations
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
+
+            if self.impute:
+                X = impute(X)
 
             # also return indices to use with Y_new
             X_new, inds = resample.resample_with_replacement(

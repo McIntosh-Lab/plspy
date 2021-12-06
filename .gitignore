@@ -2,10 +2,11 @@ __pycache__/
 plsrri/__pycache__/
 *.py[cod]
 plsrri/.*.py[cod]
-plsrri/.*.sw[onp]
-plsrri/*/.*.sw[onp]
-.*.sw[onp]
+plsrri/.*.sw[onpm]
+plsrri/*/.*.sw[onmp]
+.*.sw[onpm]
 plsrri/.nfs*
+.Rhistory
 
 example_*/
 *-info/

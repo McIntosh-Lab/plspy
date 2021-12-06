@@ -5,6 +5,7 @@ import scipy.stats
 # project imports
 from . import bootstrap_permutation
 from . import gsvd
+from . import impute
 
 # import helpers
 from . import exceptions
@@ -229,6 +230,9 @@ class _MeanCentreTaskPLS(PLSBase):
         self.num_boot = num_boot
         self.mctype = mctype
 
+        if self.impute:
+            self.X = impute(self.X)
+
         # assign functions to class
         self._mean_centre = class_functions._mean_centre
         self._run_pls = class_functions._run_pls
@@ -255,6 +259,7 @@ class _MeanCentreTaskPLS(PLSBase):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             mctype=self.mctype,
+            impute=self.impute,
         )
         print("\nDone.")
 
@@ -474,6 +479,9 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         self.num_boot = num_boot
         # TODO: catch extraneous keyword args
 
+        if self.impute:
+            self.X = impute(self.X)
+
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module
@@ -506,6 +514,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            impute=self.impute,
         )
         print("\nDone.")
 
@@ -679,6 +688,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         self.num_boot = num_boot
         self.mctype = mctype
         # TODO: catch extraneous keyword args
+        if self.impute:
+            self.X = impute(self.X)
 
         self._mean_centre = class_functions._mean_centre
         self._run_pls_contrast = class_functions._run_pls_contrast
@@ -714,6 +725,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             rotate_method=rotate_method,
             mctype=self.mctype,
             contrast=self.contrasts,
+            impute=self.impute,
         )
         print("\nDone.")
 
@@ -883,6 +895,9 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+        if self.impute:
+            self.X = impute(self.X)
+
         self._compute_R = class_functions._compute_corr
         self._run_pls_contrast = class_functions._run_pls_contrast
         self._compute_X_latents = class_functions._compute_X_latents
@@ -915,6 +930,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
+            impute=self.impute,
         )
         print("\nDone.")
 
@@ -1078,6 +1094,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.num_perm = num_perm
         self.num_boot = num_boot
 
+        if self.impute:
+            self.X = impute(self.X)
+
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module
@@ -1111,6 +1130,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            impute=self.impute,
         )
         print("\nDone.")
 
@@ -1280,6 +1300,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+        if self.impute:
+            self.X = impute(self.X)
+
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module
@@ -1324,5 +1347,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
+            impute=self.impute,
         )
         print("\nDone.")
