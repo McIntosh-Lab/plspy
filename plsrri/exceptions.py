@@ -42,3 +42,10 @@ class MissingParameterError(Error):
     """
 
     pass
+
+
+class OutOfRangeError(Error):
+    """Raised when a variable falls outside of a specified range.
+    """
+
+    pass

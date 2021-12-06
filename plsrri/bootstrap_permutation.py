@@ -2,6 +2,7 @@ import abc
 import numpy as np
 import scipy
 import scipy.stats
+
 # import scipy.io as sio
 
 # project imports
@@ -119,7 +120,8 @@ class _ResampleTestTaskPLS(ResampleTest):
     std_errs : np.array
         Element-wise standard errors for the resampled right singular vectors.
     boot_ratios : np.array
-        NumPy array containing element-wise ratios of 
+        NumPy array containing element-wise ratios of brain LV/salience and
+        bootstrap standard errors. Known as compare_u in MATLAB PLS.
 
     """
 
@@ -259,7 +261,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # after sampling
 
             if Y is None:
-                permuted = preprocess(X_new, cond_order, mctype=mctype, return_means=False)
+                permuted = preprocess(
+                    X_new, cond_order, mctype=mctype, return_means=False
+                )
 
             else:
                 permuted = preprocess(X_new, Y_new, cond_order)
@@ -268,7 +272,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
             # print(f"permuted shape: {permuted.shape}")
-            
+
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
@@ -433,7 +437,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # after sampling
 
             if Y is None:
-                permuted = preprocess(X_new, cond_order, mctype=mctype, return_means=False)
+                permuted = preprocess(
+                    X_new, cond_order, mctype=mctype, return_means=False
+                )
 
             else:
                 permuted = preprocess(X_new, Y_new, cond_order)
@@ -511,6 +517,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # print(f"V shape: {V.shape}")
                 # print(f"U_hat shape: {U_hat.shape}")
                 # print(f"V_hat shape: {V_hat.shape}")
+                # print(f"passed in args: {locals()}")
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )

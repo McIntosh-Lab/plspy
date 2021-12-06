@@ -205,6 +205,7 @@ def _compute_corr(X, Y, cond_order):
         Concatenated computed correlation matrices for each condition
         in X/Y.
     """
+    # print(f"passed in args: {locals()}")
     R = np.empty((np.product(cond_order.shape) * Y.shape[1], X.shape[1]))
     # flatten ordering for easier iteration
     order_all = cond_order.reshape(-1)
