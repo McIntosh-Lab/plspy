@@ -230,8 +230,8 @@ class _MeanCentreTaskPLS(PLSBase):
         self.num_boot = num_boot
         self.mctype = mctype
 
-        if self.impute:
-            self.X = impute(self.X)
+         if hasattr(self, 'impute') and self.impute:
+            self.X = impute.impute(self.X)
 
         # assign functions to class
         self._mean_centre = class_functions._mean_centre
@@ -479,8 +479,8 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         self.num_boot = num_boot
         # TODO: catch extraneous keyword args
 
-        if self.impute:
-            self.X = impute(self.X)
+         if hasattr(self, 'impute') and self.impute:
+            self.X = impute.impute(self.X)
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
@@ -688,8 +688,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         self.num_boot = num_boot
         self.mctype = mctype
         # TODO: catch extraneous keyword args
-        if self.impute:
-            self.X = impute(self.X)
+         if hasattr(self, 'impute') and self.impute:
+            self.X = impute.impute(self.X)
 
         self._mean_centre = class_functions._mean_centre
         self._run_pls_contrast = class_functions._run_pls_contrast
@@ -895,8 +895,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        if self.impute:
-            self.X = impute(self.X)
+         if hasattr(self, 'impute') and self.impute:
+            self.X = impute.impute(self.X)
 
         self._compute_R = class_functions._compute_corr
         self._run_pls_contrast = class_functions._run_pls_contrast
@@ -1094,8 +1094,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.num_perm = num_perm
         self.num_boot = num_boot
 
-        if self.impute:
-            self.X = impute(self.X)
+         if hasattr(self, 'impute') and self.impute:
+            self.X = impute.impute(self.X)
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
@@ -1300,8 +1300,8 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        if self.impute:
-            self.X = impute(self.X)
+         if hasattr(self, 'impute') and self.impute:
+            self.X = impute.impute(self.X)
 
         # assign functions to class
         # TODO: decide whether or not these should be applied

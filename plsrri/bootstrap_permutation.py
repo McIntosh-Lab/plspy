@@ -251,7 +251,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
             if self.impute:
-                X = impute(X)
+                X = impute.impute(X)
             X_new, inds = resample.resample_without_replacement(
                 X, cond_order, return_indices=True
             )
@@ -424,7 +424,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 print(f"Iteration {i + 1}")
 
             if self.impute:
-                X = impute(X)
+                X = impute.impute(X)
 
             # also return indices to use with Y_new
             X_new, inds = resample.resample_with_replacement(
