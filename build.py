@@ -6,16 +6,17 @@ use_plugin("python.install_dependencies")
 use_plugin("python.coverage")
 use_plugin("python.distutils")
 
-name = "plsrri"
+name = "plspy"
 default_task = ["install_dependencies", "analyze", "publish"]
-# version = 0.1
+version = 0.2
 summary = (
     "Partial Least Squares implementation in Python, developed by "
-    "Rotman Research Institute at Baycrest Health Sciences"
+    "Noah Frazier-Logue - Institute for Neuroscience and "
+    "Neurotechnology, Simon Fraser University"
 )
-authors = [Author("Noah Frazier-Logue", "nfrazier-logue@research.baycrest.org")]
+authors = [Author("Noah Frazier-Logue", "noah_frazier-logue@sfu.ca")]
 
-requires_python = ">=3.4"
+requires_python = ">=3.8"
 
 
 @init

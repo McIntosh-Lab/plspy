@@ -1,10 +1,10 @@
-plsrri package
+plspy package
 ==============
 
 Module contents
 ---------------
 
-.. automodule:: plsrri
+.. automodule:: plspy
    :members:
    :undoc-members:
    :show-inheritance:
@@ -12,70 +12,68 @@ Module contents
 Submodules
 ----------
 
-plsrri.bootstrap\_permutation module
+plspy.bootstrap\_permutation module
 ------------------------------------
 
-.. automodule:: plsrri.bootstrap_permutation
+.. automodule:: plspy.bootstrap_permutation
    :private-members:
    :members: _ResampleTestTaskPLS
    :undoc-members:
    :show-inheritance:
 
-plsrri.check\_inputs module
+plspy.check\_inputs module
 ---------------------------
 
-.. automodule:: plsrri.check_inputs
+.. automodule:: plspy.check_inputs
    :members:
    :undoc-members:
    :show-inheritance:
 
-plsrri.decorators module
+plspy.decorators module
 ------------------------
 
-.. automodule:: plsrri.decorators
+.. automodule:: plspy.decorators
    :members:
    :undoc-members:
    :show-inheritance:
 
-plsrri.exceptions module
+plspy.exceptions module
 ------------------------
 
-.. automodule:: plsrri.exceptions
+.. automodule:: plspy.exceptions
    :members:
    :undoc-members:
    :show-inheritance:
 
-plsrri.gsvd module
+plspy.gsvd module
 ------------------
 
-.. automodule:: plsrri.gsvd
+.. automodule:: plspy.gsvd
    :members:
    :undoc-members:
    :show-inheritance:
 
-plsrri.pls module
+plspy.pls module
 -----------------
 
-.. automodule:: plsrri.pls
+.. automodule:: plspy.pls
    :members:
    :undoc-members:
    :show-inheritance:
 
-plsrri.pls\_classes module
+plspy.pls\_classes module
 --------------------------
 
-.. automodule:: plsrri.pls_classes
+.. automodule:: plspy.pls_classes
    :private-members:
    :members: _MeanCentreTaskSingleGroupPLS, _RegularBehaviourPLS, _ContrastTaskPLS,  _ContrastBehaviourPLS, _MultiblockPLS, _ContrastMultiblockPLS
    :undoc-members:
    :show-inheritance:
 
-plsrri.resample module
+plspy.resample module
 ----------------------
 
-.. automodule:: plsrri.resample
+.. automodule:: plspy.resample
    :members:
    :undoc-members:
    :show-inheritance:
-
-

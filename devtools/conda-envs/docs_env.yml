@@ -1,0 +1,16 @@
+name: docs
+
+channels:
+
+  - conda-forge
+  - defaults
+
+dependencies:
+
+  - python=3.10
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinxcontrib-bibtex
+  - nbsphinx
+  - recommonmark
+  - sphinx-markdown-tables

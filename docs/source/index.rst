@@ -1,21 +1,24 @@
-.. pls-tvb documentation master file, created by
-   sphinx-quickstart on Thu Jan 23 12:10:10 2020.
+.. plspy documentation master file, created by
+   sphinx-quickstart on Wed Mar 23 13:15:26 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to plsrri's documentation!
+
+Welcome to plspy's documentation!
 ===================================
 
 
 
-.. automodule:: plsrri
-   :members:
+.. automodule:: plspy
+   :members: pls
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
-   modules
+   /plspy
+   /modules
+
 
 Indices and tables
 ==================
@@ -23,4 +26,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

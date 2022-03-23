@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to plsrri’s documentation! &mdash; plsrri 0.1a1 documentation</title>
+  <title>Welcome to plspy’s documentation! &mdash; plspy 0+untagged.48.g5333d59.dirty documentation</title>
   
 
   
@@ -21,10 +21,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -33,9 +33,11 @@
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="plsrri" href="modules.html" /> 
+    <link rel="next" title="plspy package" href="plspy.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -49,7 +51,7 @@
           
 
           
-            <a href="#" class="icon icon-home"> plsrri
+            <a href="#" class="icon icon-home"> plspy
           
 
           
@@ -79,9 +81,10 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">plsrri</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plspy.html">plspy package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">plspy</a></li>
 </ul>
 
             
@@ -96,7 +99,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">plsrri</a>
+          <a href="#">plspy</a>
         
       </nav>
 
@@ -127,7 +130,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Welcome to plsrri’s documentation!</li>
+      <li>Welcome to plspy’s documentation!</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -146,11 +149,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-plsrri">
-<span id="welcome-to-plsrri-s-documentation"></span><h1>Welcome to plsrri’s documentation!<a class="headerlink" href="#module-plsrri" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="plsrri">
-<h2>plsrri<a class="headerlink" href="#plsrri" title="Permalink to this headline">¶</a></h2>
-<p>plsrri is a Partial Least Squares package developed at the Rotman
+  <div class="section" id="module-plspy">
+<span id="welcome-to-plspy-s-documentation"></span><h1>Welcome to plspy’s documentation!<a class="headerlink" href="#module-plspy" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="plspy">
+<h2>plspy<a class="headerlink" href="#plspy" title="Permalink to this headline">¶</a></h2>
+<p>plspy is a Partial Least Squares package developed at the Rotman
 Research Institute at Baycrest Health Sciences.</p>
 <p>In addition to core PLS functionality, this package also contains the following modules:</p>
 <dl class="simple">
@@ -177,23 +180,23 @@ Research Institute at Baycrest Health Sciences.</p>
 </ol>
 <p>Example arguments are used below.</p>
 <p>Mean-Centred Task PLS:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">num_perm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>  <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mct&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plspy</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">num_perm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>  <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mct&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Behavioural PLS:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plspy</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Contrast Task PLS:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;cst&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plspy</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;cst&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Contrast Behavioural PLS:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;csb&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plspy</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">contrasts</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;csb&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Multiblock PLS:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mb&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">plspy</span><span class="o">.</span><span class="n">PLS</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Y</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">pls_method</span><span class="o">=</span><span class="s2">&quot;mb&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -204,8 +207,8 @@ in website form. More information on how to access online documentation is
 forthcoming. Information on how to use help() is below.</p>
 <p>To get help documentation on a particular version of PLS, type the following
 in a Python interpreter after loading the module:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">plsrri</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="s2">&quot;&lt;methodname&gt;&quot;</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">plspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plspy</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="s2">&quot;&lt;methodname&gt;&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Where &lt;method&gt; is the string of one of the PLS versions shown below.</p>
@@ -219,7 +222,7 @@ in a Python interpreter after loading the module:</p>
 <p>“cmb” - Contrast Multiblock PLS (under construction)</p>
 </div></blockquote>
 <dl>
-<dt>Note: calling</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plsrri</span><span class="o">.</span><span class="n">PLS</span><span class="p">)</span>
+<dt>Note: calling</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">plspy</span><span class="o">.</span><span class="n">PLS</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd>
@@ -228,10 +231,41 @@ in a Python interpreter after loading the module:</p>
 <p>Author: Noah Frazier-Logue</p>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">plsrri</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="plsrri.html">plsrri package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plspy.html">plspy package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#plspy">plspy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.bootstrap_permutation">plspy.bootstrap_permutation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.check_inputs">plspy.check_inputs module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.decorators">plspy.decorators module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.exceptions">plspy.exceptions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.gsvd">plspy.gsvd module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.pls">plspy.pls module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.pls_classes">plspy.pls_classes module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html#module-plspy.resample">plspy.resample module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">plspy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plspy.html">plspy package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="plspy.html#plspy">plspy</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.bootstrap_permutation">plspy.bootstrap_permutation module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.check_inputs">plspy.check_inputs module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.decorators">plspy.decorators module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.exceptions">plspy.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.gsvd">plspy.gsvd module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.pls">plspy.pls module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.pls_classes">plspy.pls_classes module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plspy.html#module-plspy.resample">plspy.resample module</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -254,7 +288,7 @@ in a Python interpreter after loading the module:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="modules.html" class="btn btn-neutral float-right" title="plsrri" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="plspy.html" class="btn btn-neutral float-right" title="plspy package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
@@ -264,7 +298,7 @@ in a Python interpreter after loading the module:</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, Noah Frazier-Logue
+        &copy; Copyright 2022, McIntosh Lab - Institute for Neuroscience and Neurotechnology, Simon Fraser University
 
     </p>
   </div>

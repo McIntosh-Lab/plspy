@@ -1,18 +1,18 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# Rotman Institute Partial Least Squares
+# Partial Least Squares - McIntosh Lab
 
 
-plsrri is a Partial Least Squares package developed at the Rotman                              
-Research Institute at Baycrest Health Sciences.
+plspy is a Partial Least Squares package developed to replicate and extend the PLS MATLAB package created by Randy McIntosh, et al for use in neuroimaging applications.
+.
 
 ## Installation
 
-The following steps will download and install plsrri to your computer:
+The following steps will download and install plspy to your computer:
 
-`git clone https://github.com/McIntosh-Lab-RRI/plsrri.git`
+`git clone https://github.com/McIntosh-LabI/plspy.git`
 
-`cd plsrri`
+`cd plspy`
 
 `python setup.py install`
 
@@ -34,19 +34,19 @@ Basic usage examples:
     
     Mean-Centred Task PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
+        >>> result = plspy.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
     Behavioural PLS:
     
-        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, pls_method="rb")
+        >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="rb")
     Contrast Task PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, contrasts=C, pls_method="cst")
+        >>> result = plspy.PLS(X, [10, 10], 3, contrasts=C, pls_method="cst")
     Contrast Behavioural PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, contrasts=C, pls_method="csb")
+        >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, contrasts=C, pls_method="csb")
     Multiblock PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
+        >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
         
         
 To see documentation on additional arguments and fields available, 
@@ -57,8 +57,8 @@ forthcoming. Information on how to use help() is below.
 To get help documentation on a particular version of PLS, type the following
 in a Python interpreter after loading the module:
 
-    >>> import plsrri
-    >>> help(plsrri.methods["<methodname>"])
+    >>> import plspy
+    >>> help(plspy.methods["<methodname>"])
     
 Where <method> is the string of one of the PLS versions shown below.
   

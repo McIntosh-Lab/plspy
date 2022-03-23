@@ -1,7 +1,8 @@
-plsrri
+plspy
 ======
 
 .. toctree::
    :maxdepth: 4
 
-   plsrri
+   plspy
+

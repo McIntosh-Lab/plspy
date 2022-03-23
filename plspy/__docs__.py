@@ -1,14 +1,14 @@
 """
 File containing docstrings for various methods, modules, and files
-in plsrri. Can be combined as needed to make full docstrings for 
+in plspy. Can be combined as needed to make full docstrings for 
 functions and modules.
 """
 
-plsrri_header = """
-plsrri
+plspy_header = """
+plspy
 ======
 
-plsrri is a Partial Least Squares package developed at the Rotman                              
+plspy is a Partial Least Squares package developed at the Rotman                              
 Research Institute at Baycrest Health Sciences.
 
 In addition to core PLS functionality, this package also contains the following modules:
@@ -29,7 +29,7 @@ exceptions
 """
 
 
-plsrri_body = """
+plspy_body = """
 Basic usage examples:
 
     Note: There are 3 required arguments, used in the following order:
@@ -45,23 +45,23 @@ Basic usage examples:
 
     Mean-Centred Task PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
+        >>> result = plspy.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
 
     Behavioural PLS:
     
-        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, pls_method="rb")
+        >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="rb")
 
     Contrast Task PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, contrasts=C, pls_method="cst")
+        >>> result = plspy.PLS(X, [10, 10], 3, contrasts=C, pls_method="cst")
 
     Contrast Behavioural PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, contrasts=C, pls_method="csb")
+        >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, contrasts=C, pls_method="csb")
 
     Multiblock PLS:
         
-        >>> result = plsrri.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
+        >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
 
 To see documentation on additional arguments and fields available, 
 call help on a specific PLS method (see below for details).
@@ -72,8 +72,8 @@ forthcoming. Information on how to use help() is below.
 
 To get help documentation on a particular version of PLS, type the following
 in a Python interpreter after loading the module:
-    >>> import plsrri
-    >>> help(plsrri.methods["<methodname>"])
+    >>> import plspy
+    >>> help(plspy.methods["<methodname>"])
 
 Where <method> is the string of one of the PLS versions shown below.
 
@@ -93,7 +93,7 @@ Available methods:
 
 
 Note: calling
-    >>> help(plsrri.PLS) 
+    >>> help(plspy.PLS) 
 
 will show you this same help page.
 

@@ -1,6 +1,6 @@
 <!-- Please describe the issue in detail here, and fill in the fields below -->
 <!-- If you're filing anything other than an issue, feel free to disregard this template-->
-<!-- Assign a label and a Project (please use plsrri-board) on the right side of the page-->
+<!-- Assign a label and a Project (please use plspy-board) on the right side of the page-->
 
 ### Reproducing code example:
 
@@ -8,7 +8,7 @@
 self-contained, i.e., possible to run as-is via 'python myproblem.py' -->
 
 ```python
-import plsrri
+import plspy
 << your code here >>
 ```
 
@@ -18,6 +18,6 @@ import plsrri
 
 <!-- Full error message, if any (starting from line Traceback: ...) -->
 
-### plsrri/Python version information:
+### plspy/Python version information:
 
-<!-- Output from 'import sys, plsrri; print(plsrri.__version__, sys.version)' -->
+<!-- Output from 'import sys, plspy; print(plspy.__version__, sys.version)' -->

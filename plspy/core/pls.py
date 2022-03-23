@@ -2,7 +2,7 @@
 
 # project imports
 from . import pls_classes
-from . import __docs__
+from .. import __docs__
 
 # dictionary holding PLS methods; used with help()
 methods = {
@@ -43,4 +43,4 @@ def PLS(*args, **kwargs):
 # __init__.py docstring assembled using blocks also used in
 # other files. Docstrings found in __docs__.py
 PLS.__doc__ =  __docs__.pls_wrapper_header
-PLS.__doc__ += __docs__.plsrri_body
+PLS.__doc__ += __docs__.plspy_body

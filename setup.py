@@ -1,4 +1,8 @@
 import setuptools
+import versioneer
+
+version=versioneer.get_version(),
+cmdclass=versioneer.get_cmdclass(),
 
 # import os
 
@@ -8,19 +12,20 @@ import setuptools
 #    long_description = fh.read()
 
 setuptools.setup(
-    name="plsrri",  # Replace with your own username
-    version="0.1a1",
+    name="plspy",  # Replace with your own username
+    version="0.2",
     author="Noah Frazier-Logue",
-    author_email="nfrazier-logue@research.baycrest.org",
-    description="Implementation of Partial Least Squares c/o Baycrest's Rotman Research Institute",
+    author_email="noah_frazier-logue@sfu.ca",
+    description="Implementation of McIntosh Lab's Partial Least Squares " 
+                "neuroimaging tool",
     # long_description=long_description,
     # long_description_content_type="text/markdown",
-    url="https://github.com/noahfl/PartialLeastSquares",
+    url="https://github.com/McIntosh-Lab/plspy",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.4",
+    python_requires=">=3.8",
 )
