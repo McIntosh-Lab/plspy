@@ -1,0 +1,6 @@
+numpy
+scipy
+pytest
+sphinx
+sphinx-rtd-theme
+versioneer
