@@ -1,4 +1,5 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![CircleCI](https://circleci.com/gh/McIntosh-Lab/plspy/tree/main.svg?style=svg&circle-token=3b9c7e2a597b381d8b388e0fae83552ee89e07d3)](https://circleci.com/gh/McIntosh-Lab/plspy/tree/main)
 
 # Partial Least Squares - McIntosh Lab
 
