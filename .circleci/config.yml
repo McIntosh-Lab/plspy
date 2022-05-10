@@ -78,9 +78,9 @@ workflows:
   run-tests-and-build-docs:
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - build-and-test-3.10
-      - build-and-test-3.9
-      - build-and-test-3.8
-      - build-and-test-3.7
+      - build-and-test-3_10
+      - build-and-test-3_9
+      - build-and-test-3_8
+      - build-and-test-3_7
       - build-docs
 
