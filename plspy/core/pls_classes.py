@@ -1,6 +1,7 @@
 import abc
 import numpy as np
 import scipy.stats
+from typing import Optional, Tuple, List, Union, Type
 
 # project imports
 from . import bootstrap_permutation
@@ -185,7 +186,7 @@ class _MeanCentreTaskPLS(PLSBase):
         num_boot: int = 1000,
         rotate_method: int = 0,
         mctype: int = 0,
-        **kwargs,
+        **kwargs: str,
     ):
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -229,19 +230,14 @@ class _MeanCentreTaskPLS(PLSBase):
         self.num_boot = num_boot
         self.mctype = mctype
 
-        # assign functions to class
-        self._mean_centre = class_functions._mean_centre
-        self._run_pls = class_functions._run_pls
-        self._compute_X_latents = class_functions._compute_X_latents
-
         # compute X means and X mean-centred values
-        self.X_means, self.X_mc = self._mean_centre(
+        self.X_means, self.X_mc = class_functions._mean_centre(
             self.X, self.cond_order, mctype=self.mctype
         )
-        self.U, self.s, self.V = self._run_pls(self.X_mc)
+        self.U, self.s, self.V = class_functions._run_pls(self.X_mc)
         print(f"X_mc shape: {self.X_mc.shape}")
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_X_latents(self.X_mc, self.V)
+        self.X_latent = class_functions._compute_X_latents(self.X_mc, self.V)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -250,7 +246,7 @@ class _MeanCentreTaskPLS(PLSBase):
             self.s,
             self.V,
             self.cond_order,
-            preprocess=self._mean_centre,
+            preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
@@ -477,20 +473,21 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module
-        self._compute_R = class_functions._compute_corr
-        self._run_pls = class_functions._run_pls
-        self._compute_X_latents = class_functions._compute_X_latents
-        self._compute_Y_latents = class_functions._compute_Y_latents
+        class_functions._compute_R = class_functions._compute_corr
 
         # compute R correlation matrix
-        self.R = self._compute_R(self.X, self.Y, self.cond_order)
+        self.R = class_functions._compute_R(self.X, self.Y, self.cond_order)
 
-        self.U, self.s, self.V = self._run_pls(self.R)
+        self.U, self.s, self.V = class_functions._run_pls(self.R)
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_X_latents(self.X, self.V)
-        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        self.Y_latent = class_functions._compute_Y_latents(
+            self.Y, self.U, self.cond_order
+        )
         # compute latent variable correlation matrix for V using compute_R
-        self.lvcorrs = self._compute_R(self.X_latent, self.Y, self.cond_order)
+        self.lvcorrs = class_functions._compute_R(
+            self.X_latent, self.Y, self.cond_order
+        )
         # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
         # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
 
@@ -502,7 +499,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             self.s,
             self.V,
             self.cond_order,
-            preprocess=self._compute_R,
+            preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
@@ -680,16 +677,14 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         self.mctype = mctype
         # TODO: catch extraneous keyword args
 
-        self._mean_centre = class_functions._mean_centre
-        self._run_pls_contrast = class_functions._run_pls_contrast
-        self._compute_X_latents = class_functions._compute_X_latents
-        # self._compute_Y_latents = class_functions._compute_Y_latents
         # compute R correlation matrix
-        self.R = self._mean_centre(
+        self.R = class_functions._mean_centre(
             self.X, self.cond_order, return_means=False, mctype=self.mctype
         )
 
-        self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
+        self.U, self.s, self.V = class_functions._run_pls_contrast(
+            self.R, self.contrasts
+        )
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
@@ -698,8 +693,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         else:
             self.lvintercorrs = self.U.T @ self.U
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_X_latents(self.X, self.V)
-        # self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -708,7 +703,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.s,
             self.V,
             self.cond_order,
-            preprocess=self._mean_centre,
+            preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
@@ -883,15 +878,14 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        self._compute_R = class_functions._compute_corr
-        self._run_pls_contrast = class_functions._run_pls_contrast
-        self._compute_X_latents = class_functions._compute_X_latents
-        self._compute_Y_latents = class_functions._compute_Y_latents
+        class_functions._compute_R = class_functions._compute_corr
 
         # compute R correlation matrix
-        self.R = self._compute_R(self.X, self.Y, self.cond_order)
+        self.R = class_functions._compute_R(self.X, self.Y, self.cond_order)
 
-        self.U, self.s, self.V = self._run_pls_contrast(self.R, self.contrasts)
+        self.U, self.s, self.V = class_functions._run_pls_contrast(
+            self.R, self.contrasts
+        )
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
@@ -900,8 +894,10 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         else:
             self.lvintercorrs = self.U.T @ self.U
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_X_latents(self.X, self.V)
-        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        self.Y_latent = class_functions._compute_Y_latents(
+            self.Y, self.U, self.cond_order
+        )
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -910,7 +906,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             self.s,
             self.V,
             self.cond_order,
-            preprocess=self._compute_R,
+            preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
@@ -1083,17 +1079,16 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         # or if users should import from class_functions module
         self._create_multiblock = class_functions._create_multiblock
         self._compute_corr = class_functions._compute_corr
-        self._run_pls = class_functions._run_pls
-        self._compute_X_latents = class_functions._compute_X_latents
-        self._compute_Y_latents = class_functions._compute_Y_latents
 
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order)
 
-        self.U, self.s, self.V = self._run_pls(self.multiblock)
+        self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_X_latents(self.X, self.V)
-        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        self.Y_latent = class_functions._compute_Y_latents(
+            self.Y, self.U, self.cond_order
+        )
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(self.X_latent, self.Y, self.cond_order)
         # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
@@ -1285,9 +1280,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         # or if users should import from class_functions module
         self._create_multiblock = class_functions._create_multiblock
         self._compute_corr = class_functions._compute_corr
-        self._run_pls_contrast = class_functions._run_pls_contrast
-        self._compute_X_latents = class_functions._compute_X_latents
-        self._compute_Y_latents = class_functions._compute_Y_latents
+        class_functions._compute_Y_latents = class_functions._compute_Y_latents
 
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order)
@@ -1295,7 +1288,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.contrasts = self.contrasts / np.linalg.norm(self.contrasts, axis=0)
         print(self.contrasts)
 
-        self.U, self.s, self.V = self._run_pls_contrast(self.multiblock, self.contrasts)
+        self.U, self.s, self.V = class_functions._run_pls_contrast(
+            self.multiblock, self.contrasts
+        )
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
@@ -1304,8 +1299,10 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         else:
             self.lvintercorrs = self.U.T @ self.U
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = self._compute_X_latents(self.X, self.V)
-        self.Y_latent = self._compute_Y_latents(self.Y, self.U, self.cond_order)
+        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        self.Y_latent = class_functions._compute_Y_latents(
+            self.Y, self.U, self.cond_order
+        )
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(self.X_latent, self.Y, self.cond_order)
         # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1

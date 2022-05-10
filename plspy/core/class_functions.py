@@ -181,7 +181,7 @@ def _compute_X_latents(I, EV):
     return dotp
 
 
-def _compute_corr(X, Y, cond_order):
+def _compute_corr(X, Y, cond_order):  # , n_cond):
     """Compute per-condition correlation matrices (concatenated as R,
     in the case of Behavioural, to pass into GSVD).
 
@@ -210,6 +210,11 @@ def _compute_corr(X, Y, cond_order):
     order_all = cond_order.reshape(-1)
     start = 0
     start_R = 0
+    # if n_cond == 1:
+    #     X_zsc = (X - X.mean(axis=0)) / X.std(axis=0, ddof=1)
+    #     Y_zsc = (Y - Y.mean(axis=0)) / Y.std(axis=0, ddof=1)
+    #     R = (Y_zsc.T @ X_zsc) / (X_zsc.shape[0] - 1)
+    # else:
     for i in range(len(order_all)):
         # X and Y zscored within each condition
         Xc_zsc = scipy.stats.zscore(X[start : order_all[i] + start,])
