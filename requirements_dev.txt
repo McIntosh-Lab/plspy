@@ -5,6 +5,7 @@ nibabel
 seaborn
 matplotlib
 pandas
+nilearn
 sphinx
 sphinx-rtd-theme
 versioneer

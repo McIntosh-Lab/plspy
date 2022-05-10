@@ -5,3 +5,4 @@ nibabel
 seaborn
 matplotlib
 pandas
+nilearn
