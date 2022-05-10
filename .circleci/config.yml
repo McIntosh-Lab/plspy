@@ -17,6 +17,7 @@ jobs:
   build-and-test-3_10: 
     docker:
       - image: cimg/python:3.10.2
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
@@ -28,6 +29,7 @@ jobs:
   build-and-test-3_9: 
     docker:
       - image: cimg/python:3.9
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
@@ -39,6 +41,7 @@ jobs:
   build-and-test-3_8: 
     docker:
       - image: cimg/python:3.8
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
@@ -50,6 +53,7 @@ jobs:
   build-and-test-3_7: 
     docker:
       - image: cimg/python:3.7
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
@@ -61,6 +65,7 @@ jobs:
   build-docs: 
     docker:
       - image: cimg/python:3.10.2
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
