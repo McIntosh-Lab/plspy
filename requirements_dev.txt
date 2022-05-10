@@ -2,6 +2,9 @@ numpy
 scipy
 pytest
 nibabel
+seaborn
+matplotlib
+pandas
 sphinx
 sphinx-rtd-theme
 versioneer
