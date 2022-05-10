@@ -1,6 +1,7 @@
 numpy
 scipy
 pytest
+nibabel
 sphinx
 sphinx-rtd-theme
 versioneer
