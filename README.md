@@ -11,7 +11,7 @@ plspy is a Partial Least Squares package developed to replicate and extend the P
 
 The following steps will download and install plspy to your computer:
 
-`git clone https://github.com/McIntosh-LabI/plspy.git`
+`git clone https://github.com/McIntosh-Lab/plspy.git`
 
 `cd plspy`
 
