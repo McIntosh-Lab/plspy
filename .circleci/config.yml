@@ -110,14 +110,14 @@ workflows:
       - build-and-test-3_7
       - build-docs
       - test_pypi_publish-3_10:
-	  requires:
-	    - build-and-test-3_10
+          requires:
+            - build-and-test-3_10
           filters:
             branches:
               - staging
       - pypi_publish-3_10:
 	  requires:
-	    - build-and-test-3_10
+            - build-and-test-3_10
           filters:
             branches:
               - main
