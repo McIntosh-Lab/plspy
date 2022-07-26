@@ -1,14 +1,15 @@
 import abc
 
-import plspy
-import numpy as np
-import seaborn as sns
-import nilearn
-import nibabel as nib
-import scipy.io as sio
-import matplotlib.pyplot as plt
-import pandas as pd
 import matplotlib
+import matplotlib.pyplot as plt
+import nibabel as nib
+import nilearn
+import numpy as np
+import pandas as pd
+import scipy.io as sio
+import seaborn as sns
+
+from ..core import exceptions
 
 
 class _SBPlotBase(abc.ABC):
@@ -148,7 +149,7 @@ class _PermutedSingularValuesPlot(_SingularValuesPlot):
         perm_sv = pls_result.resample_tests.permute_ratio
         pal = sns.color_palette("husl", n_colors=perm_sv.shape[0])
         svt = pd.DataFrame(
-            data={"x": list(range(1, len(perm_sv) + 1)), "y": perm_sv.reshape(-1)}
+            data={"x": list(range(1, len(perm_sv) + 1)), "y": perm_sv.reshape(-1),}
         )
         bp = sns.barplot(data=svt, x="x", y="y", palette=pal)
         Ax = bp.axes
@@ -223,7 +224,7 @@ class _DesignScoresPlot(_SingularValuesPlot):
                 sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes[i])
             )
             axes[i].set_xlabel(f"Group {i + 1}")
-            axes[i].set_ylabel(f"")
+            axes[i].set_ylabel("")
         # pal = sns.color_palette("husl", n_colors=splt)
         # dv2 = pd.DataFrame(data={"x": list(range(1, splt + 1)), "y": dlv[0][splt:].reshape(-1)})
         # bp1 = sns.barplot(data=dv1, x="x", y="y", palette=pal, ax=ax1)
@@ -231,7 +232,7 @@ class _DesignScoresPlot(_SingularValuesPlot):
         # ax2.set_ylabel("")
         # ax1.set_xlabel("Group 1")
         # ax2.set_xlabel("Group 2")
-        axes[0].set_ylabel(f"Design Scores")
+        axes[0].set_ylabel("Design Scores")
         Ax = bar_plots[0].axes
         boxes = [
             item
@@ -277,9 +278,9 @@ class _CorrelationPlot(_SingularValuesPlot):
             sharey=True,
         )
         axes[0].set_ylabel("Correlations")
-        f.suptitle(f"Correlation Plot", fontsize=14)
+        f.suptitle("Correlation Plot", fontsize=14)
         splt = int(pls_result.lvcorrs.shape[0] / pls_result.num_groups)
-        bar_plots = []
+        # bar_plots = []
         scores = []
         for i in range(pls_result.num_groups):
             # stays in loop since it has to be reset every iteration
@@ -289,7 +290,7 @@ class _CorrelationPlot(_SingularValuesPlot):
                 pd.DataFrame(data={"x": list(range(1, y_mat.shape[0] + 1)), "y": y_mat})
             )
             axes[i].set_xlabel(f"Group {i + 1}")
-            axes[i].set_ylabel(f"")
+            axes[i].set_ylabel("")
         # pal = sns.color_palette("husl", n_colors=splt)
         # dv2 = pd.DataFrame(data={"x": list(range(1, splt + 1)), "y": dlv[0][splt:].reshape(-1)})
         # bp1 = sns.barplot(data=dv1, x="x", y="y", palette=pal, ax=ax1)
@@ -343,7 +344,7 @@ class _BrainLVPlot(_SingularValuesPlot):
             sharey=True,
         )
         axes[0].set_ylabel("Brain LVs")
-        f.suptitle(f"Brain LV Plot", fontsize=14)
+        f.suptitle("Brain LV Plot", fontsize=14)
         splt = int(pls_result.lvcorrs.shape[0] / pls_result.num_groups)
         bar_plots = []
         scores = []
@@ -361,7 +362,7 @@ class _BrainLVPlot(_SingularValuesPlot):
                 sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes[i])
             )
             axes[i].set_xlabel(f"Group {i + 1}")
-            axes[i].set_ylabel(f"")
+            axes[i].set_ylabel("")
         # pal = sns.color_palette("husl", n_colors=splt)
         # dv2 = pd.DataFrame(data={"x": list(range(1, splt + 1)), "y": dlv[0][splt:].reshape(-1)})
         # bp1 = sns.barplot(data=dv1, x="x", y="y", palette=pal, ax=ax1)
@@ -415,7 +416,7 @@ class _BehavLVPlot(_SingularValuesPlot):
             sharey=True,
         )
         axes[0].set_ylabel("Behaviour LVs")
-        f.suptitle(f"Behaviour LV Plot", fontsize=14)
+        f.suptitle("Behaviour LV Plot", fontsize=14)
         splt = int(pls_result.Y_latent.shape[0] / pls_result.num_groups)
         bar_plots = []
         scores = []
@@ -433,7 +434,7 @@ class _BehavLVPlot(_SingularValuesPlot):
                 sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes[i])
             )
             axes[i].set_xlabel(f"Group {i + 1} conditions")
-            axes[i].set_ylabel(f"")
+            axes[i].set_ylabel("")
         # pal = sns.color_palette("husl", n_colors=splt)
         # dv2 = pd.DataFrame(data={"x": list(range(1, splt + 1)), "y": dlv[0][splt:].reshape(-1)})
         # bp1 = sns.barplot(data=dv1, x="x", y="y", palette=pal, ax=ax1)
@@ -474,7 +475,7 @@ class _VoxelIntensityPlot(_DesignScoresPlot):
     """ """
 
     def __init__(
-        pls_result, coords, dim=(1000, 650), **kwargs,
+        self, pls_result, coords, dim=(1000, 650), **kwargs,
     ):
         self.coords = coords
         super().__init__(self, pls_result, dim, **kwargs)
@@ -502,7 +503,7 @@ class _VoxelIntensityPlot(_DesignScoresPlot):
 
 
 @_SBPlotBase._register_subclass("blv")
-class _BrainLVPlot(_SBPlotBase):
+class _BLVPlot(_SBPlotBase):
     """ """
 
     def __init__(
@@ -522,8 +523,9 @@ class _BrainLVPlot(_SBPlotBase):
 
     def __str__(self):
         info = f"Plot type: {self._sbplot_types[self.sbplot_method]}"
-        stg += info
-        return stg
+        # stg += info
+        # return stg
+        return info
 
     def __repr__(self):
         return self.__str__()

@@ -2,8 +2,7 @@
 
 
 class Error(Exception):
-    """Base class for the following excpetions.
-    """
+    """Base class for the following exceptions."""
 
     pass
 
@@ -17,28 +16,30 @@ class InputMatrixDimensionMismatchError(Error):
 
 
 class ImproperShapeError(Error):
-    """Exception raised when a matrix has the incorrect shape.
-    """
+    """Exception raised when a matrix has the incorrect shape."""
 
     pass
 
 
 class ConditionMatrixMalformedError(Error):
-    """Raised when the Condition matrix is not of shape (n,).
-    """
+    """Raised when the Condition matrix is not of shape (n,)."""
 
     pass
 
 
 class NotImplementedError(Error):
-    """Raised when a function has yet to be implemented.
-    """
+    """Raised when a function has yet to be implemented."""
 
     pass
 
 
 class MissingParameterError(Error):
-    """Raised when a required parameter is not passed in.
-    """
+    """Raised when a required parameter is not passed in."""
+
+    pass
+
+
+class OutOfRangeError(Error):
+    """Raised when an out-of-range index is referenced."""
 
     pass

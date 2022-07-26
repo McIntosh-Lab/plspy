@@ -24,7 +24,7 @@ The following steps will download and install plspy to your computer:
 
 Basic usage examples:
     Note: There are 3 required arguments, used in the following order:
-    
+
     1) X - 2-d task matrix
     
     2) a list containing the number of subjects in each group
@@ -48,19 +48,19 @@ Basic usage examples:
     Multiblock PLS:
         
         >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
-        
-        
-To see documentation on additional arguments and fields available, 
+
+
+To see documentation on additional arguments and fields available,
 call help on a specific PLS method (see below for details).
 Documentation is available both in help() form and will also be available
-in website form. More information on how to access online documentation is 
+in website form. More information on how to access online documentation is
 forthcoming. Information on how to use help() is below.
 To get help documentation on a particular version of PLS, type the following
 in a Python interpreter after loading the module:
 
     >>> import plspy
     >>> help(plspy.methods["<methodname>"])
-    
+
 Where <method> is the string of one of the PLS versions shown below.
   
 Available methods:

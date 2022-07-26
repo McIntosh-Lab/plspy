@@ -1,7 +1,8 @@
 import os
+from typing import List, Optional, Tuple, Union
+
 import nibabel
 import numpy as np
-from typing import Optional, Tuple, List, Union
 
 from .. import exceptions
 
@@ -14,7 +15,7 @@ def open_images_in_dir(
 
     Filenames are sorted alphanumerically and Nifti images are loaded
     in using same ordering.
-    
+
     Parameters
     ----------
     dir_path : str
@@ -50,7 +51,7 @@ def open_single_image_in_dir(fpath: str) -> nibabel.nifti1.Nifti1Image:
     Open single image in a directory and return it.
 
     Essentially a wrapper for nibabel.load()
-    
+
     Parameters
     ----------
     fpath : str
@@ -71,7 +72,9 @@ def open_single_image_in_dir(fpath: str) -> nibabel.nifti1.Nifti1Image:
     return image
 
 
-def open_images_from_paths_list(fpaths: List[str]) -> List[nibabel.nifti1.Nifti1Image]:
+def open_images_from_paths_list(
+    fpaths: List[str],
+) -> List[nibabel.nifti1.Nifti1Image]:
     """
     Take list of file paths and open each image.
 
@@ -101,16 +104,16 @@ def concat_images(
     For reference, see the nibabel documentation on
     `nibabel.concat_images https://nipy.org/nibabel/reference/nibabel.funcs.html#concat-images`_
 
-	Parameters
-	----------
-	*args : tuple
-    	Any argument passed into nibabel.concat_images. For our purposes it's usually
+        Parameters
+        ----------
+        *args : tuple
+        Any argument passed into nibabel.concat_images. For our purposes it's usually
         one arg of type List[nibabel.nifti1.Nifti1Image]
-	**kwargs : dict, optional
+        **kwargs : dict, optional
         Any keyword arg passed into nibabel.concat_images.
 
-	Returns
-	-------
+        Returns
+        -------
     nibabel.nifti1.Nifti1Image
         Concatenated image composed of original input images.
     """
@@ -129,18 +132,18 @@ def read_dir_to_one_image(
     For reference, see the nibabel documentation on
     `nibabel.concat_images https://nipy.org/nibabel/reference/nibabel.funcs.html#concat-images`_
 
-	Parameters
-	----------
+        Parameters
+        ----------
     fpath : str
         Full path to image file.
-	*args : tuple
-    	Any argument passed into nibabel.concat_images. For our purposes it's usually
+        *args : tuple
+        Any argument passed into nibabel.concat_images. For our purposes it's usually
         one arg of type List[nibabel.nifti1.Nifti1Image]
-	**kwargs : dict, optional
+        **kwargs : dict, optional
         Any keyword arg passed into nibabel.concat_images.
 
-	Returns
-	-------
+        Returns
+        -------
     nibabel.nifti1.Nifti1Image
         Concatenated image composed of original input images.
     """
@@ -164,31 +167,31 @@ def open_multiple_imgs_from_dirs(
     For reference, see the nibabel documentation on
     `nibabel.concat_images https://nipy.org/nibabel/reference/nibabel.funcs.html#concat-images`_
 
-	Parameters
-	----------
+        Parameters
+        ----------
     dir_list : List[str]
         List of full paths to directories of image files.
-	*args : tuple
-    	Any argument passed into nibabel.concat_images. For our purposes it's usually
+        *args : tuple
+        Any argument passed into nibabel.concat_images. For our purposes it's usually
         one arg of type List[nibabel.nifti1.Nifti1Image]
-	**kwargs : dict, optional
+        **kwargs : dict, optional
         Any keyword arg passed into nibabel.concat_images.
 
-	Returns
-	-------
+        Returns
+        -------
     nibabel.nifti1.Nifti1Image
         Concatenated image composed of original input images.
 
-	Parameters
-	----------
-	*args : tuple
-    	Any argument passed into nibabel.concat_images. For our purposes it's usually
+        Parameters
+        ----------
+        *args : tuple
+        Any argument passed into nibabel.concat_images. For our purposes it's usually
         one arg of type List[nibabel.nifti1.Nifti1Image]
-	**kwargs : dict, optional
+        **kwargs : dict, optional
         Any keyword arg passed into nibabel.concat_images.
 
-	Returns
-	-------
+        Returns
+        -------
     nibabel.nifti1.Nifti1Image
         Concatenated image composed of original input images.
     """
@@ -222,7 +225,7 @@ def extract_single_matrix(img: nibabel.nifti1.Nifti1Image) -> np.ndarray:
     # remove extra single dimension at end if present
     if mat.shape[-1] == 1:
         print(f"Shape before : {mat.shape}")
-        images[i].dataobj = mat.reshape(mat.shape[:-1])
+        img.dataobj = mat.reshape(mat.shape[:-1])
         print(f"Shape after : {mat.shape}")
 
     return mat
@@ -290,15 +293,15 @@ def extract_matrices_image_list_realign(
     Parameters
     ----------
     img_list  : List[nibabel.nifti1.Nifti1Image]
-        list of nibabel image objects loaded in from 
+        list of nibabel image objects loaded in from
 
     Returns
     -------
     mats : List[nibabel.nifti1.Nifti1Image]
-        list of NumPy arrays containing time-aligned extracted matrices for 
+        list of NumPy arrays containing time-aligned extracted matrices for
         each subject.
     shape : Tuple[int]
-        tuple containing shape of single subject's shape, of form 
+        tuple containing shape of single subject's shape, of form
         (time-point, x, y, z).
     """
 
@@ -315,7 +318,7 @@ def create_binary_mask_from_matrices(matrices: List[np.ndarray]) -> np.ndarray:
     Create mask from list of matrices.
 
     Mask will only include values where, for each index, a value does not
-    equal 0 for any subject in the list. 
+    equal 0 for any subject in the list.
 
     TODO: finish implementing
 
@@ -338,9 +341,13 @@ def create_binary_mask_from_matrices(matrices: List[np.ndarray]) -> np.ndarray:
     mats_concat = mats.reshape((-1,) + mats.shape[2:])
 
     # get the mask
-    mask = np.ma.masked_where(cond, mean_all)
+    # mask = np.ma.masked_where(mats_concat, )
 
-    return mask.mask
+    # create mask where values are False if all values throughout all
+    # subjects' time series for a particular index are 0
+    mask = np.logical_and.reduce(mats_concat, where=(mats_concat != 0), axis=0)
+
+    return mask
 
 
 def create_threshold_mask_from_matrices(
@@ -393,7 +400,7 @@ def create_threshold_mask_from_matrices(
 
 def apply_mask_matrices_deprecated(matrices, mask, fill_value):
     """
-    This will be removed in future versions of plspy, do not use. 
+    This will be removed in future versions of plspy, do not use.
 
     Parameters
     ----------
@@ -454,7 +461,9 @@ def apply_mask_matrices(
 
 
 def create_and_apply_mask_list(
-    matrices: List[np.ndarray], mask_type: str = "threshold", threshold: float = 0.15
+    matrices: List[np.ndarray],
+    mask_type: str = "threshold",
+    threshold: float = 0.15,
 ) -> np.ndarray:
     """Creates a mask and applies it to a list of matrices.
 
@@ -477,7 +486,9 @@ def create_and_apply_mask_list(
     """
 
     if mask_type == "threshold":
-        mask = create_threshold_mask_from_matrices(matrices, threshold=threshold)
+        mask = create_threshold_mask_from_matrices(
+            matrices, threshold=threshold
+        )
     elif mask_type == "binary":
         pass
     else:
@@ -733,7 +744,10 @@ def remap_vectorized_subject_to_4d(
         for j in range(len(vector_indices[0])):
             # map index in vector to 4D space
             reconstructed[
-                i, vector_indices[0][j], vector_indices[1][j], vector_indices[2][j]
+                i,
+                vector_indices[0][j],
+                vector_indices[1][j],
+                vector_indices[2][j],
             ] = vector_time_sliced[i][j]
 
     return reconstructed

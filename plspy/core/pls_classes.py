@@ -1,15 +1,12 @@
 import abc
+from typing import List, Optional, Tuple, Type, Union
+
 import numpy as np
 import scipy.stats
-from typing import Optional, Tuple, List, Union, Type
-
-# project imports
-from . import bootstrap_permutation
-from . import gsvd
 
 # import helpers
-from . import exceptions
-from . import class_functions
+# project imports
+from . import bootstrap_permutation, class_functions, exceptions, gsvd
 
 
 class PLSBase(abc.ABC):
@@ -106,9 +103,9 @@ class _MeanCentreTaskPLS(PLSBase):
         otherwise specified by the user.
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method). 
+        during bootstrap and permutation tests ("rotated" method).
         rotate_method options:
-        
+
         0 - compute s using SVD/GSVD
 
         1 - compute s using Procrustes rotation
@@ -117,7 +114,7 @@ class _MeanCentreTaskPLS(PLSBase):
 
     mctype : int, optional
         mctype options:
-    
+
         0 - within each group remove group means from condition means (default)
 
         1 - remove grand condition means from each group condition mean
@@ -125,7 +122,7 @@ class _MeanCentreTaskPLS(PLSBase):
         2 - remove grand mean (over all subjects and conditions)
 
         3 - remove all main effects - subtract condition and group means (group by condition)
-        
+
 
     Attributes
     ----------
@@ -188,11 +185,15 @@ class _MeanCentreTaskPLS(PLSBase):
         mctype: int = 0,
         **kwargs: str,
     ):
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        if len(X.shape) != 2:  #  or len(X.shape) < 2:
-            raise exceptions.ImproperShapeError("Input matrix must be 2-dimensional.")
+        if len(X.shape) != 2:  # or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError(
+                "Input matrix must be 2-dimensional."
+            )
         self.X = X
 
         if Y is not None:
@@ -206,7 +207,9 @@ class _MeanCentreTaskPLS(PLSBase):
                 f"Do not provide a contrast matrix "
                 f"for {self._pls_types[self.pls_alg]}."
             )
-        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -279,7 +282,9 @@ class _MeanCentreTaskPLS(PLSBase):
                 "X's row count. Please specify a custom cond_order field."
             )
 
-        cond_order = np.array([np.array([i] * num_conditions) for i in groups_tuple])
+        cond_order = np.array(
+            [np.array([i] * num_conditions) for i in groups_tuple]
+        )
         return cond_order
         # cond_order = []
         # # print(f"GT: {groups_tuple}")
@@ -345,9 +350,9 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         otherwise specified by the user.
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method). 
+        during bootstrap and permutation tests ("rotated" method).
         rotate_method options:
-        
+
         0 - compute s using SVD/GSVD
 
         1 - compute s using Procrustes rotation
@@ -421,6 +426,8 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         rotate_method: int = 0,
         **kwargs,
     ):
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -439,12 +446,16 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
                 f"for {self._pls_types[self.pls_alg]}."
             )
 
-        if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
-            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+        if len(X.shape) != 2 or len(Y.shape) != 2:  # or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError(
+                "Input matrices must be 2-dimensional."
+            )
         self.X = X
         self.Y = Y
 
-        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -539,9 +550,9 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         otherwise specified by the user.
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method). 
+        during bootstrap and permutation tests ("rotated" method).
         rotate_method options:
-        
+
         0 - compute s using SVD/GSVD
 
         1 - compute s using Procrustes rotation
@@ -550,7 +561,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
     mctype : int, optional
         mctype options:
-    
+
         0 - within each group remove group means from condition means (default)
 
         1 - remove grand condition means from each group condition mean
@@ -562,7 +573,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     contrasts: np.array
         contrast matrix for use in Contrast Task PLS. Used to create
         different methods of comparison.
-        
+
 
     Attributes
     ----------
@@ -632,6 +643,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         contrasts: list = None,
         **kwargs,
     ):
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -642,11 +655,15 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
                 f"for {self._pls_types[self.pls_alg]}."
             )
 
-        if len(X.shape) != 2:  #  or len(X.shape) < 2:
-            raise exceptions.ImproperShapeError("Input matrix must be 2-dimensional.")
+        if len(X.shape) != 2:  # or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError(
+                "Input matrix must be 2-dimensional."
+            )
         self.X = X
 
-        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -669,7 +686,9 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.cond_order = cond_order
 
         if contrasts is None:
-            raise exceptions.MissingParameterError("Please provide a contrast matrix.")
+            raise exceptions.MissingParameterError(
+                "Please provide a contrast matrix."
+            )
         self.contrasts = contrasts
 
         self.num_perm = num_perm
@@ -747,9 +766,9 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         otherwise specified by the user.
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method). 
+        during bootstrap and permutation tests ("rotated" method).
         rotate_method options:
-        
+
         0 - compute s using SVD/GSVD
 
         1 - compute s using Procrustes rotation
@@ -759,7 +778,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     contrasts: np.array
         contrast matrix for use in Contrast Task PLS. Used to create
         different methods of comparison.
-        
+
 
     Attributes
     ----------
@@ -828,6 +847,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         contrasts: list = None,
         **kwargs,
     ):
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -841,12 +862,16 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             # )
 
         if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
-            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+            raise exceptions.ImproperShapeError(
+                "Input matrices must be 2-dimensional."
+            )
 
         self.X = X
         self.Y = Y
 
-        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -869,11 +894,15 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             self.cond_order = cond_order
 
         if contrasts is None:
-            raise exceptions.MissingParameterError("Please provide a contrast matrix.")
+            raise exceptions.MissingParameterError(
+                "Please provide a contrast matrix."
+            )
         self.contrasts = contrasts
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -949,9 +978,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         otherwise specified by the user.
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method). 
+        during bootstrap and permutation tests ("rotated" method).
         rotate_method options:
-        
+
         0 - compute s using SVD/GSVD
 
         1 - compute s using Procrustes rotation
@@ -1024,6 +1053,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         rotate_method: int = 0,
         **kwargs,
     ):
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
 
         # TODO: catch extraneous keyword args
         for k, v in kwargs.items():
@@ -1043,13 +1074,17 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                 f"for {self._pls_types[self.pls_alg]}."
             )
 
-        if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
-            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+        if len(X.shape) != 2 or len(Y.shape) != 2:  # or len(X.shape) < 2:
+            raise exceptions.ImproperShapeError(
+                "Input matrices must be 2-dimensional."
+            )
 
         self.X = X
         self.Y = Y
 
-        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -1081,7 +1116,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self._compute_corr = class_functions._compute_corr
 
         # compute R correlation matrix
-        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order)
+        self.multiblock = self._create_multiblock(
+            self.X, self.Y, self.cond_order
+        )
 
         self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
         # self.X_latent = np.dot(self.X_mc, self.V)
@@ -1090,7 +1127,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             self.Y, self.U, self.cond_order
         )
         # compute latent variable correlation matrix for V using compute_R
-        self.lvcorrs = self._compute_corr(self.X_latent, self.Y, self.cond_order)
+        self.lvcorrs = self._compute_corr(
+            self.X_latent, self.Y, self.cond_order
+        )
         # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
         # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
 
@@ -1145,9 +1184,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         otherwise specified by the user.
     rotate_method : int, optional
         Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method). 
+        during bootstrap and permutation tests ("rotated" method).
         rotate_method options:
-        
+
         0 - compute s using SVD/GSVD
 
         1 - compute s using Procrustes rotation
@@ -1224,6 +1263,8 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         contrasts: list = None,
         **kwargs,
     ):
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
 
         # TODO: catch extraneous keyword args
         for k, v in kwargs.items():
@@ -1238,12 +1279,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             # )
 
         if len(X.shape) != 2 or len(Y.shape) != 2:  #  or len(X.shape) < 2:
-            raise exceptions.ImproperShapeError("Input matrices must be 2-dimensional.")
+            raise exceptions.ImproperShapeError(
+                "Input matrices must be 2-dimensional."
+            )
 
         self.X = X
         self.Y = Y
 
-        self.groups_sizes, self.num_groups = self._get_groups_info(groups_sizes)
+        self.groups_sizes, self.num_groups = self._get_groups_info(
+            groups_sizes
+        )
         self.num_conditions = num_conditions
         # if no user-specified condition list, generate one
         if cond_order is None:
@@ -1266,11 +1311,15 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.cond_order = cond_order
 
         if contrasts is None:
-            raise exceptions.MissingParameterError("Please provide a contrast matrix.")
+            raise exceptions.MissingParameterError(
+                "Please provide a contrast matrix."
+            )
         self.contrasts = contrasts
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        # so pylint will shut up
+        self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -1283,9 +1332,13 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         class_functions._compute_Y_latents = class_functions._compute_Y_latents
 
         # compute R correlation matrix
-        self.multiblock = self._create_multiblock(self.X, self.Y, self.cond_order)
+        self.multiblock = self._create_multiblock(
+            self.X, self.Y, self.cond_order
+        )
 
-        self.contrasts = self.contrasts / np.linalg.norm(self.contrasts, axis=0)
+        self.contrasts = self.contrasts / np.linalg.norm(
+            self.contrasts, axis=0
+        )
         print(self.contrasts)
 
         self.U, self.s, self.V = class_functions._run_pls_contrast(
@@ -1304,7 +1357,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.Y, self.U, self.cond_order
         )
         # compute latent variable correlation matrix for V using compute_R
-        self.lvcorrs = self._compute_corr(self.X_latent, self.Y, self.cond_order)
+        self.lvcorrs = self._compute_corr(
+            self.X_latent, self.Y, self.cond_order
+        )
         # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
         # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
 

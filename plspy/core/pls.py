@@ -1,9 +1,11 @@
+from typing import List, Optional, Tuple, Type, Union
+
 import numpy as np
-from typing import Optional, Tuple, List, Union, Type
+
+from .. import __docs__
 
 # project imports
 from . import pls_classes
-from .. import __docs__
 
 # dictionary holding PLS methods; used with help()
 methods = {

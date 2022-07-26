@@ -14,7 +14,7 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  build-and-test-3_10: 
+  build-and-test-3_10:
     docker:
       - image: cimg/python:3.10.2
     resource_class: medium
@@ -26,7 +26,7 @@ jobs:
       - run:
           name: Run tests
           command: pytest
-  build-and-test-3_9: 
+  build-and-test-3_9:
     docker:
       - image: cimg/python:3.9
     resource_class: medium
@@ -38,7 +38,7 @@ jobs:
       - run:
           name: Run tests
           command: pytest
-  build-and-test-3_8: 
+  build-and-test-3_8:
     docker:
       - image: cimg/python:3.8
     resource_class: medium
@@ -50,7 +50,7 @@ jobs:
       - run:
           name: Run tests
           command: pytest
-  build-and-test-3_7: 
+  build-and-test-3_7:
     docker:
       - image: cimg/python:3.7
     resource_class: medium
@@ -62,7 +62,7 @@ jobs:
       - run:
           name: Run tests
           command: pytest
-  build-docs: 
+  build-docs:
     docker:
       - image: cimg/python:3.10.2
     resource_class: medium
@@ -72,7 +72,7 @@ jobs:
           pkg-manager: pip
           pip-dependency-file: requirements_dev.txt
       - run:
-          name: build documentation 
+          name: build documentation
           command: |
             cd docs
             sphinx-build -M html . _build
@@ -88,4 +88,3 @@ workflows:
       - build-and-test-3_8
       - build-and-test-3_7
       - build-docs
-

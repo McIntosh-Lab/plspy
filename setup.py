@@ -1,8 +1,8 @@
 import setuptools
 import versioneer
 
-version=versioneer.get_version(),
-cmdclass=versioneer.get_cmdclass(),
+version = (versioneer.get_version(),)
+cmdclass = (versioneer.get_cmdclass(),)
 
 # import os
 
@@ -16,8 +16,8 @@ setuptools.setup(
     version="0.2",
     author="Noah Frazier-Logue",
     author_email="noah_frazier-logue@sfu.ca",
-    description="Implementation of McIntosh Lab's Partial Least Squares " 
-                "neuroimaging tool",
+    description="Implementation of McIntosh Lab's Partial Least Squares "
+    "neuroimaging tool",
     # long_description=long_description,
     # long_description_content_type="text/markdown",
     url="https://github.com/McIntosh-Lab/plspy",
