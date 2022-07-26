@@ -11,9 +11,7 @@ def test_remap_vectorized_subject_to_4d():
     mock_subjects = [rand_s.rand(20, 10, 10, 10) for i in range(5)]
 
     # create mask from 5 subjects
-    mask = plspy.io.create_threshold_mask_from_matrices(
-        mock_subjects, threshold=0.15
-    )
+    mask = plspy.io.create_threshold_mask_from_matrices(mock_subjects, threshold=0.15)
 
     # generate masked and vectorized subjects
     mock_masked = plspy.io.apply_mask_matrices(mock_subjects, mask)
@@ -31,8 +29,7 @@ def test_remap_vectorized_subject_to_4d():
                     # check equality if the values were masked initially
                     if mask[x, y, z]:
                         assert np.allclose(
-                            mock_subjects[0][time, x, y, l],
-                            recovered[time, x, y, z],
+                            mock_subjects[0][time, x, y, z], recovered[time, x, y, z],
                         )
                     # otherwise, make sure all other values are 0
                     else:
