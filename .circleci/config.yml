@@ -116,7 +116,7 @@ workflows:
             branches:
               - staging
       - pypi_publish-3_10:
-	  requires:
+          requires:
             - build-and-test-3_10
           filters:
             branches:
