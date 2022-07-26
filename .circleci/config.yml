@@ -76,7 +76,28 @@ jobs:
           command: |
             cd docs
             sphinx-build -M html . _build
-
+  test_pypi_publish-3_10:
+    docker:
+      - image: circleci/python:3.10
+    steps:
+      - checkout  # checkout source code to working directory
+      - run:
+          command: |  # create whl, install twine and publish to Test PyPI
+            python setup.py sdist bdist_wheel
+            sudo pip install pipenv
+            pipenv install twine
+            pipenv run twine upload --repository testpypi dist/*
+  pypi_publish-3_10:
+    docker:
+      - image: circleci/python:3.10
+    steps:
+      - checkout  # checkout source code to working directory
+      - run:
+          command: |  # create whl, install twine and publish to PyPI
+            python setup.py sdist bdist_wheel
+            sudo pip install pipenv
+            pipenv install twine
+            pipenv run twine upload dist/*
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
@@ -88,3 +109,15 @@ workflows:
       - build-and-test-3_8
       - build-and-test-3_7
       - build-docs
+      - test_pypi_publish-3_10:
+	  requires:
+	    - build-and-test-3_10
+          filters:
+            branches:
+              - staging
+      - pypi_publish-3_10:
+	  requires:
+	    - build-and-test-3_10
+          filters:
+            branches:
+              - main
