@@ -1,0 +1,4 @@
+exclude_dirs:
+  - plspy/_version.py
+  - versioneer.py
+  - plspy/tests

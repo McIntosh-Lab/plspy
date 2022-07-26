@@ -13,18 +13,19 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-
-autodoc_mock_imports = ["pybuilder", "numpy", "scipy", "scipy.stats"]
 import os
 import sys
-from os.path import join, pardir, dirname
+from os.path import dirname, join, pardir
+
+from versioneer import get_version
+
+autodoc_mock_imports = ["pybuilder", "numpy", "scipy", "scipy.stats"]
 
 sys.path.insert(0, join(dirname(__file__), pardir))
 
 # sys.path.insert(0, os.path.abspath("../../plspy"))
 # sys.path.insert(0, os.path.abspath("../.."))
 
-from versioneer import get_version
 
 # -- Project information -----------------------------------------------------
 
@@ -79,4 +80,3 @@ napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = False
-

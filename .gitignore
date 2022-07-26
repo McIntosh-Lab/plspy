@@ -9,12 +9,14 @@ plspy/visualize/.*.sw[klmnop]
 plspy/tests/.*.sw[klmnop]
 plspy/.nfs*
 
+report/*
+
 example_*/
 *-info/
 target/
 .tox/
 .pre-commit*
-
+.coverage
 
 build/
 dist/
