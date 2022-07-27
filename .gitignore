@@ -1,16 +1,22 @@
 __pycache__/
 plspy/__pycache__/
 *.py[cod]
-plspy/.*.py[cod]
-plspy/.*.sw[op]
+plspy/*/.*.py[cod]
+plspy/.*.sw[a-z]
+plspy/io/.*.sw[a-z]
+plspy/core/.*.sw[a-z]
+plspy/visualize/.*.sw[a-z]
+plspy/tests/.*.sw[a-z]
 plspy/.nfs*
+
+report/*
 
 example_*/
 *-info/
 target/
 .tox/
 .pre-commit*
-
+.coverage
 
 build/
 dist/

@@ -1,6 +1,6 @@
 """
 File containing docstrings for various methods, modules, and files
-in plspy. Can be combined as needed to make full docstrings for 
+in plspy. Can be combined as needed to make full docstrings for
 functions and modules.
 """
 
@@ -8,8 +8,8 @@ plspy_header = """
 plspy
 ======
 
-plspy is a Partial Least Squares package developed at the Rotman                              
-Research Institute at Baycrest Health Sciences.
+plspy is a Partial Least Squares package developed at the Institute for
+Neuroscience and Neurotechnology at Simon Fraser University.
 
 In addition to core PLS functionality, this package also contains the following modules:
 
@@ -44,30 +44,30 @@ Basic usage examples:
     Example arguments are used below.
 
     Mean-Centred Task PLS:
-        
+
         >>> result = plspy.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
 
     Behavioural PLS:
-    
+
         >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="rb")
 
     Contrast Task PLS:
-        
+
         >>> result = plspy.PLS(X, [10, 10], 3, contrasts=C, pls_method="cst")
 
     Contrast Behavioural PLS:
-        
+
         >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, contrasts=C, pls_method="csb")
 
     Multiblock PLS:
-        
+
         >>> result = plspy.PLS(X, [10, 10], 3, Y=Y, pls_method="mb")
 
-To see documentation on additional arguments and fields available, 
+To see documentation on additional arguments and fields available,
 call help on a specific PLS method (see below for details).
 
 Documentation is available both in help() form and will also be available
-in website form. More information on how to access online documentation is 
+in website form. More information on how to access online documentation is
 forthcoming. Information on how to use help() is below.
 
 To get help documentation on a particular version of PLS, type the following
@@ -93,7 +93,7 @@ Available methods:
 
 
 Note: calling
-    >>> help(plspy.PLS) 
+    >>> help(plspy.PLS)
 
 will show you this same help page.
 

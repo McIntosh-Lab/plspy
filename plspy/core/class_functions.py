@@ -1,7 +1,7 @@
-import scipy.stats
 import numpy as np
+import scipy.stats
 
-from . import exceptions
+from . import exceptions, gsvd
 
 
 def _mean_centre(X, cond_order, mctype=0, return_means=True):
@@ -29,7 +29,7 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
     return_means : boolean, optional
         Optionally specify whether or not to return the means along
         with the mean-centred matrix.
-            
+
     Returns
     -------
     X_means: np.array
@@ -87,7 +87,8 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
         X_mc = X - x_repeats - gm_repeats
     else:
         raise exceptions.NotImplementedError(
-            "Specified mean-centring method is either not implemented " "or is invalid."
+            "Specified mean-centring method is either not implemented "
+            "or is invalid."
         )
 
     if return_means:
@@ -119,6 +120,7 @@ def _run_pls(M):
         Eigenvectors of matrix `M`^T*`M`;
         right singular vectors.
     """
+    # U, s, V = gsvd.gsvd(M, full_matrices=False)
     U, s, V = np.linalg.svd(M, full_matrices=False)
     return (U, s, V.T)
 
@@ -161,13 +163,13 @@ def _run_pls_contrast(M, C, compute_uv=True):
         return s
 
 
-def _compute_X_latents(I, EV):
-    """Computes latent values of original mxn input matrix `I`
+def _compute_X_latents(X, EV):
+    """Computes latent values of original mxn input matrix `X`
     and corresponding nxn eigenvector `EV` by performing a dot-product.
 
     Parameters
     ----------
-    I : np.array
+    X : np.array
         Input matrix of shape mxn.
     EV : np.array
         Corresponding eigenvector of shape nxn.
@@ -175,13 +177,13 @@ def _compute_X_latents(I, EV):
     Returns
     -------
     dotp: np.array
-        Computed dot-product of I and EV.
+        Computed dot-product of X and EV.
     """
-    dotp = np.dot(I, EV)
+    dotp = np.dot(X, EV)
     return dotp
 
 
-def _compute_corr(X, Y, cond_order):
+def _compute_corr(X, Y, cond_order):  # , n_cond):
     """Compute per-condition correlation matrices (concatenated as R,
     in the case of Behavioural, to pass into GSVD).
 
@@ -210,19 +212,34 @@ def _compute_corr(X, Y, cond_order):
     order_all = cond_order.reshape(-1)
     start = 0
     start_R = 0
+    # if n_cond == 1:
+    #     X_zsc = (X - X.mean(axis=0)) / X.std(axis=0, ddof=1)
+    #     Y_zsc = (Y - Y.mean(axis=0)) / Y.std(axis=0, ddof=1)
+    #     R = (Y_zsc.T @ X_zsc) / (X_zsc.shape[0] - 1)
+    # else:
     for i in range(len(order_all)):
         # X and Y zscored within each condition
-        Xc_zsc = scipy.stats.zscore(X[start : order_all[i] + start,])
+        Xc_zsc = scipy.stats.zscore(
+            X[
+                start : order_all[i] + start,
+            ]
+        )
         Xc_zsc /= np.sqrt(order_all[i])
         # Xc_zsc *= -1
         # print(f"Xc_zsc: \n{Xc_zsc.shape}\n")
-        Yc_zsc = scipy.stats.zscore(Y[start : order_all[i] + start,])
+        Yc_zsc = scipy.stats.zscore(
+            Y[
+                start : order_all[i] + start,
+            ]
+        )
         Yc_zsc /= np.sqrt(order_all[i])
         # Yc_zsc *= -1
         # print(f"Yc_zsc: \n{Yc_zsc.shape}\n")
         np.nan_to_num(Xc_zsc, copy=False)
         np.nan_to_num(Yc_zsc, copy=False)
-        R[start_R : Y.shape[1] + start_R,] = np.matmul(Yc_zsc.T, Xc_zsc)
+        R[
+            start_R : Y.shape[1] + start_R,
+        ] = np.matmul(Yc_zsc.T, Xc_zsc)
         # print(f"R part: \n{R[start_R : Y.shape[1] + start_R,]}\n")
         start += order_all[i]
         start_R += Y.shape[1]
@@ -245,7 +262,12 @@ def _compute_Y_latents(Y, U, cond_order):
 
     for i in range(len(order_all)):
         Y_latent[start : order_all[i] + start,] = np.matmul(
-            Y[start : order_all[i] + start,], U[start_U : Y.shape[1] + start_U,]
+            Y[
+                start : order_all[i] + start,
+            ],
+            U[
+                start_U : Y.shape[1] + start_U,
+            ],
         )
         start += order_all[i]
         start_R += Y.shape[0]
@@ -266,7 +288,7 @@ def _mean_single_group(x, sg_cond_order):
     x : np.array
         2-dimensional np.array of a single group.
     sg_cond_order : 1-dimensional np.array
-        Single-group condition order corresponding to the input `x`. 
+        Single-group condition order corresponding to the input `x`.
         Specifies the number of subjects per condition in a single group.
 
     Returns
@@ -279,7 +301,12 @@ def _mean_single_group(x, sg_cond_order):
     start = 0
     for i in range(len(sg_cond_order)):
         # store in each row of meaned the column-wise mean of each condition
-        meaned[i,] = np.mean(x[start : sg_cond_order[i] + start,], axis=0)
+        meaned[i,] = np.mean(
+            x[
+                start : sg_cond_order[i] + start,
+            ],
+            axis=0,
+        )
         start += sg_cond_order[i]
     return meaned
 
@@ -312,7 +339,12 @@ def _get_group_means(X, cond_order):
     start = 0
 
     for i in range(len(cond_order)):
-        group_means[i,] = np.mean(X[start : start + group_sums[i],], axis=0)
+        group_means[i,] = np.mean(
+            X[
+                start : start + group_sums[i],
+            ],
+            axis=0,
+        )
         start += group_sums[i]
     return group_means
 
@@ -339,7 +371,7 @@ def _get_group_condition_means(X, cond_order):
     """
 
     grp_cond_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
-    group_means = _get_group_means(X, cond_order)
+    # group_means = _get_group_means(X, cond_order)
     group_sums = np.sum(cond_order, axis=1)
     # index counters for X_means and X, respectively
     mc = 0
@@ -347,7 +379,10 @@ def _get_group_condition_means(X, cond_order):
 
     for i in range(len(cond_order)):
         grp_cond_means[mc : mc + len(cond_order[i]),] = _mean_single_group(
-            X[xc : xc + group_sums[i],], cond_order[i]
+            X[
+                xc : xc + group_sums[i],
+            ],
+            cond_order[i],
         )
         mc += len(cond_order[i])
         xc += group_sums[i]
@@ -430,5 +465,7 @@ def _create_multiblock(X, Y, cond_order, mctype=0):
     R_norm = (R.T @ np.linalg.inv(np.diag(np.linalg.norm(R, axis=1)))).T
 
     # stack mc and R
-    mb = np.array([mc_norm, R_norm]).reshape(mc_norm.shape[0] + R_norm.shape[0], -1)
+    mb = np.array([mc_norm, R_norm]).reshape(
+        mc_norm.shape[0] + R_norm.shape[0], -1
+    )
     return mb

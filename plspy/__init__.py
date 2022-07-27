@@ -1,18 +1,20 @@
-
-from .core import exceptions
-from .core import gsvd
-from .core import decorators
-from .core import check_inputs
-from .core import class_functions
-from .core import resample
-from .core import bootstrap_permutation
-from .core import pls_classes
-from .core import pls
-from .core.pls import PLS
-from .core.pls import methods
-from . import __docs__
-
 import sys
+
+from . import __docs__
+from .core import (
+    bootstrap_permutation,
+    check_inputs,
+    class_functions,
+    decorators,
+    exceptions,
+    gsvd,
+    pls,
+    pls_classes,
+    resample,
+)
+from .core.pls import PLS, methods
+from .io import io
+from .visualize import visualize
 
 # __init__.py docstring assembled using blocks also used in
 # other files. Docstrings found in __docs__.py
@@ -21,4 +23,5 @@ sys.modules[__name__].__doc__ += __docs__.plspy_body
 
 
 from . import _version
-__version__ = _version.get_versions()['version']
+
+__version__ = _version.get_versions()["version"]

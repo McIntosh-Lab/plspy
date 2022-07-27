@@ -1,14 +1,13 @@
 import abc
+
 import numpy as np
 import scipy
 import scipy.stats
-# import scipy.io as sio
 
 # project imports
-from . import gsvd
-from . import resample
-from . import exceptions
-from . import class_functions
+from . import class_functions, exceptions, gsvd, resample
+
+# import scipy.io as sio
 
 
 class ResampleTest(abc.ABC):
@@ -119,7 +118,7 @@ class _ResampleTestTaskPLS(ResampleTest):
     std_errs : np.array
         Element-wise standard errors for the resampled right singular vectors.
     boot_ratios : np.array
-        NumPy array containing element-wise ratios of 
+        NumPy array containing element-wise ratios of
 
     """
 
@@ -259,7 +258,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # after sampling
 
             if Y is None:
-                permuted = preprocess(X_new, cond_order, mctype=mctype, return_means=False)
+                permuted = preprocess(
+                    X_new, cond_order, mctype=mctype, return_means=False
+                )
 
             else:
                 permuted = preprocess(X_new, Y_new, cond_order)
@@ -268,7 +269,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
             # print(f"permuted shape: {permuted.shape}")
-            
+
             if rotate_method == 0:
                 # run GSVD on mean-centered, resampled matrix
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
@@ -289,12 +290,16 @@ class _ResampleTestTaskPLS(ResampleTest):
                         permuted, contrast
                     )
                 else:
-                    U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                    U_hat, s_hat, V_hat = np.linalg.svd(
+                        permuted, full_matrices=False
+                    )
                     V_hat = V_hat.T
                 # procustes
                 # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
                 # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-                U_bar, s_bar, V_bar = np.linalg.svd(U.T @ U_hat, full_matrices=False)
+                U_bar, s_bar, V_bar = np.linalg.svd(
+                    U.T @ U_hat, full_matrices=False
+                )
                 V_bar = V_bar.T
                 # print(X_new_mc.shape)
                 rot = V_bar @ U_bar.T
@@ -342,7 +347,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # greatersum += s_hat >= np.mean(s)
             greatersum += s_hat >= s
             if debug:
-                s_list[i:,] = s_hat
+                s_list[
+                    i:,
+                ] = s_hat
                 sum_s[i] = np.sum(np.power(s_hat, 2))
 
         permute_ratio = greatersum / niter
@@ -433,7 +440,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # after sampling
 
             if Y is None:
-                permuted = preprocess(X_new, cond_order, mctype=mctype, return_means=False)
+                permuted = preprocess(
+                    X_new, cond_order, mctype=mctype, return_means=False
+                )
 
             else:
                 permuted = preprocess(X_new, Y_new, cond_order)
@@ -447,16 +456,22 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # run GSVD on mean-centered, resampled matrix
 
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                U_hat, s_hat, V_hat = np.linalg.svd(
+                    permuted, full_matrices=False
+                )
                 V_hat = V_hat.T
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_hat, s_hat, V_hat = np.linalg.svd(permuted, full_matrices=False)
+                U_hat, s_hat, V_hat = np.linalg.svd(
+                    permuted, full_matrices=False
+                )
                 V_hat = V_hat.T
                 # procustes
                 # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
                 # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-                U_bar, s_bar, V_bar = np.linalg.svd(U.T @ U_hat, full_matrices=False)
+                U_bar, s_bar, V_bar = np.linalg.svd(
+                    U.T @ U_hat, full_matrices=False
+                )
                 # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
                 # print(X_new_mc.shape)
                 # rot = U_bar @ V.T
@@ -477,7 +492,9 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # US_hat = V.T @ permuted.T
                 # s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
                 V_hat_der = VS_hat / s_hat
-                U_hat = (np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)).T
+                U_hat = (
+                    np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)
+                ).T
                 # V_hat = (X_new_mc.T @ U_hat_der) / s_hat
                 # potential fix for sign issues
                 V_hat = V_hat_der
@@ -501,7 +518,9 @@ class _ResampleTestTaskPLS(ResampleTest):
             # insert left singular vector into tracking np.array
             # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
             # left_sv_sampled[i] = U_hat * s_hat
-            left_sv_sampled[i] = class_functions._compute_X_latents(X_new, V_hat)
+            left_sv_sampled[i] = class_functions._compute_X_latents(
+                X_new, V_hat
+            )
             right_sv_sampled[i] = V_hat * s_hat
             if Y is not None:
                 # compute X latents for use in correlation computation
@@ -546,7 +565,15 @@ class _ResampleTestTaskPLS(ResampleTest):
             return (conf_int, std_errs, boot_ratios, debug_dict)
         else:
             llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
-            return (conf_int, std_errs, boot_ratios, LVcorr, llcorr, ulcorr, debug_dict)
+            return (
+                conf_int,
+                std_errs,
+                boot_ratios,
+                LVcorr,
+                llcorr,
+                ulcorr,
+                debug_dict,
+            )
 
     def __repr__(self):
         stg = ""

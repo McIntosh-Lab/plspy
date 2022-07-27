@@ -2,8 +2,7 @@ from . import exceptions
 
 
 def check_input_cond_order_match(X, cond_order, groups_sizes):
-    """
-    """
+    """ """
 
     # check dimensions match
     if len(cond_order.shape) != len(X.shape):

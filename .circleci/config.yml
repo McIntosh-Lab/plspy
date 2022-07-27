@@ -14,9 +14,10 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  build-and-test: 
+  build-and-test-3_10:
     docker:
       - image: cimg/python:3.10.2
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
@@ -25,26 +26,109 @@ jobs:
       - run:
           name: Run tests
           command: pytest
-  build-docs: 
+  build-and-test-3_9:
+    docker:
+      - image: cimg/python:3.9
+    resource_class: medium
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+      - run:
+          name: Run tests
+          command: pytest
+  build-and-test-3_8:
+    docker:
+      - image: cimg/python:3.8
+    resource_class: medium
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+      - run:
+          name: Run tests
+          command: pytest
+  build-and-test-3_7:
+    docker:
+      - image: cimg/python:3.7
+    resource_class: medium
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+      - run:
+          name: Run tests
+          command: pytest
+  build-docs:
     docker:
       - image: cimg/python:3.10.2
+    resource_class: medium
     steps:
       - checkout
       - python/install-packages:
           pkg-manager: pip
           pip-dependency-file: requirements_dev.txt
       - run:
-          name: build documentation 
+          name: build documentation
           command: |
             cd docs
             sphinx-build -M html . _build
-
+  test_pypi_publish-3_10:
+    docker:
+      - image: circleci/python:3.10
+    steps:
+      - checkout  # checkout source code to working directory
+      - run:
+          command: |  # create whl, install twine and publish to Test PyPI
+            python setup.py sdist bdist_wheel
+            sudo pip install pipenv
+            pipenv install twine
+            pipenv run twine upload --repository testpypi dist/* -u __token__ -p $TEST_PYPI_TOKEN
+  pypi_publish-3_10:
+    docker:
+      - image: circleci/python:3.10
+    steps:
+      - checkout  # checkout source code to working directory
+      - run:
+          command: |  # create whl, install twine and publish to PyPI
+            python setup.py sdist bdist_wheel
+            sudo pip install pipenv
+            pipenv install twine
+            pipenv run twine upload dist/* -u __token__ -p $PYPI_TOKEN
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   run-tests-and-build-docs:
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - build-and-test
+      - build-and-test-3_10
+      - build-and-test-3_9
+      - build-and-test-3_8
+      - build-and-test-3_7
       - build-docs
+      - test_pypi_publish-3_10:
+          requires:
+            - build-and-test-3_10
+            - build-and-test-3_9
+            - build-and-test-3_8
+            - build-and-test-3_7
+            - build-docs
+          filters:
+            branches:
+              only:
+                - staging
 
+      - pypi_publish-3_10:
+          requires:
+            - build-and-test-3_10
+            - build-and-test-3_9
+            - build-and-test-3_8
+            - build-and-test-3_7
+            - build-docs
+          filters:
+            branches:
+              only:
+                - main

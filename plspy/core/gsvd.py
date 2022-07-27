@@ -1,6 +1,5 @@
 import numpy as np
-from scipy.linalg import fractional_matrix_power
-from scipy.linalg import lapack
+from scipy.linalg import fractional_matrix_power, lapack
 
 from . import exceptions
 
@@ -35,20 +34,20 @@ def gsvd(A, M=None, W=None, exp=0.5, full_matrices=False, compute_uv=True):
           Eigenvectors of matrix `A`^T*`A`; right singular vectors
     """
 
-    user_spec_m = True
-    user_spec_w = True
+    # user_spec_m = True
+    # user_spec_w = True
 
     A = np.array(A)
     # if no M/W matrix specified, use identity matrix
     if M is None or M == []:
         M = np.identity(A.shape[0])
-        user_spec_m = False
+        # user_spec_m = False
     # cast to numpy array
     else:
         M = np.array(M)
     if W is None or W == []:
         W = np.identity(A.shape[1])
-        user_spec_w = False
+        # user_spec_w = False
     else:
         W = np.array(W)
 
