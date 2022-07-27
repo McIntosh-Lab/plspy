@@ -2,11 +2,11 @@ __pycache__/
 plspy/__pycache__/
 *.py[cod]
 plspy/*/.*.py[cod]
-plspy/.*.sw[klmnop]
-plspy/io/.*.sw[klmnop]
-plspy/core/.*.sw[klmnop]
-plspy/visualize/.*.sw[klmnop]
-plspy/tests/.*.sw[klmnop]
+plspy/.*.sw[a-z]
+plspy/io/.*.sw[a-z]
+plspy/core/.*.sw[a-z]
+plspy/visualize/.*.sw[a-z]
+plspy/tests/.*.sw[a-z]
 plspy/.nfs*
 
 report/*
