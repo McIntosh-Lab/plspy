@@ -1,5 +1,4 @@
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![CircleCI](https://circleci.com/gh/McIntosh-Lab/plspy/tree/main.svg?style=svg&circle-token=3b9c7e2a597b381d8b388e0fae83552ee89e07d3)](https://circleci.com/gh/McIntosh-Lab/plspy/tree/main)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![CircleCI](https://circleci.com/gh/McIntosh-Lab/plspy/tree/main.svg?style=svg&circle-token=3b9c7e2a597b381d8b388e0fae83552ee89e07d3)](https://circleci.com/gh/McIntosh-Lab/plspy/tree/main) [![Documentation Status](https://readthedocs.org/projects/plspy/badge/?version=latest)](https://plspy.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/plspy.svg)](https://badge.fury.io/py/plspy) ![versions](https://img.shields.io/pypi/pyversions/pybadges.svg) [![GitHub license](https://badgen.net/github/license/Naereen/Strapdown.js)](https://github.com/McIntosh-Lab/plspy/blob/master/LICENSE) 
 
 # Partial Least Squares - McIntosh Lab
 
@@ -7,17 +6,22 @@
 plspy is a Partial Least Squares package developed to replicate and extend the PLS MATLAB package created by Randy McIntosh, et al for use in neuroimaging applications.
 .
 
+Checkout the documentation for `plspy` at https://plspy.readthedocs.io/en/latest/
+
+
 ## Installation
 
 The following steps will download and install plspy to your computer:
 
-`git clone https://github.com/McIntosh-LabI/plspy.git`
+`pip install plspy`
 
-`cd plspy`
+If you prefer to build from source, run these commands:
 
-`python setup.py install`
-
-
+```
+git clone https://github.com/McIntosh-LabI/plspy.git
+cd plspy
+python setup.py install
+```
 
 
 ## Usage
