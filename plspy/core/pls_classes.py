@@ -229,7 +229,13 @@ class _MeanCentreTaskPLS(PLSBase):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-        self.mctype = mctype
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
 
         # compute X means and X mean-centred values
         self.X_means, self.X_mc = class_functions._mean_centre(
@@ -691,7 +697,13 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-        self.mctype = mctype
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
         # TODO: catch extraneous keyword args
 
         # compute R correlation matrix
