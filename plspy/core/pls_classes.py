@@ -187,7 +187,7 @@ class _MeanCentreTaskPLS(PLSBase):
         self.pls_alg = kwargs["pls_alg"]
         for k, v in kwargs.items():
             setattr(self, k, v)
-
+        
         if len(X.shape) != 2:  # or len(X.shape) < 2:
             raise exceptions.ImproperShapeError(
                 "Input matrix must be 2-dimensional."
@@ -253,6 +253,8 @@ class _MeanCentreTaskPLS(PLSBase):
             rotate_method=rotate_method,
             mctype=self.mctype,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
     @staticmethod
@@ -511,6 +513,8 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -723,6 +727,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             mctype=self.mctype,
             contrast=self.contrasts,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -933,6 +939,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -1136,6 +1144,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -1365,4 +1375,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
