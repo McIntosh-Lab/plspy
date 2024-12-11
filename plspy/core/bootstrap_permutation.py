@@ -552,9 +552,9 @@ class _ResampleTestTaskPLS(ResampleTest):
         )
 
         # compute standard error of left singular vector
-        std_errs = scipy.stats.sem(right_sv_sampled, axis=0)
+        std_errs = np.std(right_sv_sampled, axis=0)
         # compute bootstrap ratios
-        boot_ratios = np.divide(std_errs, V)
+        boot_ratios = np.divide(V * s,std_errs)
         # TODO: find more elegant solution to returning arbitrary # of vals
         # maybe tokenizing a dictionary?
 
