@@ -391,7 +391,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # allocate memory for sampled values
         # left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
-        left_sv_sampled = np.empty((niter, X.shape[0], U.shape[1]))
+        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
         indices = np.empty((niter, X.shape[0]))
 
@@ -453,13 +453,21 @@ class _ResampleTestTaskPLS(ResampleTest):
             #     )  # , ngroups=ngroups)
 
             if rotate_method == 0:
-                # run GSVD on mean-centered, resampled matrix
+                #Get U
+                U_hat = (np.dot(V.T, permuted.T)).T
 
-                # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_hat, s_hat, V_hat = np.linalg.svd(
-                    permuted, full_matrices=False
-                )
-                V_hat = V_hat.T
+                #Get VS
+                VS_hat = permuted.T @ U
+                
+                # Get V - normalize VS_hat
+                base = np.sqrt(np.sum(VS_hat**2, axis=0))
+                # Handle zeros in base
+                base[base == 0] = 1 
+                # Normalize
+                V_hat = VS_hat / base
+                # Set columns with original base zero back to zero
+                V_hat[:, base == 1] = 0
+
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
                 U_hat, s_hat, V_hat = np.linalg.svd(
@@ -518,10 +526,8 @@ class _ResampleTestTaskPLS(ResampleTest):
             # insert left singular vector into tracking np.array
             # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
             # left_sv_sampled[i] = U_hat * s_hat
-            left_sv_sampled[i] = class_functions._compute_X_latents(
-                X_new, V_hat
-            )
-            right_sv_sampled[i] = V_hat * s_hat
+            left_sv_sampled[i] = U_hat
+            right_sv_sampled[i] = VS_hat
             if Y is not None:
                 # compute X latents for use in correlation computation
                 X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
@@ -533,6 +539,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
+                left_sv_sampled[i] = LVcorr[i]
                 # LVcorr[:, 1:] = LVcorr[:, 1:] * -1  # temp sign change fix
                 # LVcorr[:, 0] = np.abs(LVcorr[:, 0])
             # right_sum += V_hat
