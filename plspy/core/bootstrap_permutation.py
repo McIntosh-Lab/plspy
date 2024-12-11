@@ -547,12 +547,8 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # compute confidence intervals of U sampled
 
-        # compute iteration-wise, then column-wise means to compute
-        # grand mean of
-        left_grand_mean = np.mean(np.mean(left_sv_sampled, axis=0), axis=0)
-
         conf_int = resample.confidence_interval(
-            left_sv_sampled - left_grand_mean, conf=dist
+            left_sv_sampled, conf=dist
         )
 
         # compute standard error of left singular vector
@@ -565,7 +561,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         if debug:
             debug_dict["left_sv_sampled"] = left_sv_sampled
             debug_dict["right_sv_sampled"] = right_sv_sampled
-            debug_dict["left_grand_mean"] = left_grand_mean
+            #debug_dict["left_grand_mean"] = left_grand_mean
             debug_dict["indices"] = indices
 
         if Y is None:
