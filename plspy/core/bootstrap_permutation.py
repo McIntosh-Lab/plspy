@@ -251,7 +251,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             indices[i] = inds
 
             if Y is not None:
-                Y_new = Y[inds, :]
+                Y_new = Y
                 # Y_new = resample.resample_without_replacement(Y, cond_order)
 
             # pass in preprocessing function (i.e. mean-centering) for use
@@ -276,8 +276,8 @@ class _ResampleTestTaskPLS(ResampleTest):
 
                 # s_hat = gsvd.gsvd(permuted, compute_uv=False)
                 if contrast is None:
-                    s_hat = np.linalg.svd(permuted, compute_uv=False)
-                    # print(f"s_hat shape: {s_hat.shape}\n")
+                    VS_hat = permuted.T @ U
+                    s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
                 else:
                     inpt = contrast.T @ permuted
                     # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
