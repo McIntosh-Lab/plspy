@@ -243,8 +243,8 @@ class _MeanCentreTaskPLS(PLSBase):
         )
         self.U, self.s, self.V = class_functions._run_pls(self.X_mc)
         print(f"X_mc shape: {self.X_mc.shape}")
-        # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X_mc, self.V)
+        self.X_latent = self.X @ self.V
+        #self.X_latent = class_functions._compute_X_latents(self.X_mc, self.V)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
