@@ -41,73 +41,33 @@ def resample_without_replacement(
                 conditions list.
     """
 
-    # # initialize C based on cond_order unless otherwise specified
-    # if C is None:
-    #     # C = np.ones((len(matrix), matrix[0].shape[0]))
-    #     C = []
-    #     for i in range(len(cond_order[group_num])):
-    #         # for k in range(len(cond_order[i])):
-    #         # tmp = []
-    #         # for j in range(len(cond_order[i])):
-    #         C.extend([i] * cond_order[group_num][i])
-    #     C = np.array(C)
-    # # print(C)
-    # # select C array corresponding to group number
-    # resampled = np.empty(matrix.shape)
-
-    # # C = np.array(C[group_num])
-    # # print(C)
-    # # print(C.shape)
-    # if len(C.shape) > 1:
-    #     raise exceptions.ConditionMatrixMalformedError(
-    #         "Condition matrix has improper dimensions."
-    #         "Must be of dimension (n,). Was {} instead.".format(C.shape)
-    #     )
-    # # extract unique condition numbers
-    # C_vals = np.unique(C)
-
-    # # variable where shuffled indices will be calculated and stored
-    # shuf_indices = np.array(range(matrix.shape[0]))
-
-    # # for number of unique conditions
-    # for idx in range(len(C_vals)):
-    #     # extract indices corresponding to current condition and shuffle them
-    #     tmp = shuf_indices[C == C_vals[idx]]
-    #     np.random.shuffle(tmp)
-    #     # replace original indices with shuffled ones
-    #     shuf_indices[C == C_vals[idx]] = tmp
-
-    # # shuffle matrix values according to shuffled indices
-    # # EXPERIMENTAL
-    # # shuf_indices = np.array([i for i in range(len(matrix))])
-    # # np.random.shuffle(shuf_indices)
-    # # resampled = matrix[shuf_indices, :]
-    ncond = len(cond_order[0])
-    nsub_grp = np.sum(cond_order[0])
-    ngrp = len(cond_order)
-    nsub_cond = int(nsub_grp / ncond)
-    # generate indices list
     inds = np.array([i for i in range(len(matrix))])
-    # reshape so indices are separated by group
-    indsp = inds.reshape(ngrp, nsub_grp)
-    # print(f"{indsp}\n")
-    # reshape so subject indices are separated by group and ordered by
-    # condition
-    grp_split = np.array(
-        [indsp[i].reshape(ncond, nsub_cond).T for i in range(len(indsp))]
-    )
-    # print(f"{grp_split}\n")
-    # print(grp_split)
-    # merge both groups into one 2-d matrix
-    # if ngrp > 1:
-    grp = grp_split.reshape(nsub_cond * ngrp, ncond)
-    # else:
-    #     grp = np.copy(grp_split)
-    # print(f"{grp}\n")
-    # shuffle first within subject's condition order and then
-    # between all subjects
-    shuff = np.random.permutation(np.random.permutation(grp.T).T)
-    # print(shuff)
+    grp_split = None
+    start = 0
+    # Split indices into groups and conditions based on cond_order
+    for i, group_sizes in enumerate(cond_order):
+        group_split = []
+        for cond_size in group_sizes:
+            group_split.append(inds[start : start + cond_size])  # Slice indices for condition
+            start += cond_size
+        group_split = np.column_stack(group_split)  # Stack conditions for this group
+
+        # Concatenate into a mega-array
+        if grp_split is None:
+            grp_split = group_split  # Initialize with the first group
+        else:
+            grp_split = np.concatenate((grp_split, group_split))  # Horizontally concatenate groups
+    
+    grp=grp_split
+
+    # Shuffle within each subject's condition
+    within_subject_shuffle = np.apply_along_axis(np.random.permutation, axis=1, arr=grp)
+
+    # Shuffle across all subjects
+    shuff = np.copy(within_subject_shuffle.T)
+    for col in range(grp.shape[1]):
+        shuff[col, :] = np.random.permutation(within_subject_shuffle.T[col, :])
+
     # flatten
     shuf_indices = shuff.ravel()
 
@@ -157,78 +117,37 @@ def resample_with_replacement(
                 If set to True, returns the ordering of the shuffled
                 conditions list.
     """
-    # # group_num = len(cond_order) - 1
-    # # initialize C based on cond_order unless otherwise specified
-    # if C is None:
-    #     # C = np.ones((len(matrix), matrix[0].shape[0]))
-    #     C = []
-    #     # cond_flat = cond_order.reshape(-1)
-    #     for i in range(len(cond_order[group_num])):
-    #         # for i in range(len(cond_flat)):
-    #         # tmp = []
-    #         # for j in range(len(cond_order[i])):
-    #         C.extend([i] * cond_order[group_num][i])
-    #     C = np.array(C)
-
-    # ## initialize C to be one condition if not otherwise specified
-
-    # # if C is None:
-    # #     C = np.ones(matrix.shape[0])
-
-    # # select C array corresponding to group number
-    # # C = np.array(C[group_num - 1])
-
-    # if len(C.shape) > 1:
-    #     raise exceptions.ConditionMatrixMalformedError(
-    #         "Condition matrix has improper dimensions."
-    #         "Must be of dimension (n,). Was {} instead.".format(C.shape)
-    #     )
-
-    # # extract unique condition numbers
-    # C_vals = np.unique(C)
-
-    # # variable where shuffled indices will be calculated and stored
-    # shuf_indices = np.array(range(matrix.shape[0]))
-
-    # # for number of unique conditions
-    # for idx in range(len(C_vals)):
-    #     # extract indices corresponding to current condition and shuffle them
-    #     tmp = shuf_indices[C == C_vals[idx]]
-    #     # shuffle with replacement
-    #     rand_inds = np.random.randint(len(tmp), size=len(tmp))
-    #     # replace original indices with shuffled ones
-    #     shuf_indices[C == C_vals[idx]] = tmp[rand_inds]
-
-    # # shuffle matrix values according to shuffled indices
-    # # shuf = np.array([i for i in range(len(matrix))])
-    # # shuf_indices = np.random.choice(shuf, len(shuf), replace=True)
-    # # resampled = matrix[shuf_indices, :]
-    ncond = len(cond_order[0])
-    nsub_grp = np.sum(cond_order[0])
-    ngrp = len(cond_order)
-    nsub_cond = int(nsub_grp / ncond)
-    # generate indices list
     inds = np.array([i for i in range(len(matrix))])
-    # reshape so indices are separated by group
-    indsp = inds.reshape(ngrp, nsub_grp)
-    # reshape so subject indices are separated by group and ordered by
-    # condition
-    grp_split = np.array(
-        [indsp[i].reshape(nsub_cond, ncond).T for i in range(len(indsp))]
-    )
-    # print(grp_split)
-    # merge both groups into one 2-d matrix
-    grp = grp_split.reshape(nsub_cond * ngrp, ncond)
-    # shuffle first within subject's condition order and then
-    # between all subjects
-    shuf_cond = np.array(
-        [
-            np.random.choice(grp[i, :], len(grp[i, :]), replace=True)
-            for i in range(len(grp))
-        ]
-    )
+    grp_split = None
+    start = 0
 
-    # shuff = np.random.permutation(np.random.permutation(grp.T).T)
+    # Split indices into groups and conditions based on cond_order
+    for i, group_sizes in enumerate(cond_order):
+        group_split = []
+        for cond_size in group_sizes:
+            group_split.append(inds[start : start + cond_size])  # Slice indices for condition
+            start += cond_size
+        group_split = np.column_stack(group_split)  # Stack conditions for this group
+
+        # Concatenate into a mega-array
+        if grp_split is None:
+            grp_split = group_split  # Initialize with the first group
+        else:
+            grp_split = np.concatenate((grp_split, group_split))  # Horizontally concatenate groups
+    
+    grp=grp_split
+
+    # Resample
+    num_rows = grp.shape[0]
+    shuffled_indices = np.random.choice(num_rows,num_rows, replace=True)
+
+    shuf_cond = []
+    for col in range(grp.shape[1]):  # Iterate through each column in grp
+        shuf_cond.append(grp[shuffled_indices, col])  # Append each column
+
+    # Stack the list of arrays
+    shuf_cond = np.vstack(shuf_cond)
+    
     # flatten
     shuf_indices = shuf_cond.ravel()
 

@@ -251,7 +251,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             indices[i] = inds
 
             if Y is not None:
-                Y_new = Y[inds, :]
+                Y_new = Y
                 # Y_new = resample.resample_without_replacement(Y, cond_order)
 
             # pass in preprocessing function (i.e. mean-centering) for use
@@ -276,8 +276,8 @@ class _ResampleTestTaskPLS(ResampleTest):
 
                 # s_hat = gsvd.gsvd(permuted, compute_uv=False)
                 if contrast is None:
-                    s_hat = np.linalg.svd(permuted, compute_uv=False)
-                    # print(f"s_hat shape: {s_hat.shape}\n")
+                    VS_hat = permuted.T @ U
+                    s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
                 else:
                     inpt = contrast.T @ permuted
                     # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
@@ -391,7 +391,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # allocate memory for sampled values
         # left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
-        left_sv_sampled = np.empty((niter, X.shape[0], U.shape[1]))
+        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
         indices = np.empty((niter, X.shape[0]))
 
@@ -453,13 +453,21 @@ class _ResampleTestTaskPLS(ResampleTest):
             #     )  # , ngroups=ngroups)
 
             if rotate_method == 0:
-                # run GSVD on mean-centered, resampled matrix
+                #Get U
+                U_hat = (np.dot(V.T, permuted.T)).T
 
-                # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_hat, s_hat, V_hat = np.linalg.svd(
-                    permuted, full_matrices=False
-                )
-                V_hat = V_hat.T
+                #Get VS
+                VS_hat = permuted.T @ U
+                
+                # Get V - normalize VS_hat
+                base = np.sqrt(np.sum(VS_hat**2, axis=0))
+                # Handle zeros in base
+                base[base == 0] = 1 
+                # Normalize
+                V_hat = VS_hat / base
+                # Set columns with original base zero back to zero
+                V_hat[:, base == 1] = 0
+
             elif rotate_method == 1:
                 # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
                 U_hat, s_hat, V_hat = np.linalg.svd(
@@ -518,10 +526,8 @@ class _ResampleTestTaskPLS(ResampleTest):
             # insert left singular vector into tracking np.array
             # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
             # left_sv_sampled[i] = U_hat * s_hat
-            left_sv_sampled[i] = class_functions._compute_X_latents(
-                X_new, V_hat
-            )
-            right_sv_sampled[i] = V_hat * s_hat
+            left_sv_sampled[i] = U_hat
+            right_sv_sampled[i] = VS_hat
             if Y is not None:
                 # compute X latents for use in correlation computation
                 X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
@@ -533,6 +539,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
+                left_sv_sampled[i] = LVcorr[i]
                 # LVcorr[:, 1:] = LVcorr[:, 1:] * -1  # temp sign change fix
                 # LVcorr[:, 0] = np.abs(LVcorr[:, 0])
             # right_sum += V_hat
@@ -540,25 +547,21 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # compute confidence intervals of U sampled
 
-        # compute iteration-wise, then column-wise means to compute
-        # grand mean of
-        left_grand_mean = np.mean(np.mean(left_sv_sampled, axis=0), axis=0)
-
         conf_int = resample.confidence_interval(
-            left_sv_sampled - left_grand_mean, conf=dist
+            left_sv_sampled, conf=dist
         )
 
         # compute standard error of left singular vector
-        std_errs = scipy.stats.sem(right_sv_sampled, axis=0)
+        std_errs = np.std(right_sv_sampled, axis=0)
         # compute bootstrap ratios
-        boot_ratios = np.divide(std_errs, V)
+        boot_ratios = np.divide(V * s,std_errs)
         # TODO: find more elegant solution to returning arbitrary # of vals
         # maybe tokenizing a dictionary?
 
         if debug:
             debug_dict["left_sv_sampled"] = left_sv_sampled
             debug_dict["right_sv_sampled"] = right_sv_sampled
-            debug_dict["left_grand_mean"] = left_grand_mean
+            #debug_dict["left_grand_mean"] = left_grand_mean
             debug_dict["indices"] = indices
 
         if Y is None:

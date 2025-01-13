@@ -89,8 +89,7 @@ class _MeanCentreTaskPLS(PLSBase):
         the number of participants in that group. E.g. in (7,6,5), group 1
         would have 7 participants and group 3 would have 5 participants.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     Y: None
         Not used in Mean-Centred Task PLS.
     num_perm : int, optional
@@ -138,8 +137,7 @@ class _MeanCentreTaskPLS(PLSBase):
     num_groups : int
         Value specifying the number of groups in the input data.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     cond_order: array-like
         List/array where each entry holds the number of subjects per condition
         for each group in the input matrix.
@@ -189,7 +187,7 @@ class _MeanCentreTaskPLS(PLSBase):
         self.pls_alg = kwargs["pls_alg"]
         for k, v in kwargs.items():
             setattr(self, k, v)
-
+        
         if len(X.shape) != 2:  # or len(X.shape) < 2:
             raise exceptions.ImproperShapeError(
                 "Input matrix must be 2-dimensional."
@@ -231,7 +229,13 @@ class _MeanCentreTaskPLS(PLSBase):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-        self.mctype = mctype
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
 
         # compute X means and X mean-centred values
         self.X_means, self.X_mc = class_functions._mean_centre(
@@ -240,7 +244,7 @@ class _MeanCentreTaskPLS(PLSBase):
         self.U, self.s, self.V = class_functions._run_pls(self.X_mc)
         print(f"X_mc shape: {self.X_mc.shape}")
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X_mc, self.V)
+        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -255,6 +259,8 @@ class _MeanCentreTaskPLS(PLSBase):
             rotate_method=rotate_method,
             mctype=self.mctype,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
     @staticmethod
@@ -334,8 +340,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         the number of participants in that group. E.g. in (7,6,5), group 1
         would have 7 participants and group 3 would have 5 participants.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     Y: np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
@@ -378,8 +383,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     num_groups : int
         Value specifying the number of groups in the input data.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     cond_order : array-like
         List/array where each entry holds the number of subjects per condition
         for each group in the input matrix.
@@ -515,6 +519,8 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -536,8 +542,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         the number of participants in that group. E.g. in (7,6,5), group 1
         would have 7 participants and group 3 would have 5 participants.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     Y: None
         Not used in Contrast Task PLS.
     num_perm : int, optional
@@ -593,8 +598,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     num_groups : int
         Value specifying the number of groups in the input data.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     cond_order : array-like
         List/array where each entry holds the number of subjects per condition
         for each group in the input matrix.
@@ -693,7 +697,13 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-        self.mctype = mctype
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
         # TODO: catch extraneous keyword args
 
         # compute R correlation matrix
@@ -729,6 +739,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             mctype=self.mctype,
             contrast=self.contrasts,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -750,8 +762,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         the number of participants in that group. E.g. in (7,6,5), group 1
         would have 7 participants and group 3 would have 5 participants.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     Y: np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
@@ -798,8 +809,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     num_groups : int
         Value specifying the number of groups in the input data.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     cond_order : array-like
         List/array where each entry holds the number of subjects per condition
         for each group in the input matrix.
@@ -941,6 +951,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -962,8 +974,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         the number of participants in that group. E.g. in (7,6,5), group 1
         would have 7 participants and group 3 would have 5 participants.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     Y: np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
@@ -1006,8 +1017,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     num_groups : int
         Value specifying the number of groups in the input data.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     cond_order : array-like
         List/array where each entry holds the number of subjects per condition
         for each group in the input matrix.
@@ -1146,6 +1156,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
@@ -1168,8 +1180,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         the number of participants in that group. E.g. in (7,6,5), group 1
         would have 7 participants and group 3 would have 5 participants.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     Y: np.array
         Input behavioural matrix for use with PLS. Each participant's
         data must be flattened and concatenated to form a single 2-dimensional
@@ -1212,8 +1223,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
     num_groups : int
         Value specifying the number of groups in the input data.
     num_conditions : int
-        Number of conditions in each matrix. For example, if input matrix `X`
-        contained 7 participants and 3 conditions, it would be of length 21.
+        Number of conditions in each matrix.
     cond_order : array-like
         List/array where each entry holds the number of subjects per condition
         for each group in the input matrix.
@@ -1377,4 +1387,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+        # swap U & V to be consistent with matlab
+        self.U, self.V = self.V, self.U
         print("\nDone.")
