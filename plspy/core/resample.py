@@ -118,8 +118,10 @@ def resample_with_replacement(
                 conditions list.
     """
     inds = np.array([i for i in range(len(matrix))])
-    grp_split = None
     start = 0
+
+    my_resampled=None
+    my_shuf_indices=None
 
     # Split indices into groups and conditions based on cond_order
     for i, group_sizes in enumerate(cond_order):
@@ -129,34 +131,33 @@ def resample_with_replacement(
             start += cond_size
         group_split = np.column_stack(group_split)  # Stack conditions for this group
 
-        # Concatenate into a mega-array
-        if grp_split is None:
-            grp_split = group_split  # Initialize with the first group
+        # Resample
+        num_rows = group_split.shape[0]
+        shuffled_indices = np.random.choice(num_rows,num_rows, replace=True)
+    
+        shuf_cond = []
+        for col in range(group_split.shape[1]):  # Iterate through each column in grp
+            shuf_cond.append(group_split[shuffled_indices, col])  # Append each column
+
+        # Stack the list of arrays
+        shuf_cond = np.vstack(shuf_cond)
+        
+        # flatten
+        shuf_indices = shuf_cond.ravel()
+
+        resampled = matrix[shuf_indices, :]
+
+        if my_resampled is None:
+            my_resampled = resampled  # Initialize with the first group
+            my_shuf_indices=shuf_indices
         else:
-            grp_split = np.concatenate((grp_split, group_split))  # Horizontally concatenate groups
-    
-    grp=grp_split
+            my_resampled = np.concatenate((my_resampled, resampled))  # Horizontally concatenate groups
+            my_shuf_indices = np.concatenate((my_shuf_indices, shuf_indices))
+        # return shuffled indices if specified
 
-    # Resample
-    num_rows = grp.shape[0]
-    shuffled_indices = np.random.choice(num_rows,num_rows, replace=True)
-
-    shuf_cond = []
-    for col in range(grp.shape[1]):  # Iterate through each column in grp
-        shuf_cond.append(grp[shuffled_indices, col])  # Append each column
-
-    # Stack the list of arrays
-    shuf_cond = np.vstack(shuf_cond)
-    
-    # flatten
-    shuf_indices = shuf_cond.ravel()
-
-    resampled = matrix[shuf_indices, :]
-
-    # return shuffled indices if specified
     if return_indices:
-        return (resampled, shuf_indices)
-    return resampled
+        return (my_resampled, my_shuf_indices)
+    return my_resampled
 
     # flat = np.array(matrix).reshape(-1)
     # resampled = np.random.choice(flat, size=matrix.shape, replace=True)
