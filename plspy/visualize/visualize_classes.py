@@ -376,24 +376,35 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
         bar_plots = []
         scores = []
         x_counter = 0  # Counter to track data point indices in X_latent
-
+        num_conditions= np.shape(pls_result.cond_order)[1]
         for group_idx, group_cond in enumerate(pls_result.cond_order):
+            pal = [f"cond{i + 1}" for i in range(num_conditions)]
             # Extract data for the current group
             group_data = pls_result.X_latent.T[self.lv - 1][
                 x_counter : x_counter + sum(group_cond)
             ]
             x_counter += sum(group_cond)  # Move the counter forward for the next group
 
-            # Calculate average scores for each condition
-            condition_means = [
-                group_data[
+            #Get confidence intervals
+            ci_values = []
+            condition_means = []
+            for cond_idx in range(len(group_cond)):
+                # Extract data for the current condition
+                condition_data = group_data[
                     sum(group_cond[:cond_idx]) : sum(group_cond[:cond_idx + 1])
-                ].mean()
-                for cond_idx in range(len(group_cond))
-            ]
+                ]
+
+                # Compute the mean and confidence intervals for the mean
+                condition_means.append(condition_data.mean())
+
+                # Compute 5th and 95th percentiles
+                lower_percentile = np.percentile(condition_data, 5)  # 5th percentile
+                upper_percentile = np.percentile(condition_data, 95)  # 95th percentile
+
+                # Store as (lower bound, upper bound)
+                ci_values.append((condition_data.mean() - lower_percentile, upper_percentile - condition_data.mean()))
 
             # Create DataFrame for plotting
-            pal = sns.color_palette("husl", n_colors=len(group_cond))
             scores.append(
                 pd.DataFrame(
                     data={
@@ -403,51 +414,37 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
                 )
             )
 
-            # Check for confidence intervals
-            has_conf_ints = (
-                hasattr(pls_result, "resample_tests")
-                and hasattr(pls_result.resample_tests, "conf_ints")
-            )
-            if has_conf_ints:
-                lower_ci = [
-                    pls_result.resample_tests.conf_ints[0].T[self.lv - 1][
-                        sum(group_cond[:cond_idx]) : sum(group_cond[:cond_idx + 1])
-                    ].mean()
-                    for cond_idx in range(len(group_cond))
-                ]
-                upper_ci = [
-                    pls_result.resample_tests.conf_ints[1].T[self.lv - 1][
-                        sum(group_cond[:cond_idx]) : sum(group_cond[:cond_idx + 1])
-                    ].mean()
-                    for cond_idx in range(len(group_cond))
-                ]
-                ci_values = [
-                    (condition_means[j] - lower_ci[j], upper_ci[j] - condition_means[j])
-                    for j in range(len(group_cond))
-                ]
-
             # Plot for each group
             if pls_result.num_groups > 1:
+                legend_flag = False
+                if group_idx == pls_result.num_groups-1:
+                    legend_flag = True
                 bar_plots.append(
                     sns.barplot(
                         data=scores[group_idx],
                         x="x",
                         y="y",
-                        palette=pal,
+                        hue = pal,
+                        #palette=pal,
                         ax=axes[group_idx],
                         errorbar=None,
+                        legend = legend_flag
                     )
                 )
-                if has_conf_ints:
-                    for j in range(len(group_cond)):
-                        axes[group_idx].errorbar(
-                            j,
-                            scores[group_idx]["y"][j],
-                            yerr=[[ci_values[j][0]], [ci_values[j][1]]],
-                            fmt="none",
-                            capsize=5,
-                            color="black",
-                        )
+ 
+                if group_idx == pls_result.num_groups-1:                
+                    sns.move_legend(bar_plots[pls_result.num_groups-1], "upper left", bbox_to_anchor=(1.1, 1))
+
+                for j in range(len(group_cond)):
+                    axes[group_idx].errorbar(
+                        j,
+                        scores[group_idx]["y"][j],
+                        yerr=[[ci_values[j][0]], [ci_values[j][1]]],
+                        fmt="none",
+                        capsize=5,
+                        color="black",
+                    )
+
                 axes[group_idx].set_xlabel(f"Group {group_idx + 1}")
                 axes[group_idx].set_ylabel("")
             else:
@@ -456,23 +453,24 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
                         data=scores[group_idx],
                         x="x",
                         y="y",
-                        hue = "x",
-                        palette=pal,
+                        hue = pal,
+                        #palette=pal,
                         ax=axes,
                         errorbar=None,
                     )
                 )
-                if has_conf_ints:
-                    for j in range(len(group_cond)):
-                        axes.errorbar(
-                            j,
-                            scores[group_idx]["y"][j],
-                            yerr=[[ci_values[j][0]],
-                                [ci_values[j][1]]],
-                            fmt="none",
-                            capsize=5,
-                            color="black",
-                        )
+                sns.move_legend(bar_plots[pls_result.num_groups-1], "upper left", bbox_to_anchor=(1, 1))  
+
+                for j in range(len(group_cond)):
+                    axes.errorbar(
+                        j,
+                        scores[group_idx]["y"][j],
+                        yerr=[[ci_values[j][0]],
+                            [ci_values[j][1]]],
+                        fmt="none",
+                        capsize=5,
+                        color="black",
+                    )
                 axes.set_xlabel(f"Group {group_idx + 1}")
                 axes.set_ylabel("")
 
