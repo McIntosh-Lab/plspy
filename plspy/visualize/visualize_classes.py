@@ -97,7 +97,7 @@ class _SingularValuesPlot(_SBPlotBase):
         sv = pls_result.s
         pal = sns.color_palette("husl", n_colors=sv.shape[0])
         svt = pd.DataFrame(data={"x": list(range(1, len(sv) + 1)), "y": sv.reshape(-1)})
-        bp = sns.barplot(data=svt, x="x", y="y", palette=pal)
+        bp = sns.barplot(data=svt, x="x", y="y", hue = "x",palette=pal)
         Ax = bp.axes
         boxes = [
             item
@@ -153,7 +153,7 @@ class _PermutedSingularValuesPlot(_SingularValuesPlot):
         svt = pd.DataFrame(
             data={"x": list(range(1, len(perm_sv) + 1)), "y": perm_sv.reshape(-1),}
         )
-        bp = sns.barplot(data=svt, x="x", y="y", palette=pal)
+        bp = sns.barplot(data=svt, x="x", y="y", hue = "x",palette=pal)
         Ax = bp.axes
         boxes = [
             item
@@ -227,13 +227,13 @@ class _DesignLVPlot(_SingularValuesPlot):
             )
             if pls_result.num_groups >1:
                 bar_plots.append(
-                sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes[i])
+                sns.barplot(data=scores[i], x="x", y="y", hue = "x", palette=pal, ax=axes[i])
                 )
                 axes[i].set_xlabel(f"Group {i + 1}")
                 axes[i].set_ylabel("")
             else:
                 bar_plots.append(
-                sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes)
+                sns.barplot(data=scores[i], x="x", y="y", hue = "x", palette=pal, ax=axes)
                 )
                 axes.set_xlabel(f"Group {i + 1}")
                 axes.set_ylabel("")
@@ -435,7 +435,7 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
                         y="y",
                         palette=pal,
                         ax=axes[group_idx],
-                        ci=None,
+                        errorbar=None,
                     )
                 )
                 if has_conf_ints:
@@ -456,9 +456,10 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
                         data=scores[group_idx],
                         x="x",
                         y="y",
+                        hue = "x",
                         palette=pal,
                         ax=axes,
-                        ci=None,
+                        errorbar=None,
                     )
                 )
                 if has_conf_ints:
@@ -733,8 +734,7 @@ class _BehavLVPlot(_SingularValuesPlot):
         bar_plots = []
         scores = []
         for i in range(pls_result.num_groups):
-            base_palette = sns.color_palette("husl", n_colors=int(splt/num_behaviours))
-            pal = [color for color in base_palette for _ in range(num_behaviours)][:splt]
+            pal = [f"cond{i + 1}" for i in range(num_conditions) for _ in range(num_behaviours)][:splt]
             
             # Generate labels for x-axis
             behaviors = [f"behav{j+1}" for j in range(num_behaviours)]
@@ -751,17 +751,31 @@ class _BehavLVPlot(_SingularValuesPlot):
                 )
             )
             if pls_result.num_groups >1:
+                legend_flag = False
+                if i == pls_result.num_groups-1:
+                    legend_flag = True
                 bar_plots.append(
-                sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes[i])
+                sns.barplot(
+                    data=scores[i], 
+                    x="x", 
+                    y="y", 
+                    hue = pal, 
+                    ax=axes[i],
+                    legend=legend_flag)
                 )
+                if i == pls_result.num_groups-1:                
+                    sns.move_legend(bar_plots[pls_result.num_groups-1], "upper left", bbox_to_anchor=(1.1, 1))
                 axes[i].set_xlabel(f"Group {i + 1}")
+                axes[i].set_xticks(range(len(x_labels[:splt])))
                 axes[i].set_xticklabels(x_labels[:splt], rotation=45, ha="right")
                 axes[i].set_ylabel("")
             else:
                 bar_plots.append(
-                sns.barplot(data=scores[i], x="x", y="y", palette=pal, ax=axes)
+                sns.barplot(data=scores[i], x="x", y="y", hue = pal, ax=axes)
                 )
+                sns.move_legend(bar_plots[pls_result.num_groups-1], "upper left", bbox_to_anchor=(1, 1)) 
                 axes.set_xlabel(f"Group {i + 1}")
+                axes.set_xticks(range(len(x_labels[:splt])))
                 axes.set_xticklabels(x_labels[:splt], rotation=45, ha="right")
                 axes.set_ylabel("")
 
@@ -772,11 +786,11 @@ class _BehavLVPlot(_SingularValuesPlot):
             axes.set_ylabel("Behaviour LV")
             Ax = bar_plots[0].axes    
 
-        boxes = [
-            item
-            for item in Ax.get_children()
-            if isinstance(item, matplotlib.patches.Rectangle)
-        ]
+        # boxes = [
+        #     item
+        #     for item in Ax.get_children()
+        #     if isinstance(item, matplotlib.patches.Rectangle)
+        # ]
         #axes[0].set(xlabel="Latent Variable", ylabel="Observed Singular Values", title="Observed Singular Values")
         # if pls_result.num_groups >1:
         #     labels = [f"c{scores[i]['x'][j]}" for j in range(len(scores[i]["x"]))]
@@ -788,22 +802,6 @@ class _BehavLVPlot(_SingularValuesPlot):
         #     matplotlib.patches.Patch(color=C, label=L)
         #     for C, L in zip([item.get_facecolor() for item in boxes], labels)
         # ]
-        unique_conditions = [f"cond{i + 1}" for i in range(num_conditions)]
-        legend_labels = [f"{cond}" for cond in unique_conditions]
-
-        # Create patches for the legend
-        patches = [
-            matplotlib.patches.Patch(color=pal[j * num_behaviours], label=legend_labels[j])
-            for j in range(len(unique_conditions))
-        ]
-        bar_plots[i].legend(
-            handles=patches,
-            bbox_to_anchor=(1, 1),
-            loc=i,
-            title="Condition",
-            fontsize=8,
-            handlelength=0.5,
-        )
 
         return f, axes
 
