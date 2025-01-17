@@ -554,7 +554,11 @@ class _ResampleTestTaskPLS(ResampleTest):
         # compute standard error of left singular vector
         std_errs = np.std(right_sv_sampled, axis=0)
         # compute bootstrap ratios
-        boot_ratios = np.divide(V * s,std_errs)
+        if contrast is None:
+            boot_ratios = np.divide(V * s,std_errs)
+        else:
+            boot_ratios = np.divide(V, std_errs)
+
         # TODO: find more elegant solution to returning arbitrary # of vals
         # maybe tokenizing a dictionary?
 
