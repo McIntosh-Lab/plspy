@@ -720,7 +720,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             U_normed = self.U / np.linalg.norm(self.U)
             self.lvintercorrs = U_normed.T @ U_normed
         else:
-            self.lvintercorrs = self.U.T @ self.U
+            self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
@@ -931,7 +931,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             U_normed = self.U / np.linalg.norm(self.U)
             self.lvintercorrs = U_normed.T @ U_normed
         else:
-            self.lvintercorrs = self.U.T @ self.U
+            self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         self.Y_latent = class_functions._compute_Y_latents(
@@ -1360,7 +1360,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             U_normed = self.U / np.linalg.norm(self.U)
             self.lvintercorrs = U_normed.T @ U_normed
         else:
-            self.lvintercorrs = self.U.T @ self.U
+            self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         self.Y_latent = class_functions._compute_Y_latents(
