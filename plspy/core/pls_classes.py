@@ -722,7 +722,11 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         else:
             self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        # get X_latents
+        base = np.linalg.norm(self.V, axis=0)
+        V_normed = np.divide(self.V, base, where=base != 0)
+        self.X_latent = class_functions._compute_X_latents(self.X, V_normed)
+        
         # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
