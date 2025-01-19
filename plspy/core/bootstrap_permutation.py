@@ -401,18 +401,20 @@ class _ResampleTestTaskPLS(ResampleTest):
         if Y is not None:
             # LVcorr = np.empty((niter, Y.shape[0], V.shape[1]))
             # change LVcorr column dimension if using multi-block
-            ncols = np.product(cond_order.shape) * Y.shape[1]
-            if pls_alg in ["mb", "cmb"]:
-                ncols = X.shape[1]
-
+            if contrast is None: 
+                ncols = np.product(cond_order.shape) * Y.shape[1]
+                if pls_alg in ["mb", "cmb"]:
+                    ncols = X.shape[1]
+            else:
+                ncols = contrast.shape[1]
             LVcorr = np.empty(
-                (
-                    niter,
-                    np.product(cond_order.shape) * Y.shape[1],
-                    # np.product(cond_order.shape) * Y.shape[1],
-                    ncols,
-                )
+            (
+                niter,
+                np.product(cond_order.shape) * Y.shape[1],
+                # np.product(cond_order.shape) * Y.shape[1],
+                ncols,
             )
+        )
 
         # right_sum = np.zeros(X.shape[1], X.shape[1])
         # right_squares = np.zeros(X.shape[1], X.shape[1])
@@ -455,7 +457,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             if rotate_method == 0:
                 #Get U
                 U_hat = (np.dot(V.T, permuted.T)).T
-
+                
                 #Get VS
                 VS_hat = permuted.T @ U
                 
@@ -531,14 +533,18 @@ class _ResampleTestTaskPLS(ResampleTest):
             if Y is not None:
                 # compute X latents for use in correlation computation
                 X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
-                # print(f"XHL shape: {X_hat_latent.shape}")
+                #print(f"XHL shape: {X_hat_latent.shape}")
+
                 # print(f"U shape: {U.shape}")
                 # print(f"V shape: {V.shape}")
-                # print(f"U_hat shape: {U_hat.shape}")
-                # print(f"V_hat shape: {V_hat.shape}")
+                #print(f"U_hat shape: {U_hat.shape}")
+                #print(f"V_hat shape: {V_hat.shape}")
+
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
+                #print(f"LVcorr shape: {LVcorr.shape}")
+                
                 left_sv_sampled[i] = LVcorr[i]
                 # LVcorr[:, 1:] = LVcorr[:, 1:] * -1  # temp sign change fix
                 # LVcorr[:, 0] = np.abs(LVcorr[:, 0])
