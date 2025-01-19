@@ -693,7 +693,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        self.contrasts = contrasts
+        base = np.sqrt(np.sum(contrasts**2, axis=0))
+        self.contrasts = contrasts / base
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -710,7 +711,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         self.R = class_functions._mean_centre(
             self.X, self.cond_order, return_means=False, mctype=self.mctype
         )
-
+        
+        
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
@@ -911,7 +913,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        self.contrasts = contrasts
+        base = np.sqrt(np.sum(contrasts**2, axis=0))
+        self.contrasts = contrasts / base
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -925,7 +928,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
 
         # compute R correlation matrix
         self.R = class_functions._compute_R(self.X, self.Y, self.cond_order)
-
+        #self.U, _, _= class_functions._run_pls(self.R)
+        #self.contrasts = np.sign(contrasts) * np.abs(self.U) # apply contrast signs to U
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
