@@ -514,6 +514,7 @@ class _CorrelationPlot(_SingularValuesPlot):
         num_conditions= np.shape(pls_result.cond_order)[1]
         splt = int(lv_corr.shape[0] / pls_result.num_groups) # number of conditions * behaviours per group, number of bars in each group sub-plot
         bar_plots = []
+        bad_bars = []
         scores = []
         for i in range(pls_result.num_groups):
             pal = [f"cond{i + 1}" for i in range(num_conditions) for _ in range(num_behaviours)][:splt]
@@ -555,6 +556,7 @@ class _CorrelationPlot(_SingularValuesPlot):
                     if ci_values[j][0] <0 or ci_values[j][1]<0:
                         ci_values[j]=(0,0)
                         scores[i]["y"][j]=0
+                        bad_bars.append([i,j])
                         print(f"ERROR: Bar #{j+1} in Group {i+1} has invalid confidence intervals. Bar and errors set to zero. Do not use data for that group and condition.")
 
             if pls_result.num_groups > 1:
@@ -616,6 +618,21 @@ class _CorrelationPlot(_SingularValuesPlot):
                 axes.set_xticks(range(len(x_labels[:splt]))) # Set the ticks
                 axes.set_xticklabels(x_labels[:splt], rotation=45, ha="right")
                 axes.set_ylabel("")
+
+        for item in bad_bars:
+            bar=axes[item[0]].patches[item[1]]
+            bar_x = bar.get_x() + bar.get_width() / 2.0
+            bar_height = bar.get_height()
+            axes[item[0]].text(
+            x=bar_x,
+            y=bar_height,
+            s="err", # show text
+            ha="center", # horizontal alignment
+            va="bottom", # vertical alignment
+            fontsize=10, # choose your font size
+            color="red", # text color
+            weight="bold" # text weight
+            )
 
         if pls_result.num_groups > 1:
             axes[0].set_ylabel("Correlation")
