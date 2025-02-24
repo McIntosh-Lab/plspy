@@ -430,7 +430,7 @@ def _get_grand_condition_means(X, cond_order):
     return grand_cond_means
 
 
-def _create_multiblock(X, Y, cond_order, pls_alg, mctype=0, XT_provided=None, norm_opt = True):
+def _create_multiblock(X, cond_order, pls_alg, bscan,mctype=0, XT_provided=None, norm_opt = True, Xbscan=None, Ybscan=None):
     """Creates multiblock matrix from X and Y.
 
     Combines mean-centred result of X and correlation matrix R from X and Y
@@ -440,13 +440,12 @@ def _create_multiblock(X, Y, cond_order, pls_alg, mctype=0, XT_provided=None, no
     ----------
     X : np.array
         Neural matrix passed into PLS class.
-    Y : np.array
-        Behavioural matrix passed into PLS class.
     cond_order: np.array
         2-d np array containing number of subjects per condition in
         each group.
     mctype : int
         Specify which mean-centring method to use.
+    #TO DO: add in description for XT_provided, norm_opt, Xbscan, Ybscan
 
     Returns
     -------
@@ -461,7 +460,7 @@ def _create_multiblock(X, Y, cond_order, pls_alg, mctype=0, XT_provided=None, no
     else:
         XT = XT_provided
 
-    # Task portion of multi-block
+    # Task portion of multi-block - uses full data
     if pls_alg in ["cmb"]:
         # Contrast multi-block
         mc = _get_group_condition_means(XT, cond_order)
@@ -469,17 +468,20 @@ def _create_multiblock(X, Y, cond_order, pls_alg, mctype=0, XT_provided=None, no
         # Regular multi-block
         mc = _mean_centre(XT, cond_order, mctype, return_means=False) 
 
-    # Behaviour portion of multi-block
-    R = _compute_corr(X, Y, cond_order)
-    start = 0
+    # Behaviour portion of multi-block - uses bscan data
+    bscan_cond_order = cond_order[:,bscan]
+    R = _compute_corr(Xbscan, Ybscan, bscan_cond_order)
+    start_mc = 0
+    start_b = 0 
     stacked = []
 
+    # Loop through each group & stack task portion on behaviour portion
     for group_sizes in cond_order:
-        num_conditions = len(group_sizes)
-
+        num_conditions_b = len(bscan)
+        num_conditions_mc = len(group_sizes)
         # Extract corresponding rows for this group
-        mc_group = mc[start : start + num_conditions, :]
-        R_group = R[start : start + num_conditions, :]
+        mc_group = mc[start_mc : start_mc + num_conditions_mc, :]
+        R_group = R[start_b : start_b + num_conditions_b, :]
 
         if norm_opt is True:
             mc_group = mc_group / np.linalg.norm(mc_group, axis=1, keepdims=True)
@@ -488,7 +490,8 @@ def _create_multiblock(X, Y, cond_order, pls_alg, mctype=0, XT_provided=None, no
         # Stack mc_group and R_group under each other
         stacked.append(np.vstack((mc_group, R_group)))  
 
-        start += num_conditions  # Update index
+        start_mc += num_conditions_mc  # Update index
+        start_b += num_conditions_b  # Update index
 
     # stack mc and R
     mb = np.vstack(stacked)

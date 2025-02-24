@@ -1162,6 +1162,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    bscan : array-like
+        List/array specifying the subset of conditions to be used. E.g., [1 3] for 
+        conditions 1 and 3. The conditions should be listed in ascending order. 
+        Default bscan is all conditions i.e., [1 2 3 4] for 4 conditions.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -1198,9 +1202,11 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
+        
 
         # TODO: catch extraneous keyword args
         self._user_defined_attrs = set()
+        #Note: k = number of conditions
         for k, v in kwargs.items():
             setattr(self, k, v)
             self._user_defined_attrs.add(k)
@@ -1251,6 +1257,20 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                 )
             self.cond_order = cond_order
 
+        #self.bscan = [i-1 for i in range (len(cond_order[0]))]
+        if "bscan" not in self._user_defined_attrs:
+            self.bscan = [i for i in range (self.num_conditions)]
+        else: 
+            self.bscan = [i-1 for i in self.bscan]
+            if self.bscan != sorted(self.bscan):
+                print("provided bscan not in ascending order - conditions in bscan will be correctly reordered")
+            invalid_bscan = 0
+            for item in self.bscan:
+                if item < 0 or item > self.num_conditions-1:
+                    invalid_bscan = 1
+            if invalid_bscan == 1:
+                print(f"bscan should be a subset of: 1 to {self.num_conditions}")
+
         self.num_perm = num_perm
         self.num_boot = num_boot
 
@@ -1260,11 +1280,26 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self._create_multiblock = class_functions._create_multiblock
         self._compute_corr = class_functions._compute_corr
 
+        # only keep conditions of interest from bscan for behavioural portion
+        mask = np.array([])
+        for item in self.cond_order:
+            for cond_i, cond in enumerate(item):
+                if cond_i in self.bscan:
+                    mask = np.concatenate((mask,np.repeat(1,cond)))
+                else:
+                    mask = np.concatenate((mask,np.repeat(0,cond)))
+        
+        mask = mask.flatten().astype(bool)
+        # Note: If bscan is full (e.g., not specified by user), all instances of Xbscan = X & Ybscan = Y
+        # i.e., Xbscan will contain all conditions and will be equivalent to X.
+        self.Xbscan = self.X[mask]
+        self.Ybscan = self.Y[mask]
+        
         # ADD IN STEP TO ONLY GRAB CONDITIONS OF INTEREST (BSCAN)
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
-            self.X, self.Y, self.cond_order, self.pls_alg, self.mctype,
-        )
+            self.X, self.cond_order, self.pls_alg, self.bscan, self.mctype,
+            Xbscan = self.Xbscan, Ybscan = self.Ybscan) 
 
         self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
 
