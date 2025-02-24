@@ -6,7 +6,7 @@ import scipy.stats
 
 # import helpers
 # project imports
-from . import bootstrap_permutation, class_functions, exceptions, gsvd
+from . import bootstrap_permutation, split_half_resampling, class_functions, exceptions, gsvd
 
 
 class PLSBase(abc.ABC):
@@ -185,8 +185,10 @@ class _MeanCentreTaskPLS(PLSBase):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
         
         if len(X.shape) != 2:  # or len(X.shape) < 2:
             raise exceptions.ImproperShapeError(
@@ -253,12 +255,41 @@ class _MeanCentreTaskPLS(PLSBase):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
-            mctype=self.mctype,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("The 'num_split' attribute was user-defined.")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=None
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = None,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+        else:
+            print("The 'num_split' attribute was not user-defined.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -432,9 +463,10 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
-
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -514,11 +546,41 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             self.s,
             self.V,
             self.cond_order,
+            mctype = None,
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("The 'num_split' attribute was user-defined.")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=None,
+                    contrasts=None
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=None,
+                    contrasts = None,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+        else:
+            print("The 'num_split' attribute was not user-defined.")
+        
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -649,9 +711,10 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
-
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is not None:
             raise ValueError(
@@ -693,8 +756,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        base = np.sqrt(np.sum(contrasts**2, axis=0))
-        self.contrasts = contrasts / base
+        self.contrasts = class_functions._normalize(contrasts)
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -707,12 +769,13 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.mctype = mctype
         # TODO: catch extraneous keyword args
 
-        # compute R correlation matrix
-        self.R = class_functions._mean_centre(
-            self.X, self.cond_order, return_means=False, mctype=self.mctype
-        )
-        
-        
+        # compute mean-centred matrix
+        # self.R = class_functions._mean_centre(
+        #     self.X, self.cond_order, return_means=False, mctype=self.mctype
+        # )
+        # get matrix for svd
+        self.R = class_functions._get_group_condition_means(self.X, self.cond_order)
+        #print(self.R)
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
@@ -725,8 +788,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         # get X_latents
-        base = np.linalg.norm(self.V, axis=0)
-        V_normed = np.divide(self.V, base, where=base != 0)
+        V_normed = class_functions._normalize(self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, V_normed)
         
         # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
@@ -738,13 +800,43 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
-            mctype=self.mctype,
+            #mctype=self.mctype,
             contrast=self.contrasts,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("The 'num_split' attribute was user-defined.")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=self.contrasts
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = self.contrasts,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+        else:
+            print("The 'num_split' attribute was not user-defined.")
+                    
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -865,9 +957,10 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
-
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -913,16 +1006,18 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        base = np.sqrt(np.sum(contrasts**2, axis=0))
-        self.contrasts = contrasts / base
+
+        self.contrasts = class_functions._normalize(contrasts)
 
         self.num_perm = num_perm
         self.num_boot = num_boot
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         class_functions._compute_R = class_functions._compute_corr
 
@@ -953,12 +1048,42 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             self.s,
             self.V,
             self.cond_order,
+            mctype = None,
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("The 'num_split' attribute was user-defined.")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=self.contrasts
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = self.contrasts,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+        else:
+            print("The 'num_split' attribute was not user-defined.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -1075,8 +1200,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.pls_alg = kwargs["pls_alg"]
 
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -1129,27 +1256,49 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
-        # or if users should import from class_functions module
+        # or if users should import from class_functions module     
         self._create_multiblock = class_functions._create_multiblock
         self._compute_corr = class_functions._compute_corr
 
+        # ADD IN STEP TO ONLY GRAB CONDITIONS OF INTEREST (BSCAN)
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
-            self.X, self.Y, self.cond_order
+            self.X, self.Y, self.cond_order, self.pls_alg, self.mctype,
         )
 
         self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
-        # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
-        self.Y_latent = class_functions._compute_Y_latents(
-            self.Y, self.U, self.cond_order
-        )
+
+        # Task X_latent (Tusc)
+        V_normed = class_functions._normalize(self.V)
+        T_X_latent = class_functions._compute_X_latents(self.X, V_normed)
+
+        # Behaviour X_latents (Busc)
+        B_X_latent = class_functions._compute_X_latents(self.X, self.V) 
+
+        #Stack
+        self.X_latent = np.array([T_X_latent, B_X_latent])
+        
+        # Split U into Tu and Bu
+        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order)
+
+        # Compute Tusc
+        Tusc = class_functions._get_Tusc(Tu, num_conditions, self.cond_order)
+        # Compute Busc
+        Busc = class_functions._get_Busc(Bu, num_conditions, self.Y, self.cond_order)
+
+        # Change names to match matlab
+        self.Bvsc = Busc
+        self.Tvsc = Tusc
+        self.Tv = Tu
+        self.Bv = Bu
+        self.Y_latent = np.vstack([Tusc, Busc])
+        self.vsc = self.Y_latent
+        self.usc = self.X_latent # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
+
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
-            self.X_latent, self.Y, self.cond_order
+            B_X_latent, self.Y, self.cond_order
         )
-        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
-        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
 
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
@@ -1159,18 +1308,48 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("The 'num_split' attribute was user-defined.")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=self.contrasts
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = self.contrasts,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+        else:
+            print("The 'num_split' attribute was not user-defined.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
 # deregistered for now until Randy and I work out a new implementation
-# @PLSBase._register_subclass("cmb")
+@PLSBase._register_subclass("cmb")
 class _ContrastMultiblockPLS(_MultiblockPLS):
     """Driver class for Multiblock PLS.
 
@@ -1285,8 +1464,10 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.pls_alg = kwargs["pls_alg"]
 
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -1332,15 +1513,20 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        self.contrasts = contrasts
+        self.contrasts = class_functions._normalize(contrasts)
+
+        #print(self.contrasts)
+        #self.contrasts = contrasts
 
         self.num_perm = num_perm
         self.num_boot = num_boot
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
@@ -1351,16 +1537,49 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
-            self.X, self.Y, self.cond_order
+            self.X, self.Y, self.cond_order, self.pls_alg, self.mctype,
         )
 
-        self.contrasts = self.contrasts / np.linalg.norm(
-            self.contrasts, axis=0
-        )
-        print(self.contrasts)
+        # self.contrasts = self.contrasts / np.linalg.norm(
+        #     self.contrasts, axis=0
+        # )
+        # print(self.contrasts)
 
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.multiblock, self.contrasts
+        )
+
+
+        # Task X_latent (Tusc)
+        V_normed = class_functions._normalize(self.V)
+        T_X_latent = class_functions._compute_X_latents(self.X, V_normed)
+
+        # Behaviour X_latents (Busc)
+        B_X_latent = class_functions._compute_X_latents(self.X, self.V) 
+
+        #Stack
+        self.X_latent = np.array([T_X_latent, B_X_latent])
+        
+        # Split U into Tu and Bu
+        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order)
+
+        # Compute Tusc
+        Tusc = class_functions._get_Tusc(Tu, num_conditions, self.cond_order)
+        # Compute Busc
+        Busc = class_functions._get_Busc(Bu, num_conditions, self.Y, self.cond_order)
+
+        # Change names to match matlab
+        self.Bvsc = Busc
+        self.Tvsc = Tusc
+        self.Tv = Tu
+        self.Bv = Bu
+        self.Y_latent = np.vstack([Tusc, Busc])
+        self.vsc = self.Y_latent
+        self.usc = self.X_latent # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
+
+        # compute latent variable correlation matrix for V using compute_R
+        self.lvcorrs = self._compute_corr(
+            B_X_latent, self.Y, self.cond_order
         )
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
@@ -1389,12 +1608,42 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("The 'num_split' attribute was user-defined.")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=self.contrasts
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = self.contrasts,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+        else:
+            print("The 'num_split' attribute was not user-defined.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
