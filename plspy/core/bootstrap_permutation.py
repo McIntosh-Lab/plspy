@@ -639,7 +639,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     tmp_Tdistrib =  smeanmat @ V_hat
                     Tdistrib[i] = class_functions._get_group_condition_means(tmp_Tdistrib, cond_order)
 
-            if contrast is None:
+            if contrast is not None:
                 contrast_normed = class_functions._normalize(contrast)
                 crossblock =  contrast_normed.T @ permuted
                 norm_crossblock = class_functions._normalize(crossblock.T)
