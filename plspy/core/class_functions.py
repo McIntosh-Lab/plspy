@@ -498,7 +498,7 @@ def _create_multiblock(X, cond_order, pls_alg, bscan,mctype=0, XT_provided=None,
 
     return mb
 
-def _get_Tu_Bu(U, n_cond, n_behav, cond_order):
+def _get_Tu_Bu(U, n_cond, n_behav, cond_order, bscan):
     """
     Seperate U (Task/Behaviour LV) into Task & Behaviour for Multi-block PLS
 
@@ -517,6 +517,9 @@ def _get_Tu_Bu(U, n_cond, n_behav, cond_order):
         2-d np array containing number of subjects per condition in
         each group.
 
+    bscan : array-like
+        List/array specifying the subset of conditions to be used.
+
     Returns:
     --------
     Tu : np.ndarray
@@ -527,10 +530,10 @@ def _get_Tu_Bu(U, n_cond, n_behav, cond_order):
     # Split U into Tu and Bu
     for group_num, group_sizes in enumerate(cond_order):
         group_num = group_num + 1       
-        kk = n_cond # to do: modify to handle bscan
+        num_conditions_b = len(bscan)
 
         # Get Tu
-        start_row = (group_num - 1) * n_cond + (group_num - 1) * kk * n_behav
+        start_row = (group_num - 1) * n_cond + (group_num - 1) * num_conditions_b * n_behav
         end_row = start_row + n_cond
 
         # Extract the rows from u
@@ -543,8 +546,8 @@ def _get_Tu_Bu(U, n_cond, n_behav, cond_order):
             Tu = np.vstack((Tu, extracted_rows))
         
         # Get Bu
-        start_row = (group_num - 1) * n_cond + (group_num - 1) * kk * n_behav + n_cond
-        end_row = start_row + kk * n_behav
+        start_row = (group_num - 1) * n_cond + (group_num - 1) * num_conditions_b * n_behav + n_cond
+        end_row = start_row + num_conditions_b * n_behav
 
         # Extract the rows from u
         extracted_rows = U[start_row:end_row, :]
@@ -605,7 +608,7 @@ def _get_Tusc(Tu, n_cond, cond_order):
     return Tusc
 
 
-def _get_Busc(Bu, n_cond, Y, cond_order):
+def _get_Busc(Bu, n_cond, Ybscan, cond_order, bscan):
     """
     Compute the Busc matrix - Behaviour scores 
 
@@ -617,12 +620,15 @@ def _get_Busc(Bu, n_cond, Y, cond_order):
     n_cond : int
         Number of conditions.
 
-    Y : np.array
-        Behavioural matrix passed into PLS class.
+    Ybscan : np.array
+        Behavioural matrix for conditions of interest.
 
     cond_order: np.array
         2-d np array containing number of subjects per condition in
         each group.
+
+    bscan : array-like
+        List/array specifying the subset of conditions to be used.
 
     Returns:
     --------
@@ -630,25 +636,9 @@ def _get_Busc(Bu, n_cond, Y, cond_order):
         Matrix of behaviour scores.(equivalent to the behaviour portion of `TBvsc` in matlab)
 
     """
-    ##########
-    # bscan = range(1, 1 + n_cond) # to do: modify to actual bscan input - use for busc computation later
-    
-    # last = 0
-    # # Compute row_idx
-    # for k1 in range(1,1+n_cond): 
-    #     if k1 in bscan:
-    #         tmp_idx = np.arange(1, group_sizes[k1-1] + 1) # to do: modify
 
-    #         if k1 == 1:
-    #             row_idx = tmp_idx
-    #         else:
-    #             row_idx = np.concatenate((row_idx, tmp_idx + last))
-    #     last += group_sizes[k1-1]
-    ##########
-
-
-    kk = n_cond # to do: modify to handle bscan
-    n_behav = Y.shape[1]
+    num_conditions_b = len(bscan)
+    n_behav = Ybscan.shape[1]
     # Compute Busc
     Busc = []
     for group_num, group_sizes in enumerate(cond_order):
@@ -661,16 +651,17 @@ def _get_Busc(Bu, n_cond, Y, cond_order):
         if group_num == 1:
             span = 0
         else:
-            span = sum(cond_order[:group_num-1,0]) * kk
+            span = sum(cond_order[:group_num-1,0]) * num_conditions_b
 
         # Loop over conditions
-        for k1 in range(1,1+kk):
+        for k1 in range(1,1+num_conditions_b):
             # Extract rows for the current condition
             bdata_rows = slice(span +  num_subs_in_group * (k1-1), span +  num_subs_in_group * k1)
-            lv_rows = slice(num_col * (k1-1) + num_col * kk * (group_num-1), num_col * (k1) + num_col * kk * (group_num-1))
+            lv_rows = slice(num_col * (k1-1) + num_col * num_conditions_b * (group_num-1), 
+                            num_col * (k1) + num_col * num_conditions_b * (group_num-1))
 
             # Perform matrix multiplication
-            tmp1 = Y[bdata_rows,:] @ Bu[lv_rows, :]
+            tmp1 = Ybscan[bdata_rows,:] @ Bu[lv_rows, :]
             tmp.append(tmp1)
 
         # Append to Busc

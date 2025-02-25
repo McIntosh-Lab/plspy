@@ -1302,39 +1302,46 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             Xbscan = self.Xbscan, Ybscan = self.Ybscan) 
 
         self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
-
-        # Task X_latent (Tusc)
+        
+        #### COMPUTE USC ####
+        # Task X_latent (Tusc in matlab)
         V_normed = class_functions._normalize(self.V)
         T_X_latent = class_functions._compute_X_latents(self.X, V_normed)
 
-        # Behaviour X_latents (Busc)
-        B_X_latent = class_functions._compute_X_latents(self.X, self.V) 
+        # Behaviour X_latents (Busc in matlab)
+        B_X_latent = class_functions._compute_X_latents(self.Xbscan, self.V) 
 
         #Stack
-        self.X_latent = np.array([T_X_latent, B_X_latent])
-        
+        self.X_latent = np.vstack((np.array(T_X_latent),  np.array(B_X_latent)))
+
+        # Change names to match matlab
+        self.usc = self.X_latent 
+        # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
+
+
+       #### COMPUTE VSC ####
         # Split U into Tu and Bu
-        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order)
+        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order, self.bscan)
 
-        # Compute Tusc
+        # Compute Tusc (Tvsc in matlab)
         Tusc = class_functions._get_Tusc(Tu, num_conditions, self.cond_order)
-        # Compute Busc
-        Busc = class_functions._get_Busc(Bu, num_conditions, self.Y, self.cond_order)
 
+        # Compute Busc (Bvsc in matlab)
+        Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
+        
         # Change names to match matlab
         self.Bvsc = Busc
         self.Tvsc = Tusc
         self.Tv = Tu
         self.Bv = Bu
         self.Y_latent = np.vstack([Tusc, Busc])
-        self.vsc = self.Y_latent
-        self.usc = self.X_latent # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
-
+        self.vsc = self.Y_latent 
+        
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
-            B_X_latent, self.Y, self.cond_order
+            B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
         )
-
+        
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1383,7 +1390,6 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         print("\nDone.")
 
 
-# deregistered for now until Randy and I work out a new implementation
 @PLSBase._register_subclass("cmb")
 class _ContrastMultiblockPLS(_MultiblockPLS):
     """Driver class for Multiblock PLS.
@@ -1575,15 +1581,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.X, self.Y, self.cond_order, self.pls_alg, self.mctype,
         )
 
-        # self.contrasts = self.contrasts / np.linalg.norm(
-        #     self.contrasts, axis=0
-        # )
-        # print(self.contrasts)
-
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.multiblock, self.contrasts
         )
-
 
         # Task X_latent (Tusc)
         V_normed = class_functions._normalize(self.V)
