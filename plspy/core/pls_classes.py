@@ -775,10 +775,11 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         # )
         # get matrix for svd
         self.R = class_functions._get_group_condition_means(self.X, self.cond_order)
-        #print(self.R)
+        
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
+
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
@@ -1257,7 +1258,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                 )
             self.cond_order = cond_order
 
-        #self.bscan = [i-1 for i in range (len(cond_order[0]))]
+        # Get bscan
         if "bscan" not in self._user_defined_attrs:
             self.bscan = [i for i in range (self.num_conditions)]
         else: 
@@ -1295,7 +1296,6 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.Xbscan = self.X[mask]
         self.Ybscan = self.Y[mask]
         
-        # ADD IN STEP TO ONLY GRAB CONDITIONS OF INTEREST (BSCAN)
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
             self.X, self.cond_order, self.pls_alg, self.bscan, self.mctype,
@@ -1355,6 +1355,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            bscan = self.bscan,
+            Xbscan = self.Xbscan,
+            Ybscan = self.Ybscan
         )
 
         # Split-half resampling
@@ -1525,7 +1528,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         self.X = X
         self.Y = Y
-
+        
         self.groups_sizes, self.num_groups = self._get_groups_info(
             groups_sizes
         )
@@ -1550,25 +1553,57 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                 )
             self.cond_order = cond_order
 
+
+       # Get bscan
+        if "bscan" not in self._user_defined_attrs:
+            self.bscan = [i for i in range (self.num_conditions)]
+        else: 
+            self.bscan = [i-1 for i in self.bscan]
+            if self.bscan != sorted(self.bscan):
+                print("provided bscan not in ascending order - conditions in bscan will be correctly reordered")
+            invalid_bscan = 0
+            for item in self.bscan:
+                if item < 0 or item > self.num_conditions-1:
+                    invalid_bscan = 1
+            if invalid_bscan == 1:
+                print(f"bscan should be a subset of: 1 to {self.num_conditions}")
+
+        # only keep conditions of interest from bscan for behavioural portion
+        mask = np.array([])
+        for item in self.cond_order:
+            for cond_i, cond in enumerate(item):
+                if cond_i in self.bscan:
+                    mask = np.concatenate((mask,np.repeat(1,cond)))
+                else:
+                    mask = np.concatenate((mask,np.repeat(0,cond)))
+        
+        mask = mask.flatten().astype(bool)
+
+        # Note: If bscan is full (e.g., not specified by user), all instances of Xbscan = X & Ybscan = Y
+        # i.e., Xbscan will contain all conditions and will be equivalent to X.
+        self.Xbscan = self.X[mask]
+        self.Ybscan = self.Y[mask]
+
+        self.num_perm = num_perm
+        self.num_boot = num_boot
+
         if contrasts is None:
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
+        # Create a binary mask for conditions of interest
+        TBi = np.ones(self.num_conditions)
+        Bi = np.zeros((self.Y.shape[1], self.num_conditions))
+        Bi[:, self.bscan] = 1
+
+        # Flatten and repeat for num_groups
+        TBi = np.hstack((TBi, Bi.flatten()))
+        TBi = np.tile(TBi, self.num_groups)
+
+        # Apply the mask
+        contrasts = contrasts[TBi.astype(bool), :]
         self.contrasts = class_functions._normalize(contrasts)
-
-        #print(self.contrasts)
-        #self.contrasts = contrasts
-
-        self.num_perm = num_perm
-        self.num_boot = num_boot
-        # so pylint will shut up
-        self.pls_alg = kwargs["pls_alg"]
-        # TODO: catch extraneous keyword args
-        self._user_defined_attrs = set()
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-            self._user_defined_attrs.add(k)
-
+        
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module
@@ -1578,30 +1613,30 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
-            self.X, self.Y, self.cond_order, self.pls_alg, self.mctype,
-        )
-
+            self.X, self.cond_order, self.pls_alg, self.bscan, self.mctype,
+            Xbscan = self.Xbscan, Ybscan = self.Ybscan) 
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.multiblock, self.contrasts
         )
-
-        # Task X_latent (Tusc)
+        
+        # Task X_latent (Tusc in matlab)
         V_normed = class_functions._normalize(self.V)
         T_X_latent = class_functions._compute_X_latents(self.X, V_normed)
-
-        # Behaviour X_latents (Busc)
-        B_X_latent = class_functions._compute_X_latents(self.X, self.V) 
+        
+        # Behaviour X_latents (Busc in matlab)
+        B_X_latent = class_functions._compute_X_latents(self.Xbscan, self.V) 
 
         #Stack
-        self.X_latent = np.array([T_X_latent, B_X_latent])
+        self.X_latent = np.vstack((np.array(T_X_latent),  np.array(B_X_latent)))
         
         # Split U into Tu and Bu
-        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order)
-
-        # Compute Tusc
+        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order, self.bscan)
+        
+        # Compute Tusc (Tvsc in matlab)
         Tusc = class_functions._get_Tusc(Tu, num_conditions, self.cond_order)
-        # Compute Busc
-        Busc = class_functions._get_Busc(Bu, num_conditions, self.Y, self.cond_order)
+
+        # Compute Busc (Bvsc in matlab)
+        Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
 
         # Change names to match matlab
         self.Bvsc = Busc
@@ -1614,27 +1649,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
-            B_X_latent, self.Y, self.cond_order
+            B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
         )
-        # norm lvintercorrs if rotate method is
-        # Procrustes or derived
-        if rotate_method in [1, 2]:
-            U_normed = self.U / np.linalg.norm(self.U)
-            self.lvintercorrs = U_normed.T @ U_normed
-        else:
-            self.lvintercorrs = self.V.T @ self.V
-        # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
-        self.Y_latent = class_functions._compute_Y_latents(
-            self.Y, self.U, self.cond_order
-        )
-        # compute latent variable correlation matrix for V using compute_R
-        self.lvcorrs = self._compute_corr(
-            self.X_latent, self.Y, self.cond_order
-        )
-        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
-        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
-
+        
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1649,6 +1666,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
+            bscan = self.bscan,
+            Xbscan = self.Xbscan,
+            Ybscan = self.Ybscan
         )
 
         # Split-half resampling

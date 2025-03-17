@@ -236,7 +236,7 @@ def _calculate_smeanmat(X_new_T, cond_order, mctype):
     Returns:
     smeanmat: The mean-centered data matrix.
     """
-
+    
     if mctype == 0:
         # Calculate group means
         XT_means = class_functions._get_group_means(X_new_T, cond_order)

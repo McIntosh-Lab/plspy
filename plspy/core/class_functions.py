@@ -151,6 +151,7 @@ def _run_pls_contrast(M, C, compute_uv=True):
     if compute_uv:
         V = CB.T
         U = C
+        
         # U = CB.T
         # V = C
         # V = VS / s
@@ -370,15 +371,15 @@ def _get_group_condition_means(X, cond_order):
 
     grp_cond_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
     # group_means = _get_group_means(X, cond_order)
-    group_sums = np.sum(cond_order, axis=1)
+    group_sums = np.sum(cond_order, axis=1) #number of subs in each group
     # index counters for X_means and X, respectively
     mc = 0
     xc = 0
-
-    for i in range(len(cond_order)):
+    
+    for i in range(len(cond_order)): #for each group
         grp_cond_means[mc : mc + len(cond_order[i]),] = _mean_single_group(
             X[
-                xc : xc + group_sums[i],
+                xc : xc + group_sums[i], #grab subjects from current group from X 
             ],
             cond_order[i],
         )
@@ -430,7 +431,7 @@ def _get_grand_condition_means(X, cond_order):
     return grand_cond_means
 
 
-def _create_multiblock(X, cond_order, pls_alg, bscan,mctype=0, XT_provided=None, norm_opt = True, Xbscan=None, Ybscan=None):
+def _create_multiblock(X, cond_order, pls_alg, bscan, mctype=0, norm_opt = True, Xbscan=None, Ybscan=None):
     """Creates multiblock matrix from X and Y.
 
     Combines mean-centred result of X and correlation matrix R from X and Y
@@ -445,7 +446,7 @@ def _create_multiblock(X, cond_order, pls_alg, bscan,mctype=0, XT_provided=None,
         each group.
     mctype : int
         Specify which mean-centring method to use.
-    #TO DO: add in description for XT_provided, norm_opt, Xbscan, Ybscan
+    #TO DO: add in description for norm_opt, Xbscan, Ybscan
 
     Returns
     -------
@@ -454,22 +455,18 @@ def _create_multiblock(X, cond_order, pls_alg, bscan,mctype=0, XT_provided=None,
         correlation matrix computed from X and Y.
 
     """
-    # Handle shuffled X (Task portion of multiblock)
-    if XT_provided is None:
-        XT = X
-    else:
-        XT = XT_provided
 
     # Task portion of multi-block - uses full data
     if pls_alg in ["cmb"]:
         # Contrast multi-block
-        mc = _get_group_condition_means(XT, cond_order)
+        mc = _get_group_condition_means(X, cond_order)
     else:
         # Regular multi-block
-        mc = _mean_centre(XT, cond_order, mctype, return_means=False) 
+        mc = _mean_centre(X, cond_order, mctype, return_means=False) 
 
     # Behaviour portion of multi-block - uses bscan data
     bscan_cond_order = cond_order[:,bscan]
+    
     R = _compute_corr(Xbscan, Ybscan, bscan_cond_order)
     start_mc = 0
     start_b = 0 
