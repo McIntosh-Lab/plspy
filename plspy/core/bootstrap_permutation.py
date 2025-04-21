@@ -499,14 +499,14 @@ class _ResampleTestTaskPLS(ResampleTest):
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
         indices = np.empty((niter, X.shape[0]))
 
-        #ADDED
-        if pls_alg in ["mct"]:
-            u_sum = np.zeros_like(V)
-        if pls_alg in ["cst", "csb", "cmb"]:
-            u_sum = V
-        if pls_alg in ["mb", "rb"]:
-            u_sum = V * s
-        u_sq = np.power(u_sum,2)
+        # #MATLAB equivalent
+        # if pls_alg in ["mct"]:
+        #     u_sum = np.zeros_like(V)
+        # if pls_alg in ["cst", "csb", "cmb"]:
+        #     u_sum = V
+        # if pls_alg in ["mb", "rb"]:
+        #     u_sum = V * s
+        # u_sq = np.power(u_sum,2)
         
         # m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
         # print(f"MATLAB SHAPE: {m_inds.shape}")
@@ -557,10 +557,10 @@ class _ResampleTestTaskPLS(ResampleTest):
             #indices[i] = inds
             
         # #     # TESTING WITH MATLAB
-        #    inds = loadmat("TSAMP.mat") 
-        #    inds = inds["TSAMP"][:,i] -1
-        #    X_new = X[inds,:]
-            #X_new_T = X[inds,:]
+            # inds = loadmat("TSAMP.mat") 
+            # inds = inds["TSAMP"][:,i] -1
+            # X_new = X[inds,:]
+            # #X_new_T = X[inds,:]
             # inds = loadmat("BSAMP.mat")
             # inds = inds["BSAMP"][:,i] -1
             # Y_new = Y[inds,:]
@@ -711,28 +711,27 @@ class _ResampleTestTaskPLS(ResampleTest):
                         # Compute LVcorr (bcorr)
                         LVcorr[i] = class_functions._compute_corr(B_X_hat_latent, Y_new, cond_order[:,bscan])
                         left_sv_sampled[i] = LVcorr[i]
-                # ADDED
-                u_sq = u_sq + (np.power(crossblock,2).T)
-                u_sum = u_sum + crossblock.T
+            #     #MATLAB equivalent
+            #     u_sq = u_sq + (np.power(crossblock,2).T)
+            #     u_sum = u_sum + crossblock.T
                 
-            else:
-                u_sum += VS_hat
-                u_sq += np.power(VS_hat, 2)
+            # else:
+            #     u_sum += VS_hat
+            #     u_sq += np.power(VS_hat, 2)
         
 
         
         # compute standard error
-        # ADDED
-        if pls_alg in ["mct"]:
-            u_sum2 = (np.power(u_sum,2)) / (niter)
-            std_errs = np.sqrt(np.abs(u_sq - u_sum2) / (niter-1))
-        else:
-            u_sum2 = (np.power(u_sum,2)) / (niter+1)
-            std_errs = np.sqrt(np.abs(u_sq - u_sum2) / niter)
-
+        # #MATLAB equivalent
+        # if pls_alg in ["mct"]:
+        #     u_sum2 = (np.power(u_sum,2)) / (niter)
+        #     std_errs = np.sqrt(np.abs(u_sq - u_sum2) / (niter-1))
         # else:
-        #std_errs = np.std(right_sv_sampled, axis=0)
-        
+        #     u_sum2 = (np.power(u_sum,2)) / (niter+1)
+        #     std_errs = np.sqrt(np.abs(u_sq - u_sum2) / niter)
+
+        std_errs = np.std(right_sv_sampled, axis=0)
+
         # std_errs =np.sqrt(np.abs(VS_hat-V)/(niter)
 
         # compute bootstrap ratios
