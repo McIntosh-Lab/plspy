@@ -466,8 +466,8 @@ def _create_multiblock(X, cond_order, pls_alg, bscan, mctype=0, norm_opt = True,
 
     # Behaviour portion of multi-block - uses bscan data
     bscan_cond_order = cond_order[:,bscan]
-    
     R = _compute_corr(Xbscan, Ybscan, bscan_cond_order)
+
     start_mc = 0
     start_b = 0 
     stacked = []
@@ -478,7 +478,7 @@ def _create_multiblock(X, cond_order, pls_alg, bscan, mctype=0, norm_opt = True,
         num_conditions_mc = len(group_sizes)
         # Extract corresponding rows for this group
         mc_group = mc[start_mc : start_mc + num_conditions_mc, :]
-        R_group = R[start_b : start_b + num_conditions_b, :]
+        R_group = R[start_b : start_b + num_conditions_b*Ybscan.shape[1], :]
 
         if norm_opt is True:
             mc_group = mc_group / np.linalg.norm(mc_group, axis=1, keepdims=True)
@@ -488,7 +488,7 @@ def _create_multiblock(X, cond_order, pls_alg, bscan, mctype=0, norm_opt = True,
         stacked.append(np.vstack((mc_group, R_group)))  
 
         start_mc += num_conditions_mc  # Update index
-        start_b += num_conditions_b  # Update index
+        start_b += num_conditions_b*Ybscan.shape[1]  # Update index
 
     # stack mc and R
     mb = np.vstack(stacked)
@@ -535,7 +535,7 @@ def _get_Tu_Bu(U, n_cond, n_behav, cond_order, bscan):
 
         # Extract the rows from u
         extracted_rows = U[start_row:end_row, :]
-
+        
         # Append the extracted rows to Tu
         if group_num == 1:
             Tu = extracted_rows
