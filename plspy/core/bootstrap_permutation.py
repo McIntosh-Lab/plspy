@@ -513,20 +513,25 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         if pls_alg in ["mct","cst"]:
             Tdistrib = np.empty((niter, U.shape[0], U.shape[1]))
-        else:
-            if pls_alg in ["mb", "cmb"]:
+  
+        elif pls_alg in ["mb", "cmb"]:
+            if pls_alg in ["mb"]:
                 ncols = U.shape[0]
-                left_sv_sampled = np.empty((niter,np.product(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
-                Tdistrib = np.empty((niter, np.product(cond_order.shape) * Ybscan.shape[1], ncols,))
-                LVcorr = np.empty((niter, np.product(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
             else:
-                if pls_alg in ["rb"]:
-                    ncols = np.product(cond_order.shape) * Y.shape[1]
+                ncols = contrast.shape[1]
 
-                if pls_alg in ["csb"]:
-                    ncols = contrast.shape[1]
+            left_sv_sampled = np.empty((niter,np.product(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
+            Tdistrib = np.empty((niter, np.product(cond_order.shape), ncols))
+            LVcorr = np.empty((niter, np.product(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
 
-                LVcorr = np.empty((niter, np.product(cond_order.shape) * Y.shape[1], ncols,))
+        else:
+            if pls_alg in ["rb"]:
+                ncols = np.product(cond_order.shape) * Y.shape[1]
+
+            if pls_alg in ["csb"]:
+                ncols = contrast.shape[1]
+
+            LVcorr = np.empty((niter, np.product(cond_order.shape) * Y.shape[1], ncols,))
                 
             
         print("----Running Bootstrap Test----\n")
