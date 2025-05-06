@@ -524,7 +524,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
 
         # compute R correlation matrix
         self.R = class_functions._compute_R(self.X, self.Y, self.cond_order)
-
         self.U, self.s, self.V = class_functions._run_pls(self.R)
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
@@ -1068,7 +1067,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
                     self.Y,
                     self.cond_order,                    
                     num_split=self.num_split,
-                    mctype=self.mctype,
+                    mctype=None,
                     contrasts=self.contrasts
                     )
                 self.pls_repro_sh = split_half_resampling.split_half(
@@ -1077,7 +1076,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
                     self.Y,
                     self.cond_order,
                     num_split=self.num_split,
-                    mctype=self.mctype,
+                    mctype=None,
                     contrasts = self.contrasts,
                     lv = self.lv-1,
                     CI = self.CI,
@@ -1262,7 +1261,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         if "bscan" not in self._user_defined_attrs:
             self.bscan = [i for i in range (self.num_conditions)]
         else: 
-            self.bscan = [i-1 for i in self.bscan]
+            #self.bscan = [i-1 for i in self.bscan]
             if self.bscan != sorted(self.bscan):
                 print("provided bscan not in ascending order - conditions in bscan will be correctly reordered")
             invalid_bscan = 0
@@ -1302,7 +1301,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             Xbscan = self.Xbscan, Ybscan = self.Ybscan) 
 
         self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
-        
+       
         #### COMPUTE USC ####
         # Task X_latent (Tusc in matlab)
         V_normed = class_functions._normalize(self.V)
@@ -1316,6 +1315,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
         # Change names to match matlab
         self.usc = self.X_latent 
+        self.Tusc = T_X_latent
+        self.Busc = B_X_latent
         # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
 
 
@@ -1372,7 +1373,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                     self.cond_order,                    
                     num_split=self.num_split,
                     mctype=self.mctype,
-                    contrasts=self.contrasts
+                    contrasts=None,
+                    bscan = self.bscan,
+                    Xbscan = self.Xbscan,
+                    Ybscan = self.Ybscan
                     )
                 self.pls_repro_sh = split_half_resampling.split_half(
                     self.pls_alg,
@@ -1381,7 +1385,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                     self.cond_order,
                     num_split=self.num_split,
                     mctype=self.mctype,
-                    contrasts = self.contrasts,
+                    contrasts = None,
+                    bscan = self.bscan,
+                    Xbscan = self.Xbscan,
+                    Ybscan = self.Ybscan,
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
@@ -1558,7 +1565,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         if "bscan" not in self._user_defined_attrs:
             self.bscan = [i for i in range (self.num_conditions)]
         else: 
-            self.bscan = [i-1 for i in self.bscan]
+            #self.bscan = [i-1 for i in self.bscan]
             if self.bscan != sorted(self.bscan):
                 print("provided bscan not in ascending order - conditions in bscan will be correctly reordered")
             invalid_bscan = 0
@@ -1646,6 +1653,8 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.Y_latent = np.vstack([Tusc, Busc])
         self.vsc = self.Y_latent
         self.usc = self.X_latent # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
+        self.Tusc = T_X_latent
+        self.Busc = B_X_latent
 
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
@@ -1683,7 +1692,10 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                     self.cond_order,                    
                     num_split=self.num_split,
                     mctype=self.mctype,
-                    contrasts=self.contrasts
+                    contrasts=self.contrasts,
+                    bscan = self.bscan,
+                    Xbscan = self.Xbscan,
+                    Ybscan = self.Ybscan,
                     )
                 self.pls_repro_sh = split_half_resampling.split_half(
                     self.pls_alg,
@@ -1693,6 +1705,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                     num_split=self.num_split,
                     mctype=self.mctype,
                     contrasts = self.contrasts,
+                    bscan=self.bscan,
+                    Xbscan=self.Xbscan,
+                    Ybscan = self.Ybscan,
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
