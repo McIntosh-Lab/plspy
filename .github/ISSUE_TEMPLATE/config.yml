@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussion
+    url: https://github.com/McIntosh-Lab/plspy/discussions
+    about: Start here!
+  - name: 📖 Documentation
+    url: https://plspy.readthedocs.io/en/latest/
+    about: Official plspy documentation
+  - name: ❓ FAQ
+    url: https://github.com/McIntosh-Lab/plspy/discussions/18
+    about: Frequently Asked Questions
+  - name: 💡 Feature Requests
+    url: https://github.com/McIntosh-Lab/plspy/discussions/new/choose
+    about: Is plspy missing something?
+  - name: 🛠️ Support Requests
+    url: https://github.com/McIntosh-Lab/plspy/discussions/new/choose
+    about: Something not working? Having trouble with installation or running?
