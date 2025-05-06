@@ -2,7 +2,7 @@ import abc
 
 import matplotlib
 import matplotlib.pyplot as plt
-import nibabel as nib
+import nibabel as nib 
 import nilearn
 import numpy as np
 import pandas as pd
@@ -208,8 +208,16 @@ class _DesignLVPlot(_SingularValuesPlot):
             axes[0].set_ylabel("Design Scores")
         else:
             axes.set_ylabel("Design Scores")
-        f.suptitle(f"LV {self.lv}", fontsize=14)
-        splt = int(pls_result.V.T[self.lv - 1].shape[0] / pls_result.num_groups)
+        f.suptitle(f"LV {self.lv+1}", fontsize=14)
+
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            lv_data = pls_result.Tv.T[self.lv ]
+        else:
+            lv_data = pls_result.V.T[self.lv ]
+
+        splt = int(lv_data.shape[0] / pls_result.num_groups)
+
+        #splt = int(pls_result.V.T[self.lv - 1].shape[0] / pls_result.num_groups)
         bar_plots = []
         scores = []
         for i in range(pls_result.num_groups):
@@ -219,18 +227,21 @@ class _DesignLVPlot(_SingularValuesPlot):
                 pd.DataFrame(
                     data={
                         "x": list(range(1, splt + 1)),
-                        "y": pls_result.V.T[self.lv - 1][
-                            i * splt : (i + 1) * splt
+                        "y": lv_data[i * splt : (i + 1) * splt
                         ].reshape(-1),
                     }
                 )
             )
             if pls_result.num_groups >1:
+                legend_flag = False
+                if i == pls_result.num_groups-1:
+                    legend_flag = True
                 bar_plots.append(
-                sns.barplot(data=scores[i], x="x", y="y", hue = "x", palette=pal, ax=axes[i])
+                sns.barplot(data=scores[i], x="x", y="y", hue = "x", palette=pal, ax=axes[i], legend = legend_flag)
                 )
                 axes[i].set_xlabel(f"Group {i + 1}")
                 axes[i].set_ylabel("")
+                
             else:
                 bar_plots.append(
                 sns.barplot(data=scores[i], x="x", y="y", hue = "x", palette=pal, ax=axes)
@@ -266,6 +277,7 @@ class _DesignLVPlot(_SingularValuesPlot):
             matplotlib.patches.Patch(color=C, label=L)
             for C, L in zip([item.get_facecolor() for item in boxes], labels)
         ]
+
         bar_plots[i].legend(
             handles=patches,
             bbox_to_anchor=(1, 1),
@@ -297,13 +309,19 @@ class _DesignScoresPlot(_SingularValuesPlot):
 
         ax.set_xlabel("Design Scores (V)")
         ax.set_ylabel("Brain Scores (X Latents)")
-        ax.set_title(f"Scatter Plot for LV {self.lv}")
+        ax.set_title(f"Scatter Plot for LV {self.lv +1}")
 
         # Extract y-axis data
-        y = pls_result.X_latent.T[self.lv - 1]
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            y = pls_result.Tusc.T[self.lv ]
+        else:
+            y = pls_result.X_latent.T[self.lv ]
 
         # Extract x-axis data
-        original_x = pls_result.V.T[self.lv - 1]  # Original x values (group-level)
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            original_x = pls_result.Tv.T[self.lv ]  # Original x values (group-level)
+        else:
+            original_x = pls_result.V.T[self.lv ]
         repeated_x = []
         x_counter = 0  # Counter to track the position in original_x
         
@@ -371,7 +389,7 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
             axes[0].set_ylabel("Brain Scores")
         else:
             axes.set_ylabel("Brain Scores")
-        f.suptitle(f"LV {self.lv}", fontsize=14)
+        f.suptitle(f"LV {self.lv+1}", fontsize=14)
         
         bar_plots = []
         scores = []
@@ -380,9 +398,14 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
         for group_idx, group_cond in enumerate(pls_result.cond_order):
             pal = [f"cond{i + 1}" for i in range(num_conditions)]
             # Extract data for the current group
-            group_data = pls_result.X_latent.T[self.lv - 1][
-                x_counter : x_counter + sum(group_cond)
-            ]
+            if pls_result.pls_alg in ["mb", "cmb"]:
+                group_data = pls_result.Tusc.T[self.lv ][
+                    x_counter : x_counter + sum(group_cond)
+                ]                
+            else:
+                group_data = pls_result.X_latent.T[self.lv ][
+                    x_counter : x_counter + sum(group_cond)
+                ]
             x_counter += sum(group_cond)  # Move the counter forward for the next group
 
             #Get confidence intervals
@@ -507,18 +530,21 @@ class _CorrelationPlot(_SingularValuesPlot):
             axes[0].set_ylabel("Correlation")
         else:
             axes.set_ylabel("Correlation")
-        f.suptitle(f"LV {self.lv}", fontsize=14)
+        f.suptitle(f"LV {self.lv +1}", fontsize=14)
 
-        lv_corr = pls_result.lvcorrs.T[self.lv - 1]
+        lv_corr = pls_result.lvcorrs.T[self.lv ]
         num_behaviours = int(np.size(lv_corr)/(np.size(pls_result.cond_order)))
-        num_conditions= np.shape(pls_result.cond_order)[1]
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            num_conditions = len(pls_result.bscan)
+            num_behaviours = np.shape(pls_result.Ybscan)[1]
+        else:
+            num_conditions = np.shape(pls_result.cond_order)[1]
         splt = int(lv_corr.shape[0] / pls_result.num_groups) # number of conditions * behaviours per group, number of bars in each group sub-plot
         bar_plots = []
         bad_bars = []
         scores = []
         for i in range(pls_result.num_groups):
             pal = [f"cond{i + 1}" for i in range(num_conditions) for _ in range(num_behaviours)][:splt]
-
             # Generate labels for x-axis
             behaviors = [f"behav{j+1}" for j in range(num_behaviours)]
             x_labels = [f"{behav}" for cond in range(1, num_conditions +1) for behav in behaviors]
@@ -539,10 +565,10 @@ class _CorrelationPlot(_SingularValuesPlot):
                 and hasattr(pls_result.resample_tests, "conf_ints")
             )
             if has_conf_ints:
-                lower_ci = pls_result.resample_tests.conf_ints[0].T[self.lv - 1][
+                lower_ci = pls_result.resample_tests.conf_ints[0].T[self.lv ][
                     i * splt : (i + 1) * splt
                 ]
-                upper_ci = pls_result.resample_tests.conf_ints[1].T[self.lv - 1][
+                upper_ci = pls_result.resample_tests.conf_ints[1].T[self.lv ][
                     i * splt : (i + 1) * splt
                 ]
 
@@ -650,7 +676,7 @@ class _CorrelationPlot(_SingularValuesPlot):
 @_SBPlotBase._register_subclass("brlv")
 class _BrainLVPlot(_SingularValuesPlot):
     """ """
-
+## This function is not currently complete 
     def __init__(
         self, pls_result, dim=(1000, 650), **kwargs,
     ):
@@ -671,9 +697,14 @@ class _BrainLVPlot(_SingularValuesPlot):
         scores = []
         for i in range(pls_result.num_groups):
             # stays in loop since it has to be reset every iteration
-            colours = int(pls_result.lvcorrs.shape[0] / pls_result.num_conditions)
+            if pls_result.pls_alg in ["mb", "cmb"]:
+                num_conditions = len(pls_result.bscan)
+                y_mat = pls_result.Busc[i * splt : (i + 1) * splt].reshape(-1)
+            else:
+                num_conditions = pls_result.num_conditions
+                y_mat = pls_result.X_latent[i * splt : (i + 1) * splt].reshape(-1)
+            colours = int(pls_result.lvcorrs.shape[0] /num_conditions)
             pal = sns.color_palette("husl", n_colors=colours)
-            y_mat = pls_result.X_latent[i * splt : (i + 1) * splt].reshape(-1)
             scores.append(
                 pd.DataFrame(
                     data={"x": list(range(1, y_mat.shape[0] + 1)), "y": y_mat,}
@@ -740,12 +771,16 @@ class _BehavLVPlot(_SingularValuesPlot):
             axes[0].set_ylabel("Behaviour LV")
         else:
             axes.set_ylabel("Behaviour LV")
-        f.suptitle(f"LV {self.lv}", fontsize=14)
-
-        num_behaviours = int(np.size(pls_result.V[self.lv - 1])/(np.size(pls_result.cond_order)))
-        num_conditions= np.shape(pls_result.cond_order)[1]
-
-        splt = int(pls_result.V.T[self.lv - 1].shape[0] / pls_result.num_groups) # number of conditions * behaviours per group, number of bars in each group sub-plot
+        f.suptitle(f"LV {self.lv+1}", fontsize=14)
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            num_behaviours = np.shape(pls_result.Ybscan)[1]
+            num_conditions = len(pls_result.bscan)
+            lv_data = pls_result.Bv.T[self.lv ]
+        else:
+            num_behaviours = int(np.size(pls_result.V[self.lv ])/(np.size(pls_result.cond_order)))
+            num_conditions= np.shape(pls_result.cond_order)[1]
+            lv_data = pls_result.V.T[self.lv ]
+        splt = int(lv_data.shape[0] / pls_result.num_groups) # number of conditions * behaviours per group, number of bars in each group sub-plot
         bar_plots = []
         scores = []
         for i in range(pls_result.num_groups):
@@ -759,7 +794,7 @@ class _BehavLVPlot(_SingularValuesPlot):
                 pd.DataFrame(
                     data={
                         "x": list(range(1, splt + 1)),
-                        "y": pls_result.V.T[self.lv - 1][
+                        "y": lv_data[
                             i * splt : (i + 1) * splt
                         ].reshape(-1),
                     }
@@ -835,11 +870,20 @@ class _BrainScorevsBehavPlot(_SingularValuesPlot):
         super().__init__(pls_result, dim, **kwargs)
 
     def _construct_plot(self, pls_result, **kwargs):
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            my_conditions_of_interest = [pls_result.bscan.index(i) for i in self.conditions_of_interest]
+            self.conditions_of_interest = my_conditions_of_interest
+
         px = 1 / plt.rcParams["figure.dpi"]
 
-        lv_corr = pls_result.lvcorrs.T[self.lv - 1]
-        num_behaviours = int(np.size(lv_corr)/(np.size(pls_result.cond_order)))
-        num_conditions= np.shape(pls_result.cond_order)[1]
+        lv_corr = pls_result.lvcorrs.T[self.lv]
+        num_plotted_behav = len(self.behaviours_of_interest)
+        if pls_result.pls_alg in ["mb", "cmb"]:
+            num_behaviours = np.shape(pls_result.Ybscan)[1]
+            num_conditions = len(pls_result.bscan)
+        else:
+            num_behaviours = int(np.size(lv_corr)/(np.size(pls_result.cond_order)))
+            num_conditions= np.shape(pls_result.cond_order)[1]
         num_groups = np.shape(pls_result.cond_order)[0]
         
         num_groups_plot = len(self.groups_of_interest)
@@ -853,7 +897,7 @@ class _BrainScorevsBehavPlot(_SingularValuesPlot):
             figsize=(self.dim[0] * px * total_columns / 4, self.dim[1] * px * num_groups_plot / 4),
             squeeze=False
         )
-
+        
         palette = sns.color_palette(
             "husl", 
             n_colors=num_groups * num_conditions * num_behaviours
@@ -862,29 +906,40 @@ class _BrainScorevsBehavPlot(_SingularValuesPlot):
         for g_idx, group in enumerate(self.groups_of_interest):
             for c_idx, condition in enumerate(self.conditions_of_interest):
                 for b_idx, behaviour in enumerate(self.behaviours_of_interest):
-                    ax = axes[g_idx, c_idx * num_behaviours + b_idx]
-
-                    num_behaviour = int(np.size(lv_corr) / (np.size(pls_result.cond_order)))
-                    num_condition = np.shape(pls_result.cond_order)[1]
+                    ax = axes[g_idx, c_idx * num_plotted_behav + b_idx]
+                    if pls_result.pls_alg in ["mb", "cmb"]:
+                        num_behaviour = np.shape(pls_result.Ybscan)[1]
+                        num_condition = len(pls_result.bscan)
+                    else:
+                        num_behaviour = int(np.size(lv_corr) / (np.size(pls_result.cond_order)))
+                        num_condition = np.shape(pls_result.cond_order)[1]
 
                     corr_of_interest = lv_corr[
-                        ((group - 1) * num_behaviour * num_condition) + 
-                        ((condition - 1) * num_behaviour) + 
-                        (behaviour - 1)
+                        ((group) * num_behaviour * num_condition) + 
+                        ((condition) * num_behaviour) + 
+                        (behaviour)
                     ]
 
-                    ax.set_xlabel(f"Behaviour ({behaviour})")
+                    ax.set_xlabel(f"Behaviour ({behaviour+1})")
                     ax.set_ylabel("Brain Scores")
-                    ax.set_title(f"Group {group}, Condition {condition}\nLV {self.lv} r = {corr_of_interest:.2f}")
+                    ax.set_title(f"Group {group+1}, Condition {condition+1}\nLV {self.lv+1} r = {corr_of_interest:.2f}")
+                    #ax.set_title(f"Group {group +1 }, Condition {condition+1}\nLV {self.lv+1} r = {corr_of_interest:.2f}")
+                    if pls_result.pls_alg in ["mb", "cmb"]:
+                        original_x = pls_result.Ybscan  # Behavioral data
+                        num_subjects_of_interest = pls_result.cond_order[:,pls_result.bscan][group , condition ]
+                        start_idx = np.sum(pls_result.cond_order[:,pls_result.bscan][:group , :]) + \
+                        np.sum(pls_result.cond_order[:,pls_result.bscan][group , :condition ])
+                    else:
+                        original_x = pls_result.Y  # Behavioral data
+                        num_subjects_of_interest = pls_result.cond_order[group , condition ]
+                        start_idx = np.sum(pls_result.cond_order[:group , :]) + \
+                            np.sum(pls_result.cond_order[group , :condition ])
 
-                    original_x = pls_result.Y  # Behavioral data
-                    num_subjects_of_interest = pls_result.cond_order[group - 1, condition - 1]
-                    start_idx = np.sum(pls_result.cond_order[:group - 1, :]) + \
-                        np.sum(pls_result.cond_order[group - 1, :condition - 1])
-
-                    selected_x = original_x[start_idx:start_idx + num_subjects_of_interest, behaviour - 1]
-
-                    y_lv = pls_result.X_latent.T[self.lv - 1]
+                    selected_x = original_x[start_idx:start_idx + num_subjects_of_interest, behaviour ]
+                    if pls_result.pls_alg in ["mb", "cmb"]:
+                        y_lv = pls_result.Busc.T[self.lv ]
+                    else:
+                        y_lv = pls_result.X_latent.T[self.lv ]
                     y = y_lv[start_idx:start_idx + num_subjects_of_interest]
 
                     data = pd.DataFrame({
@@ -894,9 +949,9 @@ class _BrainScorevsBehavPlot(_SingularValuesPlot):
                     })
 
                     colour_index = (
-                        (group - 1) * num_behaviour * num_condition +
-                        (condition - 1) * num_behaviour +
-                        (behaviour - 1)
+                        (group ) * num_behaviour * num_condition +
+                        (condition ) * num_behaviour +
+                        (behaviour )
                     )
 
                     selected_colour = palette[colour_index]
@@ -982,3 +1037,5 @@ class _BLVPlot(_SBPlotBase):
 
     def __repr__(self):
         return self.__str__()
+
+
