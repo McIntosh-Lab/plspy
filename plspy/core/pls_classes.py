@@ -266,7 +266,7 @@ class _MeanCentreTaskPLS(PLSBase):
         if "num_split" in self._user_defined_attrs:
             self.num_split = int(self.num_split)
             if self.num_split > 0:
-                print("The 'num_split' attribute was user-defined.")
+                print("----Running Split-half Reproducibility Tests----\n")
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -287,8 +287,10 @@ class _MeanCentreTaskPLS(PLSBase):
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
         else:
-            print("The 'num_split' attribute was not user-defined.")
+            print("The split-half resampling reproducibility tests were not run.")
 
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
@@ -556,7 +558,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         if "num_split" in self._user_defined_attrs:
             self.num_split = int(self.num_split)
             if self.num_split > 0:
-                print("The 'num_split' attribute was user-defined.")
+                print("----Running Split-half Reproducibility Tests----\n")
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -577,9 +579,11 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
         else:
-            print("The 'num_split' attribute was not user-defined.")
-        
+            print("The split-half resampling reproducibility tests were not run.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -813,7 +817,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         if "num_split" in self._user_defined_attrs:
             self.num_split = int(self.num_split)
             if self.num_split > 0:
-                print("The 'num_split' attribute was user-defined.")
+                print("----Running Split-half Reproducibility Tests----\n")
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -833,9 +837,11 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
                     contrasts = self.contrasts,
                     lv = self.lv-1,
                     CI = self.CI,
-                )   
+                )
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
         else:
-            print("The 'num_split' attribute was not user-defined.")
+            print("The split-half resampling reproducibility tests were not run.")
                     
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
@@ -1060,7 +1066,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         if "num_split" in self._user_defined_attrs:
             self.num_split = int(self.num_split)
             if self.num_split > 0:
-                print("The 'num_split' attribute was user-defined.")
+                print("----Running Split-half Reproducibility Tests----\n")
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1081,8 +1087,10 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
         else:
-            print("The 'num_split' attribute was not user-defined.")
+            print("The split-half resampling reproducibility tests were not run.")
 
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
@@ -1365,7 +1373,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         if "num_split" in self._user_defined_attrs:
             self.num_split = int(self.num_split)
             if self.num_split > 0:
-                print("The 'num_split' attribute was user-defined.")
+                print("----Running Split-half Reproducibility Tests----\n")
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1392,8 +1400,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
         else:
-            print("The 'num_split' attribute was not user-defined.")
+            print("The split-half resampling reproducibility tests were not run.")
 
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
@@ -1684,7 +1694,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         if "num_split" in self._user_defined_attrs:
             self.num_split = int(self.num_split)
             if self.num_split > 0:
-                print("The 'num_split' attribute was user-defined.")
+                print("----Running Split-half Reproducibility Tests----\n")
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1711,9 +1721,11 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                     lv = self.lv-1,
                     CI = self.CI,
                 )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
         else:
-            print("The 'num_split' attribute was not user-defined.")
-
+            print("The split-half resampling reproducibility tests were not run.")
+            
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")

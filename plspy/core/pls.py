@@ -48,6 +48,36 @@ def PLS(*args: np.ndarray, **kwargs: str) -> Type[pls_classes.PLSBase]:
         pls_method = "mct"
         kwargs["pls_alg"] = pls_method
 
+
+    if "num_split" in kwargs:
+        if kwargs["num_split"] < 0 or not isinstance(kwargs["num_split"],int):
+            raise ValueError(
+                f"Invalid number of splits provided. Value must be a positive integer."
+            )
+        
+        if "CI" in kwargs:
+            if kwargs["CI"] is None or kwargs["CI"]< 0 or kwargs["CI"]>1:
+                raise ValueError(
+                    f"CI should be within 0 and 1."
+                )
+
+        if "lv" in kwargs:
+            if kwargs["lv"] <=0 or not isinstance(kwargs["lv"],int):
+                raise ValueError(
+                    f"lv must be a positive integer greater than 0."
+                )
+            
+    if "num_boot" in kwargs:
+        if kwargs["num_boot"] < 0 or not isinstance(kwargs["num_boot"],int):
+            raise ValueError(
+                f"Invalid number of bootstraps provided. Value must be a positive integer."
+            )
+    if "num_perm" in kwargs:
+        if kwargs["num_perm"] < 0 or not isinstance(kwargs["num_perm"],int):
+            raise ValueError(
+                f"Invalid number of permutations provided. Value must be a positive integer."
+            )        
+
     # TODO: find a cleaner way to do this
     # if args[1] is not None:
     #     if args[1]
