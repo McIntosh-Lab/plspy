@@ -3,12 +3,11 @@ import abc
 import numpy as np
 import scipy
 import scipy.stats
-
+from scipy.io import loadmat
 # project imports
 from . import class_functions, exceptions, gsvd, resample
 
 # import scipy.io as sio
-
 
 class ResampleTest(abc.ABC):
     """Abstract base class for the ResampleTest class set. Forces existence
@@ -130,13 +129,16 @@ class _ResampleTestTaskPLS(ResampleTest):
         s,
         V,
         cond_order,
+        mctype,
         contrast=None,
         preprocess=None,
         nperm=1000,
         nboot=1000,
         dist=(0.05, 0.95),
         rotate_method=0,
-        mctype=0,
+        bscan = None,
+        Xbscan = None,
+        Ybscan = None
     ):
         self.dist = dist
 
@@ -149,23 +151,26 @@ class _ResampleTestTaskPLS(ResampleTest):
                 s,
                 V,
                 cond_order,
+                mctype,
                 nperm,
                 self.pls_alg,
                 preprocess=preprocess,
                 rotate_method=rotate_method,
-                mctype=mctype,
                 contrast=contrast,
+                bscan = bscan,
+                Xbscan = Xbscan,
+                Ybscan = Ybscan
             )
 
         if nboot > 0:
-            if Y is not None:
+            if self.pls_alg in ["rb", "csb"]:
                 (
                     self.conf_ints,
                     self.std_errs,
                     self.boot_ratios,
                     self.LVcorr,
-                    self.llcorr,
-                    self.ulcorr,
+                    #self.llcorr,
+                    #self.ulcorr,
                     self.boot_debug_dict,
                 ) = self._bootstrap_test(
                     X,
@@ -174,12 +179,39 @@ class _ResampleTestTaskPLS(ResampleTest):
                     s,
                     V,
                     cond_order,
+                    mctype,
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
                     rotate_method=rotate_method,
                     dist=self.dist,
                     contrast=contrast,
+                )
+            elif self.pls_alg in ["mb", "cmb"]:
+                (
+                    self.conf_ints,
+                    self.conf_ints_T,
+                    self.std_errs,
+                    self.boot_ratios,
+                    self.LVcorr,
+                    self.boot_debug_dict,
+                ) = self._bootstrap_test(
+                    X,
+                    Y,
+                    U,
+                    s,
+                    V,
+                    cond_order,
+                    mctype,
+                    nboot,
+                    self.pls_alg,
+                    preprocess=preprocess,
+                    rotate_method=rotate_method,
+                    dist=self.dist,
+                    contrast=contrast,
+                    bscan = bscan,
+                    Xbscan = Xbscan,
+                    Ybscan = Ybscan
                 )
             else:
                 (
@@ -194,11 +226,11 @@ class _ResampleTestTaskPLS(ResampleTest):
                     s,
                     V,
                     cond_order,
+                    mctype,
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
                     rotate_method=rotate_method,
-                    mctype=mctype,
                     dist=self.dist,
                     contrast=contrast,
                 )
@@ -211,13 +243,16 @@ class _ResampleTestTaskPLS(ResampleTest):
         s,
         V,
         cond_order,
+        mctype,
         niter,
         pls_alg,
         preprocess=None,
         contrast=None,
         rotate_method=0,
-        mctype=0,
         threshold=1e-12,
+        bscan = None,
+        Xbscan = None,
+        Ybscan = None
     ):
         """Run permutation test on X. Resamples X (without replacement) based
         on condition order, runs PLS on resampled matrix, and computes the
@@ -239,98 +274,141 @@ class _ResampleTestTaskPLS(ResampleTest):
             sum_s = np.empty(niter)
             s_list = np.empty((niter, s.shape[0]))
 
+
+        if pls_alg in ["mb", "cmb"]:
+            mb_datamat_notnormed = preprocess(
+                    X, cond_order, pls_alg, bscan, mctype, 
+                    norm_opt = False, Xbscan = Xbscan, Ybscan = Ybscan
+                )
+            total_s = np.sum(np.power(mb_datamat_notnormed, 2))
+            per_orig = np.power(s,2) / np.sum(np.power(s,2))
+            org_s = np.sqrt(per_orig * total_s)
+
         print("----Running Permutation Test----\n")
         for i in range(niter):
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
 
-            X_new, inds = resample.resample_without_replacement(
-                X, cond_order, return_indices=True
-            )
-            indices[i] = inds
+            if pls_alg in ["mct", "cst"]:
+                X_new, inds = resample.resample_without_replacement(
+                    X, cond_order, return_indices=True, pls_alg=pls_alg
+                )
 
-            if Y is not None:
-                Y_new = Y
-                # Y_new = resample.resample_without_replacement(Y, cond_order)
+            if pls_alg in ["rb", "csb"]:
+                Y_new, inds = resample.resample_without_replacement(
+                    Y, cond_order, return_indices=True, pls_alg=pls_alg
+                )
 
+            if pls_alg in ["mb", "cmb"]:
+                X_new_T, inds = resample.resample_without_replacement(
+                    X, cond_order, return_indices=True, pls_alg=pls_alg
+                ) 
+                # Permute behavioural data (use "rb" option)
+                Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
+            # indices[i] = inds ## TO DO: modify
+            #print(inds)
+            # inds = loadmat("BSAMP.mat")
+            # inds = inds["BSAMP"][:,i] -1
+            # #X_new = X[inds,:]
+            # X_new = X
+            # Y_new = Y[inds,:]
+
+            # mask = np.array([])
+            # for item in cond_order:
+            #     for cond_i, cond in enumerate(item):
+            #         if cond_i in bscan:
+            #             mask = np.concatenate((mask,np.repeat(1,cond)))
+            #         else:
+            #             mask = np.concatenate((mask,np.repeat(0,cond)))
+            
+            # mask = mask.flatten().astype(bool)
+            # Y_new = Y_new[mask]
+            # X_new = X_new[mask]
+            # inds = loadmat("TSAMP.mat") 
+            # inds = inds["TSAMP"][:,i] -1
+            # X_new_T = X[inds,:]
+
+        
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
 
-            if Y is None:
+            if pls_alg in ["mct"]:
                 permuted = preprocess(
-                    X_new, cond_order, mctype=mctype, return_means=False
+                    X_new, cond_order, mctype, return_means=False
                 )
+            if pls_alg in ["cst"]:
+                permuted = class_functions._get_group_condition_means(X_new, cond_order)
+            
+            if pls_alg in ["mb", "cmb"]:
+                permuted = preprocess(X_new_T, cond_order, pls_alg, bscan, mctype, 
+                                      Xbscan = Xbscan, Ybscan = Y_new)
 
-            else:
-                permuted = preprocess(X_new, Y_new, cond_order)
-
+            if pls_alg in ["rb", "csb"]:
+                    permuted = preprocess(X, Y_new, cond_order)
+                    #print(f"permuted: {permuted}")
             if debug:
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
-            # print(f"permuted shape: {permuted.shape}")
 
             if rotate_method == 0:
-                # run GSVD on mean-centered, resampled matrix
-                # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-
-                # s_hat = gsvd.gsvd(permuted, compute_uv=False)
                 if contrast is None:
                     VS_hat = permuted.T @ U
                     s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
+                    #print(s_hat)
                 else:
                     inpt = contrast.T @ permuted
                     # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
                     s_hat = np.linalg.svd(inpt, compute_uv=False)
                 # print(s_hat)
-            elif rotate_method == 1:
-                # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                if contrast is not None:
-                    U_hat, s_hat, V_hat = class_functions._run_pls_contrast(
-                        permuted, contrast
-                    )
-                else:
-                    U_hat, s_hat, V_hat = np.linalg.svd(
-                        permuted, full_matrices=False
-                    )
-                    V_hat = V_hat.T
-                # procustes
-                # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-                # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-                U_bar, s_bar, V_bar = np.linalg.svd(
-                    U.T @ U_hat, full_matrices=False
-                )
-                V_bar = V_bar.T
-                # print(X_new_mc.shape)
-                rot = V_bar @ U_bar.T
-                U_rot = (U_hat * s_hat) @ rot
-                # permuted_rot = permuted @ V_rot
-                # permuted_rot = U_rot.T @ permuted
-                # s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
-                s_rot = np.sqrt(np.sum(np.power(U_rot, 2), axis=0))
-                s_hat = np.copy(s_rot)
-                # print(s_hat)
-            elif rotate_method == 2:
-                # use derivation equations to compute permuted singular values
-                if pls_alg in ["cst", "csb", "cmb"]:
-                    s_hat = class_functions._run_pls_contrast(
-                        permuted, contrast, compute_uv=False
-                    )
-                else:
-                    US_hat = permuted.T @ U
-                    s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+            # elif rotate_method == 1:
+            #     # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
+            #     if contrast is not None:
+            #         U_hat, s_hat, V_hat = class_functions._run_pls_contrast(
+            #             permuted, contrast
+            #         )
+            #     else:
+            #         U_hat, s_hat, V_hat = np.linalg.svd(
+            #             permuted, full_matrices=False
+            #         )
+            #         V_hat = V_hat.T
+            #     # procustes
+            #     # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
+            #     # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
+            #     U_bar, s_bar, V_bar = np.linalg.svd(
+            #         U.T @ U_hat, full_matrices=False
+            #     )
+            #     V_bar = V_bar.T
+            #     # print(X_new_mc.shape)
+            #     rot = V_bar @ U_bar.T
+            #     U_rot = (U_hat * s_hat) @ rot
+            #     # permuted_rot = permuted @ V_rot
+            #     # permuted_rot = U_rot.T @ permuted
+            #     # s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
+            #     s_rot = np.sqrt(np.sum(np.power(U_rot, 2), axis=0))
+            #     s_hat = np.copy(s_rot)
+            #     # print(s_hat)
+            # elif rotate_method == 2:
+            #     # use derivation equations to compute permuted singular values
+            #     if pls_alg in ["cst", "csb", "cmb"]:
+            #         s_hat = class_functions._run_pls_contrast(
+            #             permuted, contrast, compute_uv=False
+            #         )
+            #     else:
+            #         US_hat = permuted.T @ U
+            #         s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
 
-                # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
+            #     # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
 
-                # gd = [float("{:.5f}".format(i)) for i in s_hat_]
-                # der = [float("{:.5f}".format(i)) for i in s_hat]
+            #     # gd = [float("{:.5f}".format(i)) for i in s_hat_]
+            #     # der = [float("{:.5f}".format(i)) for i in s_hat]
 
-                # print(f"GSVD: {gd}")
-                # print(f"Derived: {der}")
+            #     # print(f"GSVD: {gd}")
+            #     # print(f"Derived: {der}")
 
-                # U_hat = US_hat / s_hat
-                # V_hat = np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)
-                # print(s_hat)
+            #     # U_hat = US_hat / s_hat
+            #     # V_hat = np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)
+            #     # print(s_hat)
             else:
                 raise exceptions.NotImplementedError(
                     f"Specified rotation method ({rotate_method}) "
@@ -343,16 +421,40 @@ class _ResampleTestTaskPLS(ResampleTest):
             # greater than observed singular values, element-wise
             # greatersum += s >= s_hat
             # print(s_hat >= s)
-            s_hat[np.abs(s_hat) < threshold] = 0
-            # greatersum += s_hat >= np.mean(s)
-            greatersum += s_hat >= s
-            if debug:
-                s_list[
-                    i:,
-                ] = s_hat
-                sum_s[i] = np.sum(np.power(s_hat, 2))
 
-        permute_ratio = greatersum / niter
+            if pls_alg in ["mb"]:
+                mb_permdatamat_notnormed = preprocess(
+                    X_new_T, cond_order, pls_alg, bscan, mctype, 
+                    norm_opt = False, Xbscan = Xbscan, Ybscan = Y_new
+                )
+
+                total_s_hat = np.sum(np.power(mb_permdatamat_notnormed, 2))
+
+                squared_diag = np.diag(s_hat ** 2)
+                per_hat_norm = np.diag(np.diag(squared_diag)**2) / np.sum(np.diag(squared_diag)**2)
+                per_hat = np.diag(per_hat_norm)
+                s_hat = np.sqrt(per_hat * total_s_hat)
+
+                # Compare
+                greatersum += s_hat >= org_s
+
+            if pls_alg in ["cst", "csb", "cmb"]:
+                contrast_normed = class_functions._normalize(contrast)
+                crossblock =  contrast_normed.T @ permuted 
+                s_hat = np.sqrt(np.sum(crossblock**2, axis=1)) 
+                greatersum += s_hat >= s
+
+            if pls_alg in ["rb", "mct"]:
+                s_hat[np.abs(s_hat) < threshold] = 0
+                greatersum += s_hat >= s
+                if debug:
+                    s_list[
+                        i:,
+                    ] = s_hat
+                    sum_s[i] = np.sum(np.power(s_hat, 2))
+
+            permute_ratio = greatersum / (niter + 1)
+
 
         print(f"real s: {s}")
         print(f"ratio: {permute_ratio}")
@@ -373,13 +475,16 @@ class _ResampleTestTaskPLS(ResampleTest):
         s,
         V,
         cond_order,
+        mctype,
         niter,
         pls_alg,
         preprocess=None,
         rotate_method=0,
-        mctype=0,
         dist=(0.05, 0.95),
         contrast=None,
+        bscan = None,
+        Xbscan = None,
+        Ybscan = None
     ):
         """Runs a bootstrap estimation on X matrix. Resamples X with
         replacement according to the condition order, runs PLS on the
@@ -390,173 +495,277 @@ class _ResampleTestTaskPLS(ResampleTest):
         debug_dict = {}
 
         # allocate memory for sampled values
-        # left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
         left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
         right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
         indices = np.empty((niter, X.shape[0]))
 
+        # #MATLAB equivalent
+        # if pls_alg in ["mct"]:
+        #     u_sum = np.zeros_like(V)
+        # if pls_alg in ["cst", "csb", "cmb"]:
+        #     u_sum = V
+        # if pls_alg in ["mb", "rb"]:
+        #     u_sum = V * s
+        # u_sq = np.power(u_sum,2)
+        
         # m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
         # print(f"MATLAB SHAPE: {m_inds.shape}")
 
-        if Y is not None:
-            # LVcorr = np.empty((niter, Y.shape[0], V.shape[1]))
-            # change LVcorr column dimension if using multi-block
-            ncols = np.product(cond_order.shape) * Y.shape[1]
-            if pls_alg in ["mb", "cmb"]:
-                ncols = X.shape[1]
+        if pls_alg in ["mct","cst"]:
+            Tdistrib = np.empty((niter, U.shape[0], U.shape[1]))
+  
+        elif pls_alg in ["mb", "cmb"]:
+            if pls_alg in ["mb"]:
+                ncols = U.shape[0]
+            else:
+                ncols = contrast.shape[1]
 
-            LVcorr = np.empty(
-                (
-                    niter,
-                    np.product(cond_order.shape) * Y.shape[1],
-                    # np.product(cond_order.shape) * Y.shape[1],
-                    ncols,
-                )
-            )
+            left_sv_sampled = np.empty((niter,np.product(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
+            Tdistrib = np.empty((niter, np.product(cond_order.shape), ncols))
+            LVcorr = np.empty((niter, np.product(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
 
-        # right_sum = np.zeros(X.shape[1], X.shape[1])
-        # right_squares = np.zeros(X.shape[1], X.shape[1])
+        else:
+            if pls_alg in ["rb"]:
+                ncols = np.product(cond_order.shape) * Y.shape[1]
+
+            if pls_alg in ["csb"]:
+                ncols = contrast.shape[1]
+
+            LVcorr = np.empty((niter, np.product(cond_order.shape) * Y.shape[1], ncols,))
+                
+            
         print("----Running Bootstrap Test----\n")
         for i in range(niter):
             # print out iteration number every 50 iterations
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
 
-            # also return indices to use with Y_new
-            X_new, inds = resample.resample_with_replacement(
-                X, cond_order, return_indices=True
-            )
 
-            # X_new = X[m_inds[i], :]
+            if pls_alg in ["mb", "cmb"]:
+                # X_new_T = Task portion
+                X_new_T = resample.resample_with_replacement(
+                    X, cond_order, return_indices=False
+                )
+                # X_new = Behaviour portion
+                X_new,inds = resample.resample_with_replacement(
+                    Xbscan, cond_order[:,bscan], return_indices=True
+                )
+                Y_new = Ybscan[inds, :]
+            else:
+            # return indices to use with Y_new
+                X_new, inds = resample.resample_with_replacement(
+                    X, cond_order, return_indices=True
+                )
+                if Y is not None:
+                    Y_new = Y[inds, :]
 
-            indices[i] = inds
-            # indices[i] = m_inds[i]
+            #indices[i] = inds
+            
+        # #     # TESTING WITH MATLAB
+            # inds = loadmat("TSAMP.mat") 
+            # inds = inds["TSAMP"][:,i] -1
+            # X_new = X[inds,:]
+            # #X_new_T = X[inds,:]
+            # inds = loadmat("BSAMP.mat")
+            # inds = inds["BSAMP"][:,i] -1
+            # Y_new = Y[inds,:]
+            # X_new = X[inds,:]
 
-            if Y is not None:
-                Y_new = Y[inds, :]
-                # Y_new = Y[m_inds[i], :]
+        #     mask = np.array([])
+        #     for item in cond_order:
+        #         for cond_i, cond in enumerate(item):
+        #             if cond_i in bscan:
+        #                 mask = np.concatenate((mask,np.repeat(1,cond)))
+        #             else:
+        #                 mask = np.concatenate((mask,np.repeat(0,cond)))
+            
+        #     mask = mask.flatten().astype(bool)
+        #     Y_new = Y_new[mask]
+        #     X_new = X_new[mask]
+        # # #     # TESTING WITH MATLAB
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling
 
-            if Y is None:
+            if pls_alg in ["mct"]:
                 permuted = preprocess(
-                    X_new, cond_order, mctype=mctype, return_means=False
+                    X_new, cond_order, mctype, return_means=False
                 )
-
+            elif pls_alg in ["cst"]:
+                permuted = class_functions._get_group_condition_means(X_new, cond_order)
             else:
-                permuted = preprocess(X_new, Y_new, cond_order)
-
-            # if Y is None:
-            #     X_new_means, X_new_mc = preprocess(
-            #         X_new, cond_order=cond_order
-            #     )  # , ngroups=ngroups)
-
+                if pls_alg in ["mb", "cmb"]:
+                    permuted = preprocess(X_new_T, cond_order, pls_alg, bscan, 
+                                          mctype, Xbscan=X_new, Ybscan=Y_new)
+                else:
+                    permuted = preprocess(X_new, Y_new, cond_order)
+            
             if rotate_method == 0:
                 #Get U
                 U_hat = (np.dot(V.T, permuted.T)).T
-
+                
                 #Get VS
                 VS_hat = permuted.T @ U
-                
+
                 # Get V - normalize VS_hat
-                base = np.sqrt(np.sum(VS_hat**2, axis=0))
-                # Handle zeros in base
-                base[base == 0] = 1 
-                # Normalize
-                V_hat = VS_hat / base
-                # Set columns with original base zero back to zero
-                V_hat[:, base == 1] = 0
+                V_hat = class_functions._normalize(VS_hat)
 
-            elif rotate_method == 1:
-                # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-                U_hat, s_hat, V_hat = np.linalg.svd(
-                    permuted, full_matrices=False
-                )
-                V_hat = V_hat.T
-                # procustes
-                # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-                # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-                U_bar, s_bar, V_bar = np.linalg.svd(
-                    U.T @ U_hat, full_matrices=False
-                )
-                # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
-                # print(X_new_mc.shape)
-                # rot = U_bar @ V.T
-                # V_rot = V_hat.T @ rot.T
+            # elif rotate_method == 1:
+            #     # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
+            #     U_hat, s_hat, V_hat = np.linalg.svd(
+            #         permuted, full_matrices=False
+            #     )
+            #     V_hat = V_hat.T
+            #     # procustes
+            #     # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
+            #     # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
+            #     U_bar, s_bar, V_bar = np.linalg.svd(
+            #         U.T @ U_hat, full_matrices=False
+            #     )
+            #     # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
+            #     # print(X_new_mc.shape)
+            #     # rot = U_bar @ V.T
+            #     # V_rot = V_hat.T @ rot.T
 
-                rot = V_bar @ U_bar.T
-                U_rot = (U_hat * s_hat) @ rot
-                # permuted_rot = permuted @ V_rot
-                permuted_rot = U_rot @ permuted
-                s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
-                s_hat = np.copy(s_rot)
+            #     rot = V_bar @ U_bar.T
+            #     U_rot = (U_hat * s_hat) @ rot
+            #     # permuted_rot = permuted @ V_rot
+            #     permuted_rot = U_rot @ permuted
+            #     s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
+            #     s_hat = np.copy(s_rot)
 
-            elif rotate_method == 2:
-                # use derivation equations to compute permuted singular values
-                # US_hat = X_new_mc @ V
-                VS_hat = permuted.T @ U
-                s_hat = np.sqrt(np.sum(np.power(VS_hat, 2), axis=0))
-                # US_hat = V.T @ permuted.T
-                # s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
-                V_hat_der = VS_hat / s_hat
-                U_hat = (
-                    np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)
-                ).T
-                # V_hat = (X_new_mc.T @ U_hat_der) / s_hat
-                # potential fix for sign issues
-                V_hat = V_hat_der
-                # U_hat = (X_new_mc @ V_hat) / s_hat
-                # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
+            # elif rotate_method == 2:
+            #     # use derivation equations to compute permuted singular values
+            #     # US_hat = X_new_mc @ V
+            #     VS_hat = permuted.T @ U
+            #     s_hat = np.sqrt(np.sum(np.power(VS_hat, 2), axis=0))
+            #     # US_hat = V.T @ permuted.T
+            #     # s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
+            #     V_hat_der = VS_hat / s_hat
+            #     U_hat = (
+            #         np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)
+            #     ).T
+            #     # V_hat = (X_new_mc.T @ U_hat_der) / s_hat
+            #     # potential fix for sign issues
+            #     V_hat = V_hat_der
+            #     # U_hat = (X_new_mc @ V_hat) / s_hat
+            #     # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
 
-                # print("DERIVED\n")
-                # print(U_hat_der)
-                # print("=====================")
-                # print("DOUBLE DERIVED\n")
-                # print(s_hat)
-                # print("----------------------")
-                # print(s_hat_)
-                # print("++++++++++++++++++++++")
+            #     # print("DERIVED\n")
+            #     # print(U_hat_der)
+            #     # print("=====================")
+            #     # print("DOUBLE DERIVED\n")
+            #     # print(s_hat)
+            #     # print("----------------------")
+            #     # print(s_hat_)
+            #     # print("++++++++++++++++++++++")
             else:
                 raise exceptions.NotImplementedError(
                     f"Specified rotation method ({rotate_method}) "
                     "has not been implemented."
                 )
-
+            
+            # assign right singular vector
+            right_sv_sampled[i] = VS_hat 
+            
             # insert left singular vector into tracking np.array
-            # print(f"dst: {right_sv_sampled[i].shape}; src: {V_hat.shape}")
-            # left_sv_sampled[i] = U_hat * s_hat
-            left_sv_sampled[i] = U_hat
-            right_sv_sampled[i] = VS_hat
-            if Y is not None:
-                # compute X latents for use in correlation computation
+            if pls_alg in ["mct"]:
+                # Task PLS
+                left_sv_sampled[i] = U_hat
+                # Compute Tdistrib
+                tmp_Tdistrib =  X @ V_hat
+                Tdistrib[i] = class_functions._get_group_condition_means(tmp_Tdistrib, cond_order)
+
+            if pls_alg in ["rb"]:
+                # Behavioural PLS: compute X latents for use in correlation computation
                 X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
-                # print(f"XHL shape: {X_hat_latent.shape}")
-                # print(f"U shape: {U.shape}")
-                # print(f"V shape: {V.shape}")
-                # print(f"U_hat shape: {U_hat.shape}")
-                # print(f"V_hat shape: {V_hat.shape}")
                 LVcorr[i] = class_functions._compute_corr(
                     X_hat_latent, Y_new, cond_order
                 )
                 left_sv_sampled[i] = LVcorr[i]
-                # LVcorr[:, 1:] = LVcorr[:, 1:] * -1  # temp sign change fix
-                # LVcorr[:, 0] = np.abs(LVcorr[:, 0])
-            # right_sum += V_hat
-            # right_squares += np.power(V_hat, 2)
 
-        # compute confidence intervals of U sampled
+            if pls_alg in ["mb"]:
+            # Regular Multi-block PLS
+                    # Behaviour X_latents
+                    B_X_hat_latent = class_functions._compute_X_latents(X_new, V_hat)
+  
+                    # Compute LVcorr (bcorr)
+                    LVcorr[i] = class_functions._compute_corr(B_X_hat_latent, Y_new, cond_order[:,bscan])
+                    left_sv_sampled[i] = LVcorr[i]
+                    
+                    # Compute Tdistrib
+                    smeanmat = resample._calculate_smeanmat(X_new_T, cond_order, mctype)
+                    tmp_Tdistrib =  smeanmat @ V_hat
+                    Tdistrib[i] = class_functions._get_group_condition_means(tmp_Tdistrib, cond_order)
+                                
+            if contrast is not None:
+                contrast_normed = class_functions._normalize(contrast)
+                crossblock =  contrast_normed.T @ permuted
+                norm_crossblock = class_functions._normalize(crossblock.T)
+                
+                if pls_alg in ["cmb", "cst"]:
+                # Contrast Multi-block - task portion & Contrast Task PLS
+                        tmp_Tdistrib = X @ norm_crossblock
+                        Tdistrib[i] = class_functions._get_group_condition_means(tmp_Tdistrib, cond_order)
+                        
+                if pls_alg in ["cmb", "csb"]:
+                # Contrast Multi-block - behaviour portion & Contrast Behaviour PLS
+                        # Behaviour X_latents
+                        B_X_hat_latent = class_functions._compute_X_latents(X_new, norm_crossblock)
 
-        conf_int = resample.confidence_interval(
-            left_sv_sampled, conf=dist
-        )
+                        # Compute LVcorr (bcorr)
+                        LVcorr[i] = class_functions._compute_corr(B_X_hat_latent, Y_new, cond_order[:,bscan])
+                        left_sv_sampled[i] = LVcorr[i]
+            #     #MATLAB equivalent
+            #     u_sq = u_sq + (np.power(crossblock,2).T)
+            #     u_sum = u_sum + crossblock.T
+                
+            # else:
+            #     u_sum += VS_hat
+            #     u_sq += np.power(VS_hat, 2)
+        
 
-        # compute standard error of left singular vector
+        
+        # compute standard error
+        # #MATLAB equivalent
+        # if pls_alg in ["mct"]:
+        #     u_sum2 = (np.power(u_sum,2)) / (niter)
+        #     std_errs = np.sqrt(np.abs(u_sq - u_sum2) / (niter-1))
+        # else:
+        #     u_sum2 = (np.power(u_sum,2)) / (niter+1)
+        #     std_errs = np.sqrt(np.abs(u_sq - u_sum2) / niter)
+
         std_errs = np.std(right_sv_sampled, axis=0)
+
+        # std_errs =np.sqrt(np.abs(VS_hat-V)/(niter)
+
         # compute bootstrap ratios
-        boot_ratios = np.divide(V * s,std_errs)
+        if contrast is None:
+            boot_ratios = np.divide(V * s,std_errs)
+        else:
+            boot_ratios = np.divide(V, std_errs)
+
         # TODO: find more elegant solution to returning arbitrary # of vals
         # maybe tokenizing a dictionary?
+
+        # compute confidence intervals
+        if pls_alg in ["mct","cst"]:
+            # Task PLS (ulusc & llusc in matlab)
+            conf_int = resample.confidence_interval(
+                Tdistrib, conf=dist)
+        else:
+            # Behavioural PLS CI (ulcorr & llcorr in matlab)
+            conf_int = resample.confidence_interval(
+                left_sv_sampled, conf=dist
+            )
+
+            if pls_alg in ["mb", "cmb"]:
+            # Multi-block Task CI (ulusc & llusc in matlab)
+                conf_int_T = resample.confidence_interval(
+                Tdistrib, conf=dist
+                )      
+            
+
 
         if debug:
             debug_dict["left_sv_sampled"] = left_sv_sampled
@@ -564,20 +773,44 @@ class _ResampleTestTaskPLS(ResampleTest):
             #debug_dict["left_grand_mean"] = left_grand_mean
             debug_dict["indices"] = indices
 
-        if Y is None:
-            return (conf_int, std_errs, boot_ratios, debug_dict)
-        else:
-            llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
+
+        if pls_alg in ["rb", "csb"]:
             return (
                 conf_int,
                 std_errs,
                 boot_ratios,
                 LVcorr,
-                llcorr,
-                ulcorr,
+                #llcorr,
+                #ulcorr,
                 debug_dict,
             )
-
+        elif pls_alg in ["mb", "cmb"]:
+            return (
+                conf_int,
+                conf_int_T,
+                std_errs,
+                boot_ratios,
+                LVcorr,
+                #llcorr,
+                #ulcorr,
+                debug_dict,
+            )
+        else:
+            return (conf_int, std_errs, boot_ratios, debug_dict)
+        # if Y is None:
+        #     return (conf_int, std_errs, boot_ratios, debug_dict)
+        # else:
+        #     llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
+        #     return (
+        #         conf_int,
+        #         std_errs,
+        #         boot_ratios,
+        #         LVcorr,
+        #         llcorr,
+        #         ulcorr,
+        #         debug_dict,
+        #     )
+    
     def __repr__(self):
         stg = ""
         stg += "Permutation Test Results\n"
@@ -590,10 +823,17 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += str(self.conf_ints[0])
         stg += "\n\nUpper CI: \n"
         stg += str(self.conf_ints[1])
+        # Add conf_ints_T if available
+        if self.pls_alg in ["mb", "cmb"]:
+            stg += "\n\nLower CI (Task): \n"
+            stg += str(self.conf_ints_T[0])
+            stg += "\n\nUpper CI (Task): \n"
+            stg += str(self.conf_ints_T[1])
         stg += "\n\nStandard Errors:\n"
         stg += str(self.std_errs)
         stg += "\n\nBootstrap Ratios:\n"
         stg += str(self.boot_ratios)
+
         return stg
 
     def __str__(self):
@@ -608,6 +848,12 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += str(self.conf_ints[0])
         stg += "\n\nUpper CI: \n"
         stg += str(self.conf_ints[1])
+        # Add conf_ints_T if available
+        if self.pls_alg in ["mb", "cmb"]:
+            stg += "\n\nLower CI (Task): \n"
+            stg += str(self.conf_ints_T[0])
+            stg += "\n\nUpper CI (Task): \n"
+            stg += str(self.conf_ints_T[1])
         stg += "\n\nStandard Errors:\n"
         stg += str(self.std_errs)
         stg += "\n\nBootstrap Ratios:\n"

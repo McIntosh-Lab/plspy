@@ -3,11 +3,11 @@ import scipy
 import scipy.stats
 
 # project imports
-from . import exceptions
+from . import class_functions, exceptions
 
 
 def resample_without_replacement(
-    matrix, cond_order, C=None, group_num=0, return_indices=False
+    matrix, cond_order, C=None, group_num=0, return_indices=False, pls_alg="mct"
 ):
     """Resamples input matrix without replacement. This implementation
     uses condition array `C` to shuffle the rows of `matrix` within
@@ -60,16 +60,21 @@ def resample_without_replacement(
     
     grp=grp_split
 
-    # Shuffle within each subject's condition
-    within_subject_shuffle = np.apply_along_axis(np.random.permutation, axis=1, arr=grp)
+    if pls_alg in ["mct", "cst", "mb", "cmb"]:
+        # For Task PLS
+        # Shuffle within each subject's condition
+        within_subject_shuffle = np.apply_along_axis(np.random.permutation, axis=1, arr=grp)
+        
+        # Shuffle across all subjects
+        shuff = np.copy(within_subject_shuffle.T)
+        for col in range(grp.shape[1]):
+            shuff[col, :] = np.random.permutation(within_subject_shuffle.T[col, :])
+        # flatten
+        shuf_indices = shuff.ravel()
 
-    # Shuffle across all subjects
-    shuff = np.copy(within_subject_shuffle.T)
-    for col in range(grp.shape[1]):
-        shuff[col, :] = np.random.permutation(within_subject_shuffle.T[col, :])
-
-    # flatten
-    shuf_indices = shuff.ravel()
+    else:
+        # For Behavioural PLS ("rb" or "csb") & Multi-Block Behaviour
+        shuf_indices = np.random.permutation(np.shape(matrix)[0])
 
     resampled = matrix[shuf_indices, :]
     # return shuffled indices if specified
@@ -163,7 +168,6 @@ def resample_with_replacement(
     # resampled = np.random.choice(flat, size=matrix.shape, replace=True)
     # return resampled
 
-
 def confidence_interval(matrix, conf=(0.05, 0.95)):
     """Computes element-wise confidence interval on a NumPy array.
     Requires given NumPy array to have shape (`i`, `m`, `n`) where `m` is the
@@ -194,19 +198,90 @@ def confidence_interval(matrix, conf=(0.05, 0.95)):
     lower = np.empty((nrow, ncol))
     upper = np.empty((nrow, ncol))
 
+
     for i in range(matrix.shape[1]):
         for j in range(matrix.shape[2]):
             # use percentile function to match Matlab output
             # multiply confidence values by 100 to match
             # NumPy's required input (0,100)
-            lower[i, j] = np.percentile(matrix[:, i, j], conf[0] * 100)
-            upper[i, j] = np.percentile(matrix[:, i, j], conf[1] * 100)
+            #lower[i, j] = np.percentile(matrix[:, i, j], conf[0] * 100)
+            #upper[i, j] = np.percentile(matrix[:, i, j], conf[1] * 100)
 
+            X = np.squeeze(matrix[:, i, j])  # Remove single-dimensional entries
+            X = np.sort(X)  # Sort the values
+            r = len(X)  # Number of elements
+
+            # Percentile positions
+            x = np.concatenate(([0], (np.arange(0.5, r - 0.5 + 1) / r) * 100, [100]))
+            y = np.concatenate(([X.min()], X, [X.max()]))
+
+            # Interpolation
+            lower[i,j] = np.interp(conf[0] * 100, x, y)
+            upper[i,j] = np.interp(conf[1] * 100, x, y)
+    
     return (lower, upper)
-    # n = len(matrix)
-    # m = scipy.mean(matrix, axis=0)
-    # std_err = scipy.stats.sem(matrix, axis=0)
-    # h_upper = std_err * scipy.stats.t.ppf((1 + conf[1]) / 2, n - 1)
-    # h_lower = std_err * scipy.stats.t.ppf((conf[0]) / 2, n - 1)
-    # conf_ints = (m - h_upper, m + h_upper)
-    # return conf_ints
+
+def _calculate_smeanmat(X_new_T, cond_order, mctype):
+    """
+    Calculates the mean-centered matrix (smeanmat) based on the given mctype (for multi-block PLS).
+
+    Parameters:
+    X_new_T: Bootstrapped data matrix (samples x features) for Task portion of multi-block PLS.
+    cond_order: np.array
+        2-d np array containing number of subjects per condition in
+        each group.
+    mctype: int
+        Specify which mean-centring method to use.
+
+    Returns:
+    smeanmat: The mean-centered data matrix.
+    """
+    
+    if mctype == 0:
+        # Calculate group means
+        XT_means = class_functions._get_group_means(X_new_T, cond_order)
+
+        # Calculate the number of repeats for each group
+        group_sizes = np.array([sum(g) for g in cond_order])
+
+        # Get smeanmat
+        smeanmat = X_new_T - np.repeat(XT_means, group_sizes, axis=0)
+
+    elif mctype == 1:
+        # Calculate grand condition means
+        XT_means = class_functions._get_grand_condition_means(X_new_T, cond_order)
+
+        # Calculate the number of repeats for each condition
+        condition_sizes = np.array(cond_order.flatten())
+
+        # Repeat condition means for each group
+        condition_means_for_groups = np.tile(XT_means, reps=(cond_order.shape[0], 1))
+
+        # Get smeanmat
+        smeanmat = X_new_T - np.repeat(condition_means_for_groups, condition_sizes, axis=0)
+
+    elif mctype == 2:
+        smeanmat = X_new_T - np.mean(X_new_T, axis=0)
+
+    elif mctype == 3:
+        # Calculate group means, condition means, and the grand mean
+        XT_group_means = class_functions._get_group_means(X_new_T, cond_order)
+        XT_cond_means = class_functions._get_grand_condition_means(X_new_T, cond_order)
+        XT_grand_mean = np.mean(XT_cond_means, axis=0)
+
+        # Calculate the number of repeats for each group and condition
+        group_sizes = np.array([sum(group) for group in cond_order])
+        condition_sizes = np.array(cond_order.flatten())
+
+        # Repeat condition means for each group
+        condition_means_for_groups = np.tile(XT_cond_means, (cond_order.shape[0], 1))
+
+        # Expand group means, condition means, and the grand mean to match X_new_T
+        group_means_expanded = np.repeat(XT_group_means, group_sizes, axis=0)
+        condition_means_expanded = np.repeat(condition_means_for_groups, condition_sizes, axis=0)
+        grand_mean_expanded = np.tile(XT_grand_mean, (X_new_T.shape[0], 1))
+
+        # Get smeanmat
+        smeanmat = X_new_T - group_means_expanded - condition_means_expanded + grand_mean_expanded
+
+    return smeanmat

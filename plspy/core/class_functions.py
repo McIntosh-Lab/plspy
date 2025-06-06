@@ -42,9 +42,6 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
 
     ngrps = cond_order.shape[0]
 
-    # just grab first number of conditions from cond_order
-    # assumes there are the same number of subjects in each condition
-    nsub_per_cond = cond_order[0][0]
     # within each group remove group means from condition means
     if mctype == 0:
         X_means = _get_group_condition_means(X, cond_order)
@@ -54,7 +51,6 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
         # subtract condition-wise means from condition grand means
         # (within group)
         X_mc = X_means - np.repeat(group_means, repeats, axis=0)
-        # X_mc /= np.linalg.norm(X_mc)
 
     # remove grand condition means from each group condition mean
     elif mctype == 1:
@@ -68,23 +64,25 @@ def _mean_centre(X, cond_order, mctype=0, return_means=True):
 
     # remove grand mean (over all subjects and conditions)
     elif mctype == 2:
-        X_means = np.mean(X, axis=0)
-        X_mc = X - X_means
+        X_means = _get_group_condition_means(X, cond_order)
+        X_means_gr = np.mean(X, axis=0)
+        X_mc = X_means - X_means_gr
 
     # remove all main effects
     # subtract condition and group means (group by condition)
     elif mctype == 3:
         X_means = _get_group_condition_means(X, cond_order)
         group_means = _get_group_means(X, cond_order)
-
-        group_repeats = np.array([sum(i) for i in cond_order])
-        gm_repeats = np.repeat(group_means, group_repeats[0], axis=0)
+        cond_means = _get_grand_condition_means(X, cond_order)
+        grand_mean = np.mean(cond_means,axis=0)
 
         # duplicate X_means so it applies to both groups
-        # x_repeats = np.tile(A=X_means, reps=(ngrps, 1))
-        x_repeats = np.repeat(X_means, ngrps * nsub_per_cond, axis=0)
+        group_repeats = np.array([len(i) for i in cond_order])
+        gm_repeats = np.repeat(group_means, group_repeats[0], axis=0)
+        cm_repeats = np.tile(A=cond_means, reps=(ngrps, 1))
+        gr_repeats = np.tile(A=grand_mean, reps=(X_means.shape[0], 1))
 
-        X_mc = X - x_repeats - gm_repeats
+        X_mc = X_means - cm_repeats - gm_repeats + gr_repeats
     else:
         raise exceptions.NotImplementedError(
             "Specified mean-centring method is either not implemented "
@@ -153,6 +151,7 @@ def _run_pls_contrast(M, C, compute_uv=True):
     if compute_uv:
         V = CB.T
         U = C
+        
         # U = CB.T
         # V = C
         # V = VS / s
@@ -372,15 +371,15 @@ def _get_group_condition_means(X, cond_order):
 
     grp_cond_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
     # group_means = _get_group_means(X, cond_order)
-    group_sums = np.sum(cond_order, axis=1)
+    group_sums = np.sum(cond_order, axis=1) #number of subs in each group
     # index counters for X_means and X, respectively
     mc = 0
     xc = 0
-
-    for i in range(len(cond_order)):
+    
+    for i in range(len(cond_order)): #for each group
         grp_cond_means[mc : mc + len(cond_order[i]),] = _mean_single_group(
             X[
-                xc : xc + group_sums[i],
+                xc : xc + group_sums[i], #grab subjects from current group from X 
             ],
             cond_order[i],
         )
@@ -432,7 +431,7 @@ def _get_grand_condition_means(X, cond_order):
     return grand_cond_means
 
 
-def _create_multiblock(X, Y, cond_order, mctype=0):
+def _create_multiblock(X, cond_order, pls_alg, bscan, mctype=0, norm_opt = True, Xbscan=None, Ybscan=None):
     """Creates multiblock matrix from X and Y.
 
     Combines mean-centred result of X and correlation matrix R from X and Y
@@ -442,13 +441,12 @@ def _create_multiblock(X, Y, cond_order, mctype=0):
     ----------
     X : np.array
         Neural matrix passed into PLS class.
-    Y : np.array
-        Behavioural matrix passed into PLS class.
     cond_order: np.array
         2-d np array containing number of subjects per condition in
         each group.
     mctype : int
-        Specify which mean-centring method to use. TODO: add other types
+        Specify which mean-centring method to use.
+    #TO DO: add in description for norm_opt, Xbscan, Ybscan
 
     Returns
     -------
@@ -457,15 +455,227 @@ def _create_multiblock(X, Y, cond_order, mctype=0):
         correlation matrix computed from X and Y.
 
     """
-    mc = _mean_centre(X, cond_order, mctype, return_means=False)
-    # mc_norm = mc / np.linalg.norm(mc, axis=0)
-    mc_norm = (mc.T @ np.linalg.inv(np.diag(np.linalg.norm(mc, axis=1)))).T
-    R = _compute_corr(X, Y, cond_order)
-    # R_norm = R / np.linalg.norm(R, axis=0)
-    R_norm = (R.T @ np.linalg.inv(np.diag(np.linalg.norm(R, axis=1)))).T
+
+    # Task portion of multi-block - uses full data
+    if pls_alg in ["cmb"]:
+        # Contrast multi-block
+        mc = _get_group_condition_means(X, cond_order)
+    else:
+        # Regular multi-block
+        mc = _mean_centre(X, cond_order, mctype, return_means=False) 
+
+    # Behaviour portion of multi-block - uses bscan data
+    bscan_cond_order = cond_order[:,bscan]
+    R = _compute_corr(Xbscan, Ybscan, bscan_cond_order)
+
+    start_mc = 0
+    start_b = 0 
+    stacked = []
+
+    # Loop through each group & stack task portion on behaviour portion
+    for group_sizes in cond_order:
+        num_conditions_b = len(bscan)
+        num_conditions_mc = len(group_sizes)
+        # Extract corresponding rows for this group
+        mc_group = mc[start_mc : start_mc + num_conditions_mc, :]
+        R_group = R[start_b : start_b + num_conditions_b*Ybscan.shape[1], :]
+
+        if norm_opt is True:
+            mc_group = mc_group / np.linalg.norm(mc_group, axis=1, keepdims=True)
+            R_group = R_group / np.linalg.norm(R_group, axis=1, keepdims=True)
+
+        # Stack mc_group and R_group under each other
+        stacked.append(np.vstack((mc_group, R_group)))  
+
+        start_mc += num_conditions_mc  # Update index
+        start_b += num_conditions_b*Ybscan.shape[1]  # Update index
 
     # stack mc and R
-    mb = np.array([mc_norm, R_norm]).reshape(
-        mc_norm.shape[0] + R_norm.shape[0], -1
-    )
+    mb = np.vstack(stacked)
+
     return mb
+
+def _get_Tu_Bu(U, n_cond, n_behav, cond_order, bscan):
+    """
+    Seperate U (Task/Behaviour LV) into Task & Behaviour for Multi-block PLS
+
+    Parameters:
+    -----------
+    Tu : np.ndarray
+        Task u 
+
+    n_cond : int
+        Number of conditions.
+
+    n_behav : int
+        Number of behaviours.
+
+    cond_order: np.array
+        2-d np array containing number of subjects per condition in
+        each group.
+
+    bscan : array-like
+        List/array specifying the subset of conditions to be used.
+
+    Returns:
+    --------
+    Tu : np.ndarray
+        Task portion of U.(equivalent to the task portion of `TBv` in matlab)
+    Bu: np.ndarray
+        Behaviour portion of U.(equivalent to the behaviour portion of `TBv` in matlab)
+    """
+    # Split U into Tu and Bu
+    for group_num, group_sizes in enumerate(cond_order):
+        group_num = group_num + 1       
+        num_conditions_b = len(bscan)
+
+        # Get Tu
+        start_row = (group_num - 1) * n_cond + (group_num - 1) * num_conditions_b * n_behav
+        end_row = start_row + n_cond
+
+        # Extract the rows from u
+        extracted_rows = U[start_row:end_row, :]
+        
+        # Append the extracted rows to Tu
+        if group_num == 1:
+            Tu = extracted_rows
+        else:
+            Tu = np.vstack((Tu, extracted_rows))
+        
+        # Get Bu
+        start_row = (group_num - 1) * n_cond + (group_num - 1) * num_conditions_b * n_behav + n_cond
+        end_row = start_row + num_conditions_b * n_behav
+
+        # Extract the rows from u
+        extracted_rows = U[start_row:end_row, :]
+
+        # Append the extracted rows to Tu
+        if group_num == 1:
+            Bu = extracted_rows
+        else:
+            Bu = np.vstack((Bu, extracted_rows))
+
+    return Tu, Bu
+        
+def _get_Tusc(Tu, n_cond, cond_order):
+    """
+    Compute the Tusc matrix - Task/Design scores 
+
+    Parameters:
+    -----------
+    Tu : np.ndarray
+        Task u (store seperately for multi-block)
+
+    n_cond : int
+        Number of conditions.
+
+    cond_order: np.array
+        2-d np array containing number of subjects per condition in
+        each group.
+
+    Returns:
+    --------
+    Tusc : np.ndarray
+        Matrix of task/design scores.(equivalent to the task portion of `TBvsc` in matlab)
+
+    """
+    for group_num, group_sizes in enumerate(cond_order):
+        group_num = group_num + 1
+
+        num_subs_in_group = group_sizes[0]
+        num_col = Tu.shape[1]
+        tmp = np.array([]).reshape(0, num_col)
+
+        # Loop over conditions
+        for k1 in range(n_cond):
+            # Extract rows for the current condition
+            start_row = (group_num - 1) * n_cond + k1
+            tmp1 = Tu[start_row:start_row + 1, :]
+
+            # Expand for the number of subjects in this condition
+            tmp1 = np.tile(tmp1, (group_sizes[k1], 1))
+            tmp = np.vstack((tmp, tmp1))
+
+        # Append to Tusc
+        if group_num == 1:
+            Tusc = tmp
+        else:
+            Tusc = np.vstack((Tusc, tmp))
+            
+    return Tusc
+
+
+def _get_Busc(Bu, n_cond, Ybscan, cond_order, bscan):
+    """
+    Compute the Busc matrix - Behaviour scores 
+
+    Parameters:
+    -----------
+    Bu : np.ndarray
+        Behaviour u (store seperately for multi-block)
+
+    n_cond : int
+        Number of conditions.
+
+    Ybscan : np.array
+        Behavioural matrix for conditions of interest.
+
+    cond_order: np.array
+        2-d np array containing number of subjects per condition in
+        each group.
+
+    bscan : array-like
+        List/array specifying the subset of conditions to be used.
+
+    Returns:
+    --------
+    Busc : np.ndarray
+        Matrix of behaviour scores.(equivalent to the behaviour portion of `TBvsc` in matlab)
+
+    """
+
+    num_conditions_b = len(bscan)
+    n_behav = Ybscan.shape[1]
+    # Compute Busc
+    Busc = []
+    for group_num, group_sizes in enumerate(cond_order):
+        group_num = group_num + 1
+
+        num_subs_in_group = group_sizes[0]
+        num_col = n_behav
+        tmp = []
+
+        if group_num == 1:
+            span = 0
+        else:
+            span = sum(cond_order[:group_num-1,0]) * num_conditions_b
+
+        # Loop over conditions
+        for k1 in range(1,1+num_conditions_b):
+            # Extract rows for the current condition
+            bdata_rows = slice(span +  num_subs_in_group * (k1-1), span +  num_subs_in_group * k1)
+            lv_rows = slice(num_col * (k1-1) + num_col * num_conditions_b * (group_num-1), 
+                            num_col * (k1) + num_col * num_conditions_b * (group_num-1))
+
+            # Perform matrix multiplication
+            tmp1 = Ybscan[bdata_rows,:] @ Bu[lv_rows, :]
+            tmp.append(tmp1)
+
+        # Append to Busc
+        if group_num == 1:
+            Busc = np.vstack(tmp)
+        else:
+            Busc = np.vstack((Busc, np.vstack(tmp)))
+
+    return Busc
+
+
+def _normalize(variable):
+    """
+    Normalize Euclidean distance of vectors in original 
+ 	matrix to unit 1.
+    """
+    base = np.linalg.norm(variable, axis=0)
+    normed_variable = np.divide(variable, base, where=base != 0)
+   
+    return normed_variable

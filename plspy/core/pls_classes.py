@@ -6,7 +6,7 @@ import scipy.stats
 
 # import helpers
 # project imports
-from . import bootstrap_permutation, class_functions, exceptions, gsvd
+from . import bootstrap_permutation, split_half_resampling, class_functions, exceptions, gsvd
 
 
 class PLSBase(abc.ABC):
@@ -185,8 +185,10 @@ class _MeanCentreTaskPLS(PLSBase):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
         
         if len(X.shape) != 2:  # or len(X.shape) < 2:
             raise exceptions.ImproperShapeError(
@@ -253,12 +255,43 @@ class _MeanCentreTaskPLS(PLSBase):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
-            mctype=self.mctype,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("----Running Split-half Reproducibility Tests----\n")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=None
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = None,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
+        else:
+            print("The split-half resampling reproducibility tests were not run.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -432,9 +465,10 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
-
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -492,7 +526,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
 
         # compute R correlation matrix
         self.R = class_functions._compute_R(self.X, self.Y, self.cond_order)
-
         self.U, self.s, self.V = class_functions._run_pls(self.R)
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
@@ -514,11 +547,43 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             self.s,
             self.V,
             self.cond_order,
+            mctype = None,
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("----Running Split-half Reproducibility Tests----\n")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=None,
+                    contrasts=None
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=None,
+                    contrasts = None,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
+        else:
+            print("The split-half resampling reproducibility tests were not run.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -649,9 +714,10 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
-
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is not None:
             raise ValueError(
@@ -693,7 +759,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        self.contrasts = contrasts
+        self.contrasts = class_functions._normalize(contrasts)
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -706,23 +772,29 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.mctype = mctype
         # TODO: catch extraneous keyword args
 
-        # compute R correlation matrix
-        self.R = class_functions._mean_centre(
-            self.X, self.cond_order, return_means=False, mctype=self.mctype
-        )
-
+        # compute mean-centred matrix
+        # self.R = class_functions._mean_centre(
+        #     self.X, self.cond_order, return_means=False, mctype=self.mctype
+        # )
+        # get matrix for svd
+        self.R = class_functions._get_group_condition_means(self.X, self.cond_order)
+        
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
+
         # norm lvintercorrs if rotate method is
         # Procrustes or derived
         if rotate_method in [1, 2]:
             U_normed = self.U / np.linalg.norm(self.U)
             self.lvintercorrs = U_normed.T @ U_normed
         else:
-            self.lvintercorrs = self.U.T @ self.U
+            self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+        # get X_latents
+        V_normed = class_functions._normalize(self.V)
+        self.X_latent = class_functions._compute_X_latents(self.X, V_normed)
+        
         # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
@@ -732,13 +804,45 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
-            mctype=self.mctype,
+            #mctype=self.mctype,
             contrast=self.contrasts,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("----Running Split-half Reproducibility Tests----\n")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=self.contrasts
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    None,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = self.contrasts,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
+        else:
+            print("The split-half resampling reproducibility tests were not run.")
+                    
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -859,9 +963,10 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
-
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -907,21 +1012,25 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        self.contrasts = contrasts
+
+        self.contrasts = class_functions._normalize(contrasts)
 
         self.num_perm = num_perm
         self.num_boot = num_boot
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         class_functions._compute_R = class_functions._compute_corr
 
         # compute R correlation matrix
         self.R = class_functions._compute_R(self.X, self.Y, self.cond_order)
-
+        #self.U, _, _= class_functions._run_pls(self.R)
+        #self.contrasts = np.sign(contrasts) * np.abs(self.U) # apply contrast signs to U
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
@@ -931,7 +1040,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             U_normed = self.U / np.linalg.norm(self.U)
             self.lvintercorrs = U_normed.T @ U_normed
         else:
-            self.lvintercorrs = self.U.T @ self.U
+            self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         self.Y_latent = class_functions._compute_Y_latents(
@@ -945,12 +1054,44 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             self.s,
             self.V,
             self.cond_order,
+            mctype = None,
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("----Running Split-half Reproducibility Tests----\n")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=None,
+                    contrasts=self.contrasts
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=None,
+                    contrasts = self.contrasts,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
+        else:
+            print("The split-half resampling reproducibility tests were not run.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
@@ -1029,6 +1170,10 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    bscan : array-like
+        List/array specifying the subset of conditions to be used. E.g., [1 3] for 
+        conditions 1 and 3. The conditions should be listed in ascending order. 
+        Default bscan is all conditions i.e., [1 2 3 4] for 4 conditions.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -1065,10 +1210,14 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     ):
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
+        
 
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
+        #Note: k = number of conditions
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -1116,33 +1265,92 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                 )
             self.cond_order = cond_order
 
+        # Get bscan
+        if "bscan" not in self._user_defined_attrs:
+            self.bscan = [i for i in range (self.num_conditions)]
+        else: 
+            #self.bscan = [i-1 for i in self.bscan]
+            if self.bscan != sorted(self.bscan):
+                print("provided bscan not in ascending order - conditions in bscan will be correctly reordered")
+            invalid_bscan = 0
+            for item in self.bscan:
+                if item < 0 or item > self.num_conditions-1:
+                    invalid_bscan = 1
+            if invalid_bscan == 1:
+                print(f"bscan should be a subset of: 1 to {self.num_conditions}")
+
         self.num_perm = num_perm
         self.num_boot = num_boot
 
         # assign functions to class
         # TODO: decide whether or not these should be applied
-        # or if users should import from class_functions module
+        # or if users should import from class_functions module     
         self._create_multiblock = class_functions._create_multiblock
         self._compute_corr = class_functions._compute_corr
 
+        # only keep conditions of interest from bscan for behavioural portion
+        mask = np.array([])
+        for item in self.cond_order:
+            for cond_i, cond in enumerate(item):
+                if cond_i in self.bscan:
+                    mask = np.concatenate((mask,np.repeat(1,cond)))
+                else:
+                    mask = np.concatenate((mask,np.repeat(0,cond)))
+        
+        mask = mask.flatten().astype(bool)
+        # Note: If bscan is full (e.g., not specified by user), all instances of Xbscan = X & Ybscan = Y
+        # i.e., Xbscan will contain all conditions and will be equivalent to X.
+        self.Xbscan = self.X[mask]
+        self.Ybscan = self.Y[mask]
+        
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
-            self.X, self.Y, self.cond_order
-        )
+            self.X, self.cond_order, self.pls_alg, self.bscan, self.mctype,
+            Xbscan = self.Xbscan, Ybscan = self.Ybscan) 
 
         self.U, self.s, self.V = class_functions._run_pls(self.multiblock)
-        # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
-        self.Y_latent = class_functions._compute_Y_latents(
-            self.Y, self.U, self.cond_order
-        )
+       
+        #### COMPUTE USC ####
+        # Task X_latent (Tusc in matlab)
+        V_normed = class_functions._normalize(self.V)
+        T_X_latent = class_functions._compute_X_latents(self.X, V_normed)
+
+        # Behaviour X_latents (Busc in matlab)
+        B_X_latent = class_functions._compute_X_latents(self.Xbscan, self.V) 
+
+        #Stack
+        self.X_latent = np.vstack((np.array(T_X_latent),  np.array(B_X_latent)))
+
+        # Change names to match matlab
+        self.usc = self.X_latent 
+        self.Tusc = T_X_latent
+        self.Busc = B_X_latent
+        # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
+
+
+       #### COMPUTE VSC ####
+        # Split U into Tu and Bu
+        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order, self.bscan)
+
+        # Compute Tusc (Tvsc in matlab)
+        Tusc = class_functions._get_Tusc(Tu, num_conditions, self.cond_order)
+
+        # Compute Busc (Bvsc in matlab)
+        Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
+        
+        # Change names to match matlab
+        self.Bvsc = Busc
+        self.Tvsc = Tusc
+        self.Tv = Tu
+        self.Bv = Bu
+        self.Y_latent = np.vstack([Tusc, Busc])
+        self.vsc = self.Y_latent 
+        
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
-            self.X_latent, self.Y, self.cond_order
+            B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
         )
-        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
-        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
-
+        
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1151,18 +1359,58 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            bscan = self.bscan,
+            Xbscan = self.Xbscan,
+            Ybscan = self.Ybscan
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("----Running Split-half Reproducibility Tests----\n")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=None,
+                    bscan = self.bscan,
+                    Xbscan = self.Xbscan,
+                    Ybscan = self.Ybscan
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = None,
+                    bscan = self.bscan,
+                    Xbscan = self.Xbscan,
+                    Ybscan = self.Ybscan,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
+        else:
+            print("The split-half resampling reproducibility tests were not run.")
+
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
 
 
-# deregistered for now until Randy and I work out a new implementation
-# @PLSBase._register_subclass("cmb")
+@PLSBase._register_subclass("cmb")
 class _ContrastMultiblockPLS(_MultiblockPLS):
     """Driver class for Multiblock PLS.
 
@@ -1277,8 +1525,10 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.pls_alg = kwargs["pls_alg"]
 
         # TODO: catch extraneous keyword args
+        self._user_defined_attrs = set()
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self._user_defined_attrs.add(k)
 
         if Y is None:
             raise exceptions.MissingParameterError(
@@ -1295,7 +1545,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         self.X = X
         self.Y = Y
-
+        
         self.groups_sizes, self.num_groups = self._get_groups_info(
             groups_sizes
         )
@@ -1320,20 +1570,57 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                 )
             self.cond_order = cond_order
 
+
+       # Get bscan
+        if "bscan" not in self._user_defined_attrs:
+            self.bscan = [i for i in range (self.num_conditions)]
+        else: 
+            #self.bscan = [i-1 for i in self.bscan]
+            if self.bscan != sorted(self.bscan):
+                print("provided bscan not in ascending order - conditions in bscan will be correctly reordered")
+            invalid_bscan = 0
+            for item in self.bscan:
+                if item < 0 or item > self.num_conditions-1:
+                    invalid_bscan = 1
+            if invalid_bscan == 1:
+                print(f"bscan should be a subset of: 1 to {self.num_conditions}")
+
+        # only keep conditions of interest from bscan for behavioural portion
+        mask = np.array([])
+        for item in self.cond_order:
+            for cond_i, cond in enumerate(item):
+                if cond_i in self.bscan:
+                    mask = np.concatenate((mask,np.repeat(1,cond)))
+                else:
+                    mask = np.concatenate((mask,np.repeat(0,cond)))
+        
+        mask = mask.flatten().astype(bool)
+
+        # Note: If bscan is full (e.g., not specified by user), all instances of Xbscan = X & Ybscan = Y
+        # i.e., Xbscan will contain all conditions and will be equivalent to X.
+        self.Xbscan = self.X[mask]
+        self.Ybscan = self.Y[mask]
+
+        self.num_perm = num_perm
+        self.num_boot = num_boot
+
         if contrasts is None:
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
             )
-        self.contrasts = contrasts
+        # Create a binary mask for conditions of interest
+        TBi = np.ones(self.num_conditions)
+        Bi = np.zeros((self.Y.shape[1], self.num_conditions))
+        Bi[:, self.bscan] = 1
 
-        self.num_perm = num_perm
-        self.num_boot = num_boot
-        # so pylint will shut up
-        self.pls_alg = kwargs["pls_alg"]
-        # TODO: catch extraneous keyword args
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        # Flatten and repeat for num_groups
+        TBi = np.hstack((TBi, Bi.flatten()))
+        TBi = np.tile(TBi, self.num_groups)
 
+        # Apply the mask
+        contrasts = contrasts[TBi.astype(bool), :]
+        self.contrasts = class_functions._normalize(contrasts)
+        
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module
@@ -1343,36 +1630,47 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
-            self.X, self.Y, self.cond_order
-        )
-
-        self.contrasts = self.contrasts / np.linalg.norm(
-            self.contrasts, axis=0
-        )
-        print(self.contrasts)
-
+            self.X, self.cond_order, self.pls_alg, self.bscan, self.mctype,
+            Xbscan = self.Xbscan, Ybscan = self.Ybscan) 
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.multiblock, self.contrasts
         )
-        # norm lvintercorrs if rotate method is
-        # Procrustes or derived
-        if rotate_method in [1, 2]:
-            U_normed = self.U / np.linalg.norm(self.U)
-            self.lvintercorrs = U_normed.T @ U_normed
-        else:
-            self.lvintercorrs = self.U.T @ self.U
-        # self.X_latent = np.dot(self.X_mc, self.V)
-        self.X_latent = class_functions._compute_X_latents(self.X, self.V)
-        self.Y_latent = class_functions._compute_Y_latents(
-            self.Y, self.U, self.cond_order
-        )
+        
+        # Task X_latent (Tusc in matlab)
+        V_normed = class_functions._normalize(self.V)
+        T_X_latent = class_functions._compute_X_latents(self.X, V_normed)
+        
+        # Behaviour X_latents (Busc in matlab)
+        B_X_latent = class_functions._compute_X_latents(self.Xbscan, self.V) 
+
+        #Stack
+        self.X_latent = np.vstack((np.array(T_X_latent),  np.array(B_X_latent)))
+        
+        # Split U into Tu and Bu
+        Tu, Bu = class_functions._get_Tu_Bu(self.U, num_conditions, self.Y.shape[1], self.cond_order, self.bscan)
+        
+        # Compute Tusc (Tvsc in matlab)
+        Tusc = class_functions._get_Tusc(Tu, num_conditions, self.cond_order)
+
+        # Compute Busc (Bvsc in matlab)
+        Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
+
+        # Change names to match matlab
+        self.Bvsc = Busc
+        self.Tvsc = Tusc
+        self.Tv = Tu
+        self.Bv = Bu
+        self.Y_latent = np.vstack([Tusc, Busc])
+        self.vsc = self.Y_latent
+        self.usc = self.X_latent # to do: add documentation that explains X and Y latent are equivalent to vsc and usc
+        self.Tusc = T_X_latent
+        self.Busc = B_X_latent
+
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
-            self.X_latent, self.Y, self.cond_order
+            B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
         )
-        # self.lvcorrs[:, 1:] = self.lvcorrs[:, 1:] * -1
-        # self.lvcorrs[:, 0] = np.abs(self.lvcorrs[:, 0])
-
+        
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1381,12 +1679,53 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.s,
             self.V,
             self.cond_order,
+            self.mctype,
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
+            bscan = self.bscan,
+            Xbscan = self.Xbscan,
+            Ybscan = self.Ybscan
         )
+
+        # Split-half resampling
+        if "num_split" in self._user_defined_attrs:
+            self.num_split = int(self.num_split)
+            if self.num_split > 0:
+                print("----Running Split-half Reproducibility Tests----\n")
+                self.pls_repro_tt = split_half_resampling.split_half_test_train(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,                    
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts=self.contrasts,
+                    bscan = self.bscan,
+                    Xbscan = self.Xbscan,
+                    Ybscan = self.Ybscan,
+                    )
+                self.pls_repro_sh = split_half_resampling.split_half(
+                    self.pls_alg,
+                    self.X,
+                    self.Y,
+                    self.cond_order,
+                    num_split=self.num_split,
+                    mctype=self.mctype,
+                    contrasts = self.contrasts,
+                    bscan=self.bscan,
+                    Xbscan=self.Xbscan,
+                    Ybscan = self.Ybscan,
+                    lv = self.lv-1,
+                    CI = self.CI,
+                )   
+            else:
+                print("num_split value was specified as zero. The split-half resampling reproducibility tests were not run.")   
+        else:
+            print("The split-half resampling reproducibility tests were not run.")
+            
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
         print("\nDone.")
