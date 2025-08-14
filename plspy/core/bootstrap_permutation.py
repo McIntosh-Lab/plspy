@@ -161,7 +161,9 @@ class _ResampleTestTaskPLS(ResampleTest):
                 Xbscan = Xbscan,
                 Ybscan = Ybscan
             )
-
+        else:
+            self.permute_ratio = "NA"
+            
         if nboot > 0:
             if self.pls_alg in ["rb", "csb"]:
                 (
@@ -234,6 +236,10 @@ class _ResampleTestTaskPLS(ResampleTest):
                     dist=self.dist,
                     contrast=contrast,
                 )
+        else:
+            self.conf_ints = ["NA", "NA"]
+            self.std_errs = "NA"
+            self.boot_ratios = "NA"
 
     @staticmethod
     def _permutation_test(
