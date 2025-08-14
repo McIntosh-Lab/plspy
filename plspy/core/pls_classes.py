@@ -284,7 +284,7 @@ class _MeanCentreTaskPLS(PLSBase):
                     num_split=self.num_split,
                     mctype=self.mctype,
                     contrasts = None,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -576,7 +576,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
                     num_split=self.num_split,
                     mctype=None,
                     contrasts = None,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -835,7 +835,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
                     num_split=self.num_split,
                     mctype=self.mctype,
                     contrasts = self.contrasts,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )
             else:
@@ -1084,7 +1084,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
                     num_split=self.num_split,
                     mctype=None,
                     contrasts = self.contrasts,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -1397,7 +1397,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                     bscan = self.bscan,
                     Xbscan = self.Xbscan,
                     Ybscan = self.Ybscan,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -1718,7 +1718,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                     bscan=self.bscan,
                     Xbscan=self.Xbscan,
                     Ybscan = self.Ybscan,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
