@@ -138,7 +138,9 @@ class _ResampleTestTaskPLS(ResampleTest):
         rotate_method=0,
         bscan = None,
         Xbscan = None,
-        Ybscan = None
+        Ybscan = None,
+        lvcorrs_orig = None,
+        Tvsc_orig = None
     ):
         self.dist = dist
 
@@ -188,6 +190,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     rotate_method=rotate_method,
                     dist=self.dist,
                     contrast=contrast,
+                    lvcorrs_orig = lvcorrs_orig
                 )
             elif self.pls_alg in ["mb", "cmb"]:
                 (
@@ -213,7 +216,9 @@ class _ResampleTestTaskPLS(ResampleTest):
                     contrast=contrast,
                     bscan = bscan,
                     Xbscan = Xbscan,
-                    Ybscan = Ybscan
+                    Ybscan = Ybscan,
+                    lvcorrs_orig = lvcorrs_orig,
+                    Tvsc_orig = Tvsc_orig
                 )
             else:
                 (
@@ -235,6 +240,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     rotate_method=rotate_method,
                     dist=self.dist,
                     contrast=contrast,
+                    Tvsc_orig = Tvsc_orig
                 )
         else:
             self.conf_ints = ["NA", "NA"]
@@ -271,6 +277,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # singvals = np.empty((s.shape[0], niter))
         greatersum = np.zeros(s.shape)
+        stepdown_greatersum = np.zeros(s.shape)     # for stepdown test
         s[np.abs(s) < threshold] = 0
         debug = True
         debug_dict = {}
@@ -289,6 +296,13 @@ class _ResampleTestTaskPLS(ResampleTest):
             total_s = np.sum(np.power(mb_datamat_notnormed, 2))
             per_orig = np.power(s,2) / np.sum(np.power(s,2))
             org_s = np.sqrt(per_orig * total_s)
+        else:
+            org_s = np.copy(s)
+
+        # --- Stepdown baseline ---
+        totcov_org = np.zeros_like(org_s)
+        for r in range(len(org_s)):
+            totcov_org[r] = np.sum(org_s[r:] ** 2)
 
         print("----Running Permutation Test----\n")
         for i in range(niter):
@@ -461,9 +475,17 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             permute_ratio = greatersum / (niter + 1)
 
+            # --- Stepdown permutation test ---
+            totcov_perm = np.zeros_like(s_hat)
+            for r in range(len(s_hat)):
+                totcov_perm[r] = np.sum(s_hat[r:] ** 2)
+
+            stepdown_greatersum += totcov_perm >= totcov_org
+            stepdown_ratio = stepdown_greatersum / (niter + 1)
 
         print(f"real s: {s}")
         print(f"ratio: {permute_ratio}")
+        print(f"Stepdown perm ratio: {stepdown_ratio}")
         if debug:
             debug_dict["s_list"] = s_list
             debug_dict["sum_s"] = sum_perm
@@ -490,7 +512,9 @@ class _ResampleTestTaskPLS(ResampleTest):
         contrast=None,
         bscan = None,
         Xbscan = None,
-        Ybscan = None
+        Ybscan = None,
+        lvcorrs_orig = None,
+        Tvsc_orig = None
     ):
         """Runs a bootstrap estimation on X matrix. Resamples X with
         replacement according to the condition order, runs PLS on the
@@ -757,20 +781,28 @@ class _ResampleTestTaskPLS(ResampleTest):
         # compute confidence intervals
         if pls_alg in ["mct","cst"]:
             # Task PLS (ulusc & llusc in matlab)
-            conf_int = resample.confidence_interval(
-                Tdistrib, conf=dist)
+            # conf_int = resample.confidence_interval(
+            #     Tdistrib, conf=dist) # TO DO: add in std of Tdistrib
+            std_errs_tmp = np.std(Tdistrib, axis=0)
+            conf_tmp = std_errs_tmp * 1.96 # default to 1.96 - TO DO: add option for CI level
+            conf_int =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
         else:
             # Behavioural PLS CI (ulcorr & llcorr in matlab)
-            conf_int = resample.confidence_interval(
-                left_sv_sampled, conf=dist
-            )
-
+            # conf_int = resample.confidence_interval(
+            #     left_sv_sampled, conf=dist
+            # )
+            std_errs_tmp = np.std(left_sv_sampled, axis=0)
+            conf_tmp = std_errs_tmp * 1.96 # default to 1.96 - TO DO: add option for CI level
+            conf_int =(lvcorrs_orig - conf_tmp,lvcorrs_orig + conf_tmp)
+        
             if pls_alg in ["mb", "cmb"]:
             # Multi-block Task CI (ulusc & llusc in matlab)
-                conf_int_T = resample.confidence_interval(
-                Tdistrib, conf=dist
-                )      
-            
+                # conf_int_T = resample.confidence_interval(
+                # Tdistrib, conf=dist
+                # )      
+                std_errs_tmp = np.std(Tdistrib, axis=0)
+                conf_tmp = std_errs_tmp * 1.96 # default to 1.96 - TO DO: add option for CI level
+                conf_int_T =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
 
 
         if debug:

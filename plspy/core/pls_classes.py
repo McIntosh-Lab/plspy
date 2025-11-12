@@ -247,6 +247,9 @@ class _MeanCentreTaskPLS(PLSBase):
         print(f"X_mc shape: {self.X_mc.shape}")
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+
+        Tvsc_orig = class_functions._get_group_condition_means(self.X_latent, self.cond_order)
+
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -260,6 +263,7 @@ class _MeanCentreTaskPLS(PLSBase):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            Tvsc_orig = Tvsc_orig,
         )
 
         # Split-half resampling
@@ -552,6 +556,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             nperm=self.num_perm,
             nboot=self.num_boot,
             rotate_method=rotate_method,
+            lvcorrs_orig = self.lvcorrs,
         )
 
         # Split-half resampling
@@ -794,7 +799,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         # get X_latents
         V_normed = class_functions._normalize(self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, V_normed)
-        
+        Tvsc_orig = class_functions._get_group_condition_means(self.X_latent, self.cond_order)
         # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
@@ -811,6 +816,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             rotate_method=rotate_method,
             #mctype=self.mctype,
             contrast=self.contrasts,
+            Tvsc_orig = Tvsc_orig,
         )
 
         # Split-half resampling
@@ -845,6 +851,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
                     
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
+
         print("\nDone.")
 
 
@@ -1046,6 +1053,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         self.Y_latent = class_functions._compute_Y_latents(
             self.Y, self.U, self.cond_order
         )
+
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1060,6 +1068,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             contrast=self.contrasts,
+            lvcorrs_orig = self.lvintercorrs,
         )
 
         # Split-half resampling
@@ -1338,6 +1347,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         # Compute Busc (Bvsc in matlab)
         Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
         
+        # Compute Tvsc_orig (orig_Tusc in matlab)
+        Tvsc_orig = class_functions._get_group_condition_means(T_X_latent, self.cond_order)
+
         # Change names to match matlab
         self.Bvsc = Busc
         self.Tvsc = Tusc
@@ -1345,7 +1357,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.Bv = Bu
         self.Y_latent = np.vstack([Tusc, Busc])
         self.vsc = self.Y_latent 
-        
+
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
             B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
@@ -1366,7 +1378,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             rotate_method=rotate_method,
             bscan = self.bscan,
             Xbscan = self.Xbscan,
-            Ybscan = self.Ybscan
+            Ybscan = self.Ybscan,
+            lvcorrs_orig = self.lvcorrs,
+            Tvsc_orig = Tvsc_orig
         )
 
         # Split-half resampling
@@ -1655,6 +1669,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         # Compute Busc (Bvsc in matlab)
         Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
 
+        # Compute Tvsc_orig (orig_Tusc in matlab)
+        Tvsc_orig = class_functions._get_group_condition_means(T_X_latent, self.cond_order)
+
         # Change names to match matlab
         self.Bvsc = Busc
         self.Tvsc = Tusc
@@ -1670,7 +1687,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.lvcorrs = self._compute_corr(
             B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
         )
-        
+
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1687,7 +1704,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             contrast=self.contrasts,
             bscan = self.bscan,
             Xbscan = self.Xbscan,
-            Ybscan = self.Ybscan
+            Ybscan = self.Ybscan,
+            lvcorrs_orig = self.lvcorrs,
+            Tvsc_orig = Tvsc_orig
         )
 
         # Split-half resampling
