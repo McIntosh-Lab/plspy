@@ -264,6 +264,7 @@ class _MeanCentreTaskPLS(PLSBase):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -557,6 +558,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             nboot=self.num_boot,
             rotate_method=rotate_method,
             lvcorrs_orig = self.lvcorrs,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -817,6 +819,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             #mctype=self.mctype,
             contrast=self.contrasts,
             Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -1069,6 +1072,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             rotate_method=rotate_method,
             contrast=self.contrasts,
             lvcorrs_orig = self.lvintercorrs,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -1380,7 +1384,8 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             Xbscan = self.Xbscan,
             Ybscan = self.Ybscan,
             lvcorrs_orig = self.lvcorrs,
-            Tvsc_orig = Tvsc_orig
+            Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -1706,7 +1711,8 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             Xbscan = self.Xbscan,
             Ybscan = self.Ybscan,
             lvcorrs_orig = self.lvcorrs,
-            Tvsc_orig = Tvsc_orig
+            Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling

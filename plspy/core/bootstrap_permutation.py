@@ -4,6 +4,8 @@ import numpy as np
 import scipy
 import scipy.stats
 from scipy.io import loadmat
+from scipy.stats import norm
+
 # project imports
 from . import class_functions, exceptions, gsvd, resample
 
@@ -140,7 +142,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         Xbscan = None,
         Ybscan = None,
         lvcorrs_orig = None,
-        Tvsc_orig = None
+        Tvsc_orig = None,
+        CI = 0.95
     ):
         self.dist = dist
 
@@ -190,7 +193,8 @@ class _ResampleTestTaskPLS(ResampleTest):
                     rotate_method=rotate_method,
                     dist=self.dist,
                     contrast=contrast,
-                    lvcorrs_orig = lvcorrs_orig
+                    lvcorrs_orig = lvcorrs_orig,
+                    CI = CI
                 )
             elif self.pls_alg in ["mb", "cmb"]:
                 (
@@ -218,7 +222,8 @@ class _ResampleTestTaskPLS(ResampleTest):
                     Xbscan = Xbscan,
                     Ybscan = Ybscan,
                     lvcorrs_orig = lvcorrs_orig,
-                    Tvsc_orig = Tvsc_orig
+                    Tvsc_orig = Tvsc_orig,
+                    CI = CI
                 )
             else:
                 (
@@ -240,7 +245,8 @@ class _ResampleTestTaskPLS(ResampleTest):
                     rotate_method=rotate_method,
                     dist=self.dist,
                     contrast=contrast,
-                    Tvsc_orig = Tvsc_orig
+                    Tvsc_orig = Tvsc_orig,
+                    CI = CI
                 )
         else:
             self.conf_ints = ["NA", "NA"]
@@ -514,7 +520,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         Xbscan = None,
         Ybscan = None,
         lvcorrs_orig = None,
-        Tvsc_orig = None
+        Tvsc_orig = None,
+        CI = 0.95
     ):
         """Runs a bootstrap estimation on X matrix. Resamples X with
         replacement according to the condition order, runs PLS on the
@@ -779,12 +786,14 @@ class _ResampleTestTaskPLS(ResampleTest):
         # maybe tokenizing a dictionary?
 
         # compute confidence intervals
+        CI_zscore = norm.ppf(1 - (1 - CI)/2)
+        #print(f"CI_zscore", CI_zscore)
         if pls_alg in ["mct","cst"]:
             # Task PLS (ulusc & llusc in matlab)
             # conf_int = resample.confidence_interval(
             #     Tdistrib, conf=dist) # TO DO: add in std of Tdistrib
             std_errs_tmp = np.std(Tdistrib, axis=0)
-            conf_tmp = std_errs_tmp * 1.96 # default to 1.96 - TO DO: add option for CI level
+            conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
             conf_int =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
         else:
             # Behavioural PLS CI (ulcorr & llcorr in matlab)
@@ -792,7 +801,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             #     left_sv_sampled, conf=dist
             # )
             std_errs_tmp = np.std(left_sv_sampled, axis=0)
-            conf_tmp = std_errs_tmp * 1.96 # default to 1.96 - TO DO: add option for CI level
+            conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
             conf_int =(lvcorrs_orig - conf_tmp,lvcorrs_orig + conf_tmp)
         
             if pls_alg in ["mb", "cmb"]:
@@ -801,7 +810,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 # Tdistrib, conf=dist
                 # )      
                 std_errs_tmp = np.std(Tdistrib, axis=0)
-                conf_tmp = std_errs_tmp * 1.96 # default to 1.96 - TO DO: add option for CI level
+                conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
                 conf_int_T =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
 
 
