@@ -557,18 +557,18 @@ class _ResampleTestTaskPLS(ResampleTest):
             else:
                 ncols = contrast.shape[1]
 
-            left_sv_sampled = np.empty((niter,np.product(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
-            Tdistrib = np.empty((niter, np.product(cond_order.shape), ncols))
-            LVcorr = np.empty((niter, np.product(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
+            left_sv_sampled = np.empty((niter,np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
+            Tdistrib = np.empty((niter, np.prod(cond_order.shape), ncols))
+            LVcorr = np.empty((niter, np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
 
         else:
             if pls_alg in ["rb"]:
-                ncols = np.product(cond_order.shape) * Y.shape[1]
+                ncols = np.prod(cond_order.shape) * Y.shape[1]
 
             if pls_alg in ["csb"]:
                 ncols = contrast.shape[1]
 
-            LVcorr = np.empty((niter, np.product(cond_order.shape) * Y.shape[1], ncols,))
+            LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
                 
             
         print("----Running Bootstrap Test----\n")

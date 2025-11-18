@@ -206,7 +206,7 @@ def _compute_corr(X, Y, cond_order):  # , n_cond):
         Concatenated computed correlation matrices for each condition
         in X/Y.
     """
-    R = np.empty((np.product(cond_order.shape) * Y.shape[1], X.shape[1]))
+    R = np.empty((np.prod(cond_order.shape) * Y.shape[1], X.shape[1]))
     # flatten ordering for easier iteration
     order_all = cond_order.reshape(-1)
     start = 0
@@ -369,7 +369,7 @@ def _get_group_condition_means(X, cond_order):
         Condition-wise mean for each group.
     """
 
-    grp_cond_means = np.empty((np.product(cond_order.shape), X.shape[-1]))
+    grp_cond_means = np.empty((np.prod(cond_order.shape), X.shape[-1]))
     # group_means = _get_group_means(X, cond_order)
     group_sums = np.sum(cond_order, axis=1) #number of subs in each group
     # index counters for X_means and X, respectively
