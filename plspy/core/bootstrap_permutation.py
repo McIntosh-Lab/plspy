@@ -72,7 +72,7 @@ class ResampleTest(abc.ABC):
 class _ResampleTestTaskPLS(ResampleTest):
     """Class that runs permutation and bootstrap tests for Task PLS. When run,
     this class generates fields for permutation test information
-    (permutation ratio, etc.) and for bootstrap test informtaion (confidence
+    (permutation ratio, etc.) and for bootstrap test information (confidence
     intervals, standard errors, bootstrap ratios, etc.).
 
     Parameters
@@ -98,21 +98,29 @@ class _ResampleTestTaskPLS(ResampleTest):
     nboot : int, optional
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 1000.
-    nonrotated : boolean, optional
-        Not implememted yet.
-    dist : 2-tuple of floats, optional
+    dist : 2-tuple of floats, deprecated
         Distribution values used for calculating the confidence interval in
         the bootstrap test. Defaults to (0.05, 0.95).
+    CI : float
+        Confidence level used to derive the z-score threshold for bootstrap
+        confidence intervals. Defaults to 0.95.
+        Note: The percentile-based CI approach is deprecated and not supported;
+        code remains commented out and requires manual changes to use.
 
     Attributes
     ----------
-    dist : 2-tuple of floats, optional
+    dist : 2-tuple of floats, deprecated
         Distribution values used for calculating the confidence interval in
         the bootstrap test. Defaults to (0.05, 0.95).
     permute_ratio : float
         Ratio of resampled values greater than observed values, divided by
         the number of iterations in the permutation test. A higher ratio
         indicates a higher level of randomness.
+    stepdown_ratio : float
+        Ratio of resampled cumulative covariances for each LV and the remaining
+        LVs that exceed the observed cumulative covariance, 
+        divided by the number of iterations in the permutation test. 
+        Provides a more stringent assessment than permute_ratio.
     conf_ints : 2-tuple of np.arrays
         Upper and lower element-wise confidence intervals for the resampled
         left singular vectors in a tuple.
@@ -120,8 +128,13 @@ class _ResampleTestTaskPLS(ResampleTest):
         Element-wise standard errors for the resampled right singular vectors.
     boot_ratios : np.array
         NumPy array containing element-wise ratios of
-
-    """
+    CI : float
+        Confidence level used to derive the z-score threshold for bootstrap
+        confidence intervals. Defaults to 0.95.
+    LVcorr : np.array
+        Bootstrap distribution of LV correlations across iterations for 
+        behavioural or multi-block PLS.
+        """
 
     def __init__(
         self,
@@ -136,7 +149,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         preprocess=None,
         nperm=1000,
         nboot=1000,
-        dist=(0.05, 0.95),
+#        dist=(0.05, 0.95),
         rotate_method=0,
         bscan = None,
         Xbscan = None,
@@ -145,8 +158,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         Tvsc_orig = None,
         CI = 0.95
     ):
-        self.dist = dist
-
+    #    self.dist = dist
+        self.CI = CI
         print(f"PLS ALG: {self.pls_alg}")
         if nperm > 0:
             self.permute_ratio, self.perm_debug_dict = self._permutation_test(
@@ -191,7 +204,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     self.pls_alg,
                     preprocess=preprocess,
                     rotate_method=rotate_method,
-                    dist=self.dist,
+#                    dist=self.dist,
                     contrast=contrast,
                     lvcorrs_orig = lvcorrs_orig,
                     CI = CI
@@ -216,7 +229,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     self.pls_alg,
                     preprocess=preprocess,
                     rotate_method=rotate_method,
-                    dist=self.dist,
+#                    dist=self.dist,
                     contrast=contrast,
                     bscan = bscan,
                     Xbscan = Xbscan,
@@ -243,7 +256,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     self.pls_alg,
                     preprocess=preprocess,
                     rotate_method=rotate_method,
-                    dist=self.dist,
+#                    dist=self.dist,
                     contrast=contrast,
                     Tvsc_orig = Tvsc_orig,
                     CI = CI
@@ -844,19 +857,6 @@ class _ResampleTestTaskPLS(ResampleTest):
             )
         else:
             return (conf_int, std_errs, boot_ratios, debug_dict)
-        # if Y is None:
-        #     return (conf_int, std_errs, boot_ratios, debug_dict)
-        # else:
-        #     llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
-        #     return (
-        #         conf_int,
-        #         std_errs,
-        #         boot_ratios,
-        #         LVcorr,
-        #         llcorr,
-        #         ulcorr,
-        #         debug_dict,
-        #     )
     
     def __repr__(self):
         stg = ""
@@ -865,7 +865,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += f"Ratio: {self.permute_ratio}\n\n"
         stg += "Bootstrap Test Results\n"
         stg += "----------------------\n\n"
-        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+#        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+        stg += f"Selected Confidence Interval Level: {self.CI}\n"
         stg += "\nLower CI: \n"
         stg += str(self.conf_ints[0])
         stg += "\n\nUpper CI: \n"
@@ -890,7 +891,8 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += f"Ratio: {self.permute_ratio}\n\n"
         stg += "Bootstrap Test Results\n"
         stg += "----------------------\n\n"
-        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+#        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+        stg += f"Selected Confidence Interval Level: {self.CI}\n"
         stg += "\nLower CI: \n"
         stg += str(self.conf_ints[0])
         stg += "\n\nUpper CI: \n"
