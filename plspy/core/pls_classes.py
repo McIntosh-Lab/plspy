@@ -100,17 +100,16 @@ class _MeanCentreTaskPLS(PLSBase):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
     mctype : int, optional
         mctype options:
 
@@ -149,6 +148,16 @@ class _MeanCentreTaskPLS(PLSBase):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -166,7 +175,12 @@ class _MeanCentreTaskPLS(PLSBase):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
-
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -391,17 +405,16 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
     Attributes
     ----------
@@ -433,6 +446,16 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -454,6 +477,12 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -463,8 +492,9 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         num_conditions: int,
         Y: list = None,
         cond_order: list = None,
-        num_perm: int = 1000,
-        num_boot: int = 1000,
+        num_perm: int = 0,
+        num_boot: int = 0,
+        CI: float = 0.95,
         rotate_method: int = 0,
         **kwargs,
     ):
@@ -522,6 +552,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         # TODO: catch extraneous keyword args
 
         # assign functions to class
@@ -625,16 +656,16 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
     mctype : int, optional
         mctype options:
@@ -682,6 +713,16 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -703,6 +744,12 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -889,17 +936,16 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
     contrasts: np.array
         contrast matrix for use in Contrast Task PLS. Used to create
         different methods of comparison.
@@ -935,6 +981,16 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -956,6 +1012,12 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -1141,17 +1203,16 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
     Attributes
     ----------
@@ -1183,6 +1244,16 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     bscan : array-like
         List/array specifying the subset of conditions to be used. E.g., [1 3] for 
         conditions 1 and 3. The conditions should be listed in ascending order. 
@@ -1207,6 +1278,12 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -1460,16 +1537,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
 
     Attributes
@@ -1502,6 +1579,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -1525,6 +1612,12 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
