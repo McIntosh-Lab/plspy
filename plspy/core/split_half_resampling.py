@@ -49,7 +49,23 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             different methods of comparison.
 
     Returns:
-        pls_repro: Dictionary containing split-half test-train reproducibility results.
+        pls_repro_tt: Dictionary containing split-half test-train reproducibility results.
+
+            Keys
+            ----
+            pls_s_train : np.ndarray
+                Distribution of singular values from training samples.
+            pls_s_test : np.ndarray
+                Distribution of singular values from corresponding test samples.
+            z : np.ndarray
+                Z-values for each test singular value, computed as mean(pls_s_test)/std(pls_s_test).
+            pls_s_train_null : np.ndarray
+                Distribution singular values from training sample where rows for one data block are permuted.
+            pls_s_test_null : np.ndarray
+                Distribution singular values from test sample where rows for one data block are permuted.
+            z_null : np.ndarray
+                Z-values for null test singular values (mean(pls_s_test_null)/std(pls_s_test_null)).
+
     """
 
     inds = np.array([i for i in range(len(matrix))])
@@ -66,7 +82,6 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
         d = min(p,contrasts.shape[1])
     else: # rb
         d = min(p, num_conditions*num_groups*Y.shape[1])
-    splitflag = []
     
     pls_s_train = np.zeros((d, d, num_split))
     pls_s_test = np.zeros((d, d, num_split))
@@ -383,8 +398,6 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
         np.mean(pls_s_test_null[i, i, :]) / np.std(pls_s_test_null[i, i, :],ddof=1)
         for i in range(d)
     ]
-
-    pls_repro["splitflag"] = splitflag
     return pls_repro
 
 
@@ -420,10 +433,56 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             Number of LVs to evaluate.
 
         CI (float): 
-            Confidence interval percentile.
+            Confidence interval percentile. Defaults to 0.95.
 
     Returns:
-        pls_repro: Dictionary containing split-half reproducibility results.
+        pls_repro_sh: Dictionary containing split-half reproducibility results.
+
+            Keys
+            ----
+            pls_rep_mean_u : list[float]
+                Average of cosines for u distribution from split-half.
+            pls_rep_mean_v : list[float]
+                Average of cosines for v distribution from split-half.
+            pls_rep_z_u : list[float]
+                Z-value for v distribution (mean_u/std_u)
+            pls_rep_z_v : list[float]
+                Z-value for v distribution (mean_v/std_v)
+            pls_rep_ul_u : list[float]
+                Upper bound of the u distribution.
+            pls_rep_ll_u : list[float]
+                Lower bound of the u distribution.
+            pls_rep_ul_v : list[float]
+                Upper bound of the v distribution.
+            pls_rep_ll_v : list[float]
+                Lower bound of the v distribution.
+
+            pls_null_mean_u : list[float]
+                Average of null u distribution created by permutation.
+            pls_null_mean_v : list[float]
+                Average of null v distribution.
+            pls_null_z_u : list[float]
+                Z-value for null u distribution.
+            pls_null_z_v : list[float]
+                Z-value for null v distribution.
+            pls_null_ul_u : list[float]
+                Upper bound of null u distribution.
+            pls_null_ll_u : list[float]
+                Lower bound of null u distribution.
+            pls_null_ul_v : list[float]
+                Upper bound of null v distribution.
+            pls_null_ll_v : list[float]
+                Lower bound of null v distribution.
+
+            pls_dist_u : np.ndarray
+                Full distribution of u cosines.
+            pls_dist_v : np.ndarray
+                Full distribution of v cosines.
+            pls_dist_null_u : np.ndarray
+                Full distribution of null u cosines.
+            pls_dist_null_v : np.ndarray
+                Full distribution of null v cosines.
+
     """
 
     inds = np.array([i for i in range(len(matrix))])
