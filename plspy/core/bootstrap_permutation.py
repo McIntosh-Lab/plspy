@@ -150,7 +150,6 @@ class _ResampleTestTaskPLS(ResampleTest):
         nperm=1000,
         nboot=1000,
 #        dist=(0.05, 0.95),
-        rotate_method=0,
         bscan = None,
         Xbscan = None,
         Ybscan = None,
@@ -173,7 +172,6 @@ class _ResampleTestTaskPLS(ResampleTest):
                 nperm,
                 self.pls_alg,
                 preprocess=preprocess,
-                rotate_method=rotate_method,
                 contrast=contrast,
                 bscan = bscan,
                 Xbscan = Xbscan,
@@ -203,7 +201,6 @@ class _ResampleTestTaskPLS(ResampleTest):
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
-                    rotate_method=rotate_method,
 #                    dist=self.dist,
                     contrast=contrast,
                     lvcorrs_orig = lvcorrs_orig,
@@ -228,7 +225,6 @@ class _ResampleTestTaskPLS(ResampleTest):
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
-                    rotate_method=rotate_method,
 #                    dist=self.dist,
                     contrast=contrast,
                     bscan = bscan,
@@ -255,7 +251,6 @@ class _ResampleTestTaskPLS(ResampleTest):
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
-                    rotate_method=rotate_method,
 #                    dist=self.dist,
                     contrast=contrast,
                     Tvsc_orig = Tvsc_orig,
@@ -279,7 +274,6 @@ class _ResampleTestTaskPLS(ResampleTest):
         pls_alg,
         preprocess=None,
         contrast=None,
-        rotate_method=0,
         threshold=1e-12,
         bscan = None,
         Xbscan = None,
@@ -390,76 +384,16 @@ class _ResampleTestTaskPLS(ResampleTest):
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
 
-            if rotate_method == 0:
-                if contrast is None:
-                    VS_hat = permuted.T @ U
-                    s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
-                    #print(s_hat)
-                else:
-                    inpt = contrast.T @ permuted
-                    # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
-                    s_hat = np.linalg.svd(inpt, compute_uv=False)
-                # print(s_hat)
-            # elif rotate_method == 1:
-            #     # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-            #     if contrast is not None:
-            #         U_hat, s_hat, V_hat = class_functions._run_pls_contrast(
-            #             permuted, contrast
-            #         )
-            #     else:
-            #         U_hat, s_hat, V_hat = np.linalg.svd(
-            #             permuted, full_matrices=False
-            #         )
-            #         V_hat = V_hat.T
-            #     # procustes
-            #     # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-            #     # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-            #     U_bar, s_bar, V_bar = np.linalg.svd(
-            #         U.T @ U_hat, full_matrices=False
-            #     )
-            #     V_bar = V_bar.T
-            #     # print(X_new_mc.shape)
-            #     rot = V_bar @ U_bar.T
-            #     U_rot = (U_hat * s_hat) @ rot
-            #     # permuted_rot = permuted @ V_rot
-            #     # permuted_rot = U_rot.T @ permuted
-            #     # s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
-            #     s_rot = np.sqrt(np.sum(np.power(U_rot, 2), axis=0))
-            #     s_hat = np.copy(s_rot)
-            #     # print(s_hat)
-            # elif rotate_method == 2:
-            #     # use derivation equations to compute permuted singular values
-            #     if pls_alg in ["cst", "csb", "cmb"]:
-            #         s_hat = class_functions._run_pls_contrast(
-            #             permuted, contrast, compute_uv=False
-            #         )
-            #     else:
-            #         US_hat = permuted.T @ U
-            #         s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
 
-            #     # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
-
-            #     # gd = [float("{:.5f}".format(i)) for i in s_hat_]
-            #     # der = [float("{:.5f}".format(i)) for i in s_hat]
-
-            #     # print(f"GSVD: {gd}")
-            #     # print(f"Derived: {der}")
-
-            #     # U_hat = US_hat / s_hat
-            #     # V_hat = np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)
-            #     # print(s_hat)
+            if contrast is None:
+                VS_hat = permuted.T @ U
+                s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
+                #print(s_hat)
             else:
-                raise exceptions.NotImplementedError(
-                    f"Specified rotation method ({rotate_method}) "
-                    "has not been implemented."
-                )
-
-            # insert s_hat into singvals tracking matrix
-            # singvals[:, i] = s_hat
-            # count number of times sampled singular values are
-            # greater than observed singular values, element-wise
-            # greatersum += s >= s_hat
-            # print(s_hat >= s)
+                inpt = contrast.T @ permuted
+                # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
+                s_hat = np.linalg.svd(inpt, compute_uv=False)
+            # print(s_hat)
 
             if pls_alg in ["mb"]:
                 mb_permdatamat_notnormed = preprocess(
@@ -526,7 +460,6 @@ class _ResampleTestTaskPLS(ResampleTest):
         niter,
         pls_alg,
         preprocess=None,
-        rotate_method=0,
         dist=(0.05, 0.95),
         contrast=None,
         bscan = None,
@@ -650,70 +583,15 @@ class _ResampleTestTaskPLS(ResampleTest):
                 else:
                     permuted = preprocess(X_new, Y_new, cond_order)
             
-            if rotate_method == 0:
-                #Get U
-                U_hat = (np.dot(V.T, permuted.T)).T
-                
-                #Get VS
-                VS_hat = permuted.T @ U
 
-                # Get V - normalize VS_hat
-                V_hat = class_functions._normalize(VS_hat)
+            #Get U
+            U_hat = (np.dot(V.T, permuted.T)).T
+            
+            #Get VS
+            VS_hat = permuted.T @ U
 
-            # elif rotate_method == 1:
-            #     # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-            #     U_hat, s_hat, V_hat = np.linalg.svd(
-            #         permuted, full_matrices=False
-            #     )
-            #     V_hat = V_hat.T
-            #     # procustes
-            #     # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-            #     # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-            #     U_bar, s_bar, V_bar = np.linalg.svd(
-            #         U.T @ U_hat, full_matrices=False
-            #     )
-            #     # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
-            #     # print(X_new_mc.shape)
-            #     # rot = U_bar @ V.T
-            #     # V_rot = V_hat.T @ rot.T
-
-            #     rot = V_bar @ U_bar.T
-            #     U_rot = (U_hat * s_hat) @ rot
-            #     # permuted_rot = permuted @ V_rot
-            #     permuted_rot = U_rot @ permuted
-            #     s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
-            #     s_hat = np.copy(s_rot)
-
-            # elif rotate_method == 2:
-            #     # use derivation equations to compute permuted singular values
-            #     # US_hat = X_new_mc @ V
-            #     VS_hat = permuted.T @ U
-            #     s_hat = np.sqrt(np.sum(np.power(VS_hat, 2), axis=0))
-            #     # US_hat = V.T @ permuted.T
-            #     # s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
-            #     V_hat_der = VS_hat / s_hat
-            #     U_hat = (
-            #         np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)
-            #     ).T
-            #     # V_hat = (X_new_mc.T @ U_hat_der) / s_hat
-            #     # potential fix for sign issues
-            #     V_hat = V_hat_der
-            #     # U_hat = (X_new_mc @ V_hat) / s_hat
-            #     # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
-
-            #     # print("DERIVED\n")
-            #     # print(U_hat_der)
-            #     # print("=====================")
-            #     # print("DOUBLE DERIVED\n")
-            #     # print(s_hat)
-            #     # print("----------------------")
-            #     # print(s_hat_)
-            #     # print("++++++++++++++++++++++")
-            else:
-                raise exceptions.NotImplementedError(
-                    f"Specified rotation method ({rotate_method}) "
-                    "has not been implemented."
-                )
+            # Get V - normalize VS_hat
+            V_hat = class_functions._normalize(VS_hat)
             
             # assign right singular vector
             right_sv_sampled[i] = VS_hat 

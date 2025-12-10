@@ -193,7 +193,6 @@ class _MeanCentreTaskPLS(PLSBase):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         mctype: int = 0,
         **kwargs: str,
     ):
@@ -276,7 +275,6 @@ class _MeanCentreTaskPLS(PLSBase):
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             Tvsc_orig = Tvsc_orig,
             CI = self.CI
         )
@@ -495,7 +493,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         num_perm: int = 0,
         num_boot: int = 0,
         CI: float = 0.95,
-        rotate_method: int = 0,
         **kwargs,
     ):
         # so pylint will shut up
@@ -587,7 +584,6 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             lvcorrs_orig = self.lvcorrs,
             CI = self.CI
         )
@@ -740,7 +736,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvintercorrs : np.array
-        U.T * U. Optionally normed if rotate in [1,2].
+        U.T * U.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
@@ -761,7 +757,6 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         mctype: int = 0,
         contrasts: list = None,
         **kwargs,
@@ -837,13 +832,8 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.R, self.contrasts
         )
 
-        # norm lvintercorrs if rotate method is
-        # Procrustes or derived
-        if rotate_method in [1, 2]:
-            U_normed = self.U / np.linalg.norm(self.U)
-            self.lvintercorrs = U_normed.T @ U_normed
-        else:
-            self.lvintercorrs = self.V.T @ self.V
+
+        self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         # get X_latents
         V_normed = class_functions._normalize(self.V)
@@ -862,7 +852,6 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             #mctype=self.mctype,
             contrast=self.contrasts,
             Tvsc_orig = Tvsc_orig,
@@ -1008,7 +997,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvintercorrs : np.array
-        U.T * U. Optionally normed if rotate in [1,2].
+        U.T * U.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
@@ -1029,7 +1018,6 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         contrasts: list = None,
         **kwargs,
     ):
@@ -1106,13 +1094,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
-        # norm lvintercorrs if rotate method is
-        # Procrustes or derived
-        if rotate_method in [1, 2]:
-            U_normed = self.U / np.linalg.norm(self.U)
-            self.lvintercorrs = U_normed.T @ U_normed
-        else:
-            self.lvintercorrs = self.V.T @ self.V
+
+        self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         self.Y_latent = class_functions._compute_Y_latents(
@@ -1131,7 +1114,6 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             contrast=self.contrasts,
             lvcorrs_orig = self.lvintercorrs,
             CI = self.CI
@@ -1295,7 +1277,6 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1456,7 +1437,6 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             bscan = self.bscan,
             Xbscan = self.Xbscan,
             Ybscan = self.Ybscan,
@@ -1608,7 +1588,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
     lvcorrs : np.array
         Computed latent variable correlations
     lvintercorrs : np.array
-        U.T * U. Optionally normed if rotate in [1,2].
+        U.T * U.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
@@ -1629,7 +1609,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         contrasts: list = None,
         **kwargs,
     ):
@@ -1798,7 +1777,6 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             contrast=self.contrasts,
             bscan = self.bscan,
             Xbscan = self.Xbscan,
