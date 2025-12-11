@@ -194,6 +194,7 @@ class _MeanCentreTaskPLS(PLSBase):
         num_perm: int = 1000,
         num_boot: int = 1000,
         mctype: int = 0,
+        CI: float = 0.95,
         **kwargs: str,
     ):
         # so pylint will shut up
@@ -244,6 +245,7 @@ class _MeanCentreTaskPLS(PLSBase):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         if num_conditions == 1 and mctype != 1:
             print("Because you are running single condition Task PLS, " 
                 "input Mean-Centering Type has to set to 1"
@@ -759,6 +761,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         num_boot: int = 1000,
         mctype: int = 0,
         contrasts: list = None,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -812,6 +815,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         if num_conditions == 1 and mctype != 1:
             print("Because you are running single condition Task PLS, " 
                 "input Mean-Centering Type has to set to 1"
@@ -1019,6 +1023,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         num_perm: int = 1000,
         num_boot: int = 1000,
         contrasts: list = None,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1077,6 +1082,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
@@ -1277,6 +1283,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1352,7 +1359,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-
+        self.CI = CI
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module     
@@ -1610,6 +1617,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         num_perm: int = 1000,
         num_boot: int = 1000,
         contrasts: list = None,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1694,7 +1702,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-
+        self.CI = CI
         if contrasts is None:
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
