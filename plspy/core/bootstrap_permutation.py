@@ -318,50 +318,43 @@ class _ResampleTestTaskPLS(ResampleTest):
             totcov_org[r] = np.sum(org_s[r:] ** 2)
 
         print("----Running Permutation Test----\n")
+
+        # Load all permuted indices
+        if pls_alg in ["mct", "cst","rb", "csb"]:
+            SAMP_perm = loadmat("SAMP_perm.mat")["SAMP_perm"] - 1
+        elif pls_alg in ["mb", "cmb"]:
+            TSAMP_perm = loadmat("TSAMP_perm.mat")["TSAMP_perm"] - 1
+            BSAMP_perm = loadmat("BSAMP_perm.mat")["BSAMP_perm"] - 1
+
         for i in range(niter):
             if (i + 1) % 50 == 0:
                 print(f"Iteration {i + 1}")
             # create resampled X matrix and get resampled indices
 
             if pls_alg in ["mct", "cst"]:
-                X_new, inds = resample.resample_without_replacement(
-                    X, cond_order, return_indices=True, pls_alg=pls_alg
-                )
+                # X_new, inds = resample.resample_without_replacement(
+                #     X, cond_order, return_indices=True, pls_alg=pls_alg
+                # )
+                inds = SAMP_perm[:,i]
+                X_new = X[inds,:]
 
             if pls_alg in ["rb", "csb"]:
-                Y_new, inds = resample.resample_without_replacement(
-                    Y, cond_order, return_indices=True, pls_alg=pls_alg
-                )
+                # Y_new, inds = resample.resample_without_replacement(
+                #     Y, cond_order, return_indices=True, pls_alg=pls_alg
+                # )
+                inds = SAMP_perm[:,i]
+                Y_new = Y[inds,:]
 
             if pls_alg in ["mb", "cmb"]:
-                X_new_T, inds = resample.resample_without_replacement(
-                    X, cond_order, return_indices=True, pls_alg=pls_alg
-                ) 
+                # X_new_T, inds = resample.resample_without_replacement(
+                #     X, cond_order, return_indices=True, pls_alg=pls_alg
+                # )
+                inds = TSAMP_perm[:,i] 
+                X_new_T = X[inds,:]         
                 # Permute behavioural data (use "rb" option)
-                Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
-            # indices[i] = inds ## TO DO: modify
-            #print(inds)
-            # inds = loadmat("BSAMP.mat")
-            # inds = inds["BSAMP"][:,i] -1
-            # #X_new = X[inds,:]
-            # X_new = X
-            # Y_new = Y[inds,:]
-
-            # mask = np.array([])
-            # for item in cond_order:
-            #     for cond_i, cond in enumerate(item):
-            #         if cond_i in bscan:
-            #             mask = np.concatenate((mask,np.repeat(1,cond)))
-            #         else:
-            #             mask = np.concatenate((mask,np.repeat(0,cond)))
-            
-            # mask = mask.flatten().astype(bool)
-            # Y_new = Y_new[mask]
-            # X_new = X_new[mask]
-            # inds = loadmat("TSAMP.mat") 
-            # inds = inds["TSAMP"][:,i] -1
-            # X_new_T = X[inds,:]
-
+                # Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
+                inds = BSAMP_perm[:,i]
+                Y_new = Y[inds,:]
         
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
@@ -515,9 +508,17 @@ class _ResampleTestTaskPLS(ResampleTest):
                 ncols = contrast.shape[1]
 
             LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
-                
-            
+                 
         print("----Running Bootstrap Test----\n")
+        # Load indices depending on pls_alg
+        if pls_alg in ["mct", "cst", "rb", "csb"]:
+            SAMP_boot = loadmat("SAMP_boot.mat")["SAMP_boot"] - 1
+            if pls_alg in ["rb", "csb"]:
+                BSAMP_boot = loadmat("BSAMP_boot.mat")["BSAMP_boot"] - 1
+        elif pls_alg in ["mb", "cmb"]:
+            TSAMP_boot = loadmat("TSAMP_boot.mat")["TSAMP_boot"] - 1
+            BSAMP_boot = loadmat("BSAMP_boot.mat")["BSAMP_boot"] - 1
+
         for i in range(niter):
             # print out iteration number every 50 iterations
             if (i + 1) % 50 == 0:
@@ -526,46 +527,37 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             if pls_alg in ["mb", "cmb"]:
                 # X_new_T = Task portion
-                X_new_T = resample.resample_with_replacement(
-                    X, cond_order, return_indices=False
-                )
+                # X_new_T = resample.resample_with_replacement(
+                #     X, cond_order, return_indices=False
+                # )
+                
+                inds = TSAMP_boot[:,i]
+                X_new_T = X[inds,:]
+
                 # X_new = Behaviour portion
-                X_new,inds = resample.resample_with_replacement(
-                    Xbscan, cond_order[:,bscan], return_indices=True
-                )
-                Y_new = Ybscan[inds, :]
+                # X_new,inds = resample.resample_with_replacement(
+                #     Xbscan, cond_order[:,bscan], return_indices=True
+                # )
+                # Y_new = Ybscan[inds, :]
+                SAMP_boot
+                inds = BSAMP_boot[:,i]
+                Y_new = Y[inds,:]
+                X_new = X[inds,:]
+
             else:
             # return indices to use with Y_new
-                X_new, inds = resample.resample_with_replacement(
-                    X, cond_order, return_indices=True
-                )
+                # X_new, inds = resample.resample_with_replacement(
+                #     X, cond_order, return_indices=True
+                # )
+                
+                inds = SAMP_boot[:,i]
+                X_new= X[inds,:]
+
                 if Y is not None:
-                    Y_new = Y[inds, :]
-
-            #indices[i] = inds
-            
-        # #     # TESTING WITH MATLAB
-            # inds = loadmat("TSAMP.mat") 
-            # inds = inds["TSAMP"][:,i] -1
-            # X_new = X[inds,:]
-            # #X_new_T = X[inds,:]
-            # inds = loadmat("BSAMP.mat")
-            # inds = inds["BSAMP"][:,i] -1
-            # Y_new = Y[inds,:]
-            # X_new = X[inds,:]
-
-        #     mask = np.array([])
-        #     for item in cond_order:
-        #         for cond_i, cond in enumerate(item):
-        #             if cond_i in bscan:
-        #                 mask = np.concatenate((mask,np.repeat(1,cond)))
-        #             else:
-        #                 mask = np.concatenate((mask,np.repeat(0,cond)))
-            
-        #     mask = mask.flatten().astype(bool)
-        #     Y_new = Y_new[mask]
-        #     X_new = X_new[mask]
-        # # #     # TESTING WITH MATLAB
+                    #Y_new = Y[inds, :]
+                    
+                    inds = BSAMP_boot[:,i]
+                    Y_new = Y[inds,:]
 
             # pass in preprocessing function (e.g. mean-centering) for use
             # after sampling

@@ -93,9 +93,9 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
     allgroup_ids = None
     separate_group_ids = []
 
-    # from scipy.io import loadmat
-    # mat_inds = loadmat("C:/Users/lrokos/Documents/plspy_test/plspy/plspy/MATLAB_SPLITHALF_IDX.mat")
-    # mat_inds= mat_inds["idx"]-1
+    from scipy.io import loadmat
+    mat_inds = loadmat("split-half-tt_perm.mat")
+    mat_inds= mat_inds["split_half_tt"]-1
 
     # Loop to get ids for each group
     for g, group_sizes in enumerate(cond_order): # g is group number in this loop
@@ -147,9 +147,6 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
                 group_tuple_1.append(len(idx_1)//num_conditions) # Append subsequent group sizes for first split-half
                 group_tuple_2.append(len(idx_2)//num_conditions) # Append subsequent group sizes for second split-half
 
-            # idx_1_all = mat_inds[0:50,i]
-            # idx_2_all = mat_inds[50:,i]
-
             if pls_alg in ["mb", "cmb"]:
                 # Split indices into training and testing
                 idx_1 = tmp_idx_subj[:nsplit, bscan].flatten()
@@ -164,6 +161,8 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
                     idx_2_bscan = np.concatenate((idx_2_bscan, idx_2))
 
         # Extract data for indices for each split-half
+        idx_1_all = mat_inds[0:nsplit,i]
+        idx_2_all = mat_inds[nsplit:,i]
         X1 = matrix[idx_1_all, :]
         X2 = matrix[idx_2_all, :]
 
@@ -510,6 +509,10 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
     allgroup_ids = None
     separate_group_ids = []
 
+    from scipy.io import loadmat
+    mat_inds = loadmat("split-half_perm.mat")
+    mat_inds= mat_inds["split_half"]-1
+
     # Loop to get ids for each group
     for g, group_sizes in enumerate(cond_order):
 
@@ -579,6 +582,8 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
 
 
         # Extract data for indices for each split-half
+        idx_1_all = mat_inds[0:nsplit,i]
+        idx_2_all = mat_inds[nsplit:,i]
         X1 = matrix[idx_1_all, :]
         X2 = matrix[idx_2_all, :]
 
