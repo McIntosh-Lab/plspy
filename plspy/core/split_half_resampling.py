@@ -445,7 +445,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             pls_rep_mean_v : list[float]
                 Average of cosines for v distribution from split-half.
             pls_rep_z_u : list[float]
-                Z-value for v distribution (mean_u/std_u)
+                Z-value for u distribution (mean_u/std_u)
             pls_rep_z_v : list[float]
                 Z-value for v distribution (mean_v/std_v)
             pls_rep_ul_u : list[float]
