@@ -161,7 +161,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         self.CI = CI
         print(f"PLS ALG: {self.pls_alg}")
         if nperm > 0:
-            self.permute_ratio, self.perm_debug_dict = self._permutation_test(
+            self.permute_ratio, self.stepdown_ratio, self.perm_debug_dict = self._permutation_test(
                 X,
                 Y,
                 U,
@@ -179,6 +179,7 @@ class _ResampleTestTaskPLS(ResampleTest):
             )
         else:
             self.permute_ratio = "NA"
+            self.stepdown_ratio = "NA"
             
         if nboot > 0:
             if self.pls_alg in ["rb", "csb"]:
@@ -435,7 +436,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             stepdown_greatersum += totcov_perm >= totcov_org
             stepdown_ratio = stepdown_greatersum / (niter + 1)
-
+            
         print(f"real s: {s}")
         print(f"ratio: {permute_ratio}")
         print(f"Stepdown perm ratio: {stepdown_ratio}")
@@ -445,8 +446,8 @@ class _ResampleTestTaskPLS(ResampleTest):
             debug_dict["sum_perm"] = sum_s
             debug_dict["indices"] = indices
             # debug_dict[""] =
-            return (permute_ratio, debug_dict)
-        return permute_ratio
+            return (permute_ratio, stepdown_ratio, debug_dict)
+        return permute_ratio, stepdown_ratio
 
     @staticmethod
     def _bootstrap_test(
@@ -741,6 +742,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += "Permutation Test Results\n"
         stg += "------------------------\n\n"
         stg += f"Ratio: {self.permute_ratio}\n\n"
+        stg += f"Step Down Ratio: {self.stepdown_ratio}\n\n"
         stg += "Bootstrap Test Results\n"
         stg += "----------------------\n\n"
 #        stg += f"Element-wise Confidence Interval: {self.dist}\n"
@@ -767,6 +769,7 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += "Permutation Test Results\n"
         stg += "------------------------\n\n"
         stg += f"Ratio: {self.permute_ratio}\n\n"
+        stg += f"Step Down Ratio: {self.stepdown_ratio}\n\n"
         stg += "Bootstrap Test Results\n"
         stg += "----------------------\n\n"
 #        stg += f"Element-wise Confidence Interval: {self.dist}\n"
