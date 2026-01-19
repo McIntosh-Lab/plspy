@@ -100,17 +100,16 @@ class _MeanCentreTaskPLS(PLSBase):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
     mctype : int, optional
         mctype options:
 
@@ -149,6 +148,16 @@ class _MeanCentreTaskPLS(PLSBase):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -166,7 +175,12 @@ class _MeanCentreTaskPLS(PLSBase):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
-
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -179,8 +193,8 @@ class _MeanCentreTaskPLS(PLSBase):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         mctype: int = 0,
+        CI: float = 0.95,
         **kwargs: str,
     ):
         # so pylint will shut up
@@ -231,6 +245,7 @@ class _MeanCentreTaskPLS(PLSBase):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         if num_conditions == 1 and mctype != 1:
             print("Because you are running single condition Task PLS, " 
                 "input Mean-Centering Type has to set to 1"
@@ -247,6 +262,9 @@ class _MeanCentreTaskPLS(PLSBase):
         print(f"X_mc shape: {self.X_mc.shape}")
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
+
+        Tvsc_orig = class_functions._get_group_condition_means(self.X_latent, self.cond_order)
+
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -259,7 +277,8 @@ class _MeanCentreTaskPLS(PLSBase):
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
+            Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -284,7 +303,7 @@ class _MeanCentreTaskPLS(PLSBase):
                     num_split=self.num_split,
                     mctype=self.mctype,
                     contrasts = None,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -386,17 +405,16 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
     Attributes
     ----------
@@ -428,6 +446,16 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -449,6 +477,12 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -458,9 +492,9 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
         num_conditions: int,
         Y: list = None,
         cond_order: list = None,
-        num_perm: int = 1000,
-        num_boot: int = 1000,
-        rotate_method: int = 0,
+        num_perm: int = 0,
+        num_boot: int = 0,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -517,6 +551,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         # TODO: catch extraneous keyword args
 
         # assign functions to class
@@ -551,7 +586,8 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
+            lvcorrs_orig = self.lvcorrs,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -576,7 +612,7 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
                     num_split=self.num_split,
                     mctype=None,
                     contrasts = None,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -618,16 +654,16 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
     mctype : int, optional
         mctype options:
@@ -675,6 +711,16 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -692,10 +738,16 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
     X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvintercorrs : np.array
-        U.T * U. Optionally normed if rotate in [1,2].
+        U.T * U.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -707,9 +759,9 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         mctype: int = 0,
         contrasts: list = None,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -763,6 +815,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         if num_conditions == 1 and mctype != 1:
             print("Because you are running single condition Task PLS, " 
                 "input Mean-Centering Type has to set to 1"
@@ -783,18 +836,13 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.R, self.contrasts
         )
 
-        # norm lvintercorrs if rotate method is
-        # Procrustes or derived
-        if rotate_method in [1, 2]:
-            U_normed = self.U / np.linalg.norm(self.U)
-            self.lvintercorrs = U_normed.T @ U_normed
-        else:
-            self.lvintercorrs = self.V.T @ self.V
+
+        self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         # get X_latents
         V_normed = class_functions._normalize(self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, V_normed)
-        
+        Tvsc_orig = class_functions._get_group_condition_means(self.X_latent, self.cond_order)
         # self.Y_latent = class_functions._compute_Y_latents(self.Y, self.U, self.cond_order)
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
@@ -808,9 +856,10 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             preprocess=class_functions._mean_centre,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             #mctype=self.mctype,
             contrast=self.contrasts,
+            Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -835,7 +884,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
                     num_split=self.num_split,
                     mctype=self.mctype,
                     contrasts = self.contrasts,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )
             else:
@@ -845,6 +894,7 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
                     
         # swap U & V to be consistent with matlab
         self.U, self.V = self.V, self.U
+
         print("\nDone.")
 
 
@@ -879,17 +929,16 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
     contrasts: np.array
         contrast matrix for use in Contrast Task PLS. Used to create
         different methods of comparison.
@@ -925,6 +974,16 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -942,10 +1001,16 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
     X_latent : np.array
         Latent variables of input X; dot-product of X_mc and V.
     lvintercorrs : np.array
-        U.T * U. Optionally normed if rotate in [1,2].
+        U.T * U.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -957,8 +1022,8 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         contrasts: list = None,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1017,6 +1082,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
+        self.CI = CI
         # so pylint will shut up
         self.pls_alg = kwargs["pls_alg"]
         # TODO: catch extraneous keyword args
@@ -1034,18 +1100,14 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
         self.U, self.s, self.V = class_functions._run_pls_contrast(
             self.R, self.contrasts
         )
-        # norm lvintercorrs if rotate method is
-        # Procrustes or derived
-        if rotate_method in [1, 2]:
-            U_normed = self.U / np.linalg.norm(self.U)
-            self.lvintercorrs = U_normed.T @ U_normed
-        else:
-            self.lvintercorrs = self.V.T @ self.V
+
+        self.lvintercorrs = self.V.T @ self.V
         # self.X_latent = np.dot(self.X_mc, self.V)
         self.X_latent = class_functions._compute_X_latents(self.X, self.V)
         self.Y_latent = class_functions._compute_Y_latents(
             self.Y, self.U, self.cond_order
         )
+
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1058,8 +1120,9 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             preprocess=class_functions._compute_R,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             contrast=self.contrasts,
+            lvcorrs_orig = self.lvintercorrs,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -1084,7 +1147,7 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
                     num_split=self.num_split,
                     mctype=None,
                     contrasts = self.contrasts,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -1128,17 +1191,16 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
-
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
     Attributes
     ----------
@@ -1170,6 +1232,16 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     bscan : array-like
         List/array specifying the subset of conditions to be used. E.g., [1 3] for 
         conditions 1 and 3. The conditions should be listed in ascending order. 
@@ -1194,6 +1266,12 @@ class _MultiblockPLS(_RegularBehaviourPLS):
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -1205,7 +1283,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1281,7 +1359,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-
+        self.CI = CI
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module     
@@ -1338,6 +1416,9 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         # Compute Busc (Bvsc in matlab)
         Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
         
+        # Compute Tvsc_orig (orig_Tusc in matlab)
+        Tvsc_orig = class_functions._get_group_condition_means(T_X_latent, self.cond_order)
+
         # Change names to match matlab
         self.Bvsc = Busc
         self.Tvsc = Tusc
@@ -1345,7 +1426,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.Bv = Bu
         self.Y_latent = np.vstack([Tusc, Busc])
         self.vsc = self.Y_latent 
-        
+
         # compute latent variable correlation matrix for V using compute_R
         self.lvcorrs = self._compute_corr(
             B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
@@ -1363,10 +1444,12 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             bscan = self.bscan,
             Xbscan = self.Xbscan,
-            Ybscan = self.Ybscan
+            Ybscan = self.Ybscan,
+            lvcorrs_orig = self.lvcorrs,
+            Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -1397,7 +1480,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
                     bscan = self.bscan,
                     Xbscan = self.Xbscan,
                     Ybscan = self.Ybscan,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:
@@ -1441,16 +1524,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
-    rotate_method : int, optional
-        Optional value specifying whether or not full GSVD should be used
-        during bootstrap and permutation tests ("rotated" method).
-        rotate_method options:
-
-        0 - compute s using SVD/GSVD
-
-        1 - compute s using Procrustes rotation
-
-        2 - compute s by derivation
+    num_split : int, optional
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float, optional
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int, optional
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests. For example, lv=3 means 1,2,3 are assessed.
 
 
     Attributes
@@ -1483,6 +1566,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 0, meaning no bootstrap test will be run unless
         otherwise specified by the user.
+    num_split : int
+        Optional value specifying the number of splits for the resproducibilty
+        tests. Defaults to 0, meaning no reproducibilty test will be run unless
+        otherwise specified by the user.
+    CI : float
+        Confidence level (e.g., 0.95) used when computing bootstrap confidence intervals
+        for singular vectors and for split-half reproducibility tests.
+    lv : int
+        Optional value specifying the largest number of LV to be evaluated in the
+        reproducibility tests.
     X_means: np.array
         Mean-values of X array on axis-0 (column-wise).
     X_mc: np.array
@@ -1502,10 +1595,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
     lvcorrs : np.array
         Computed latent variable correlations
     lvintercorrs : np.array
-        U.T * U. Optionally normed if rotate in [1,2].
+        U.T * U.
     resample_tests : class
         Class containing results for permutation and bootstrap tests. See
         documentation on Resample Tests for more information.
+    pls_repro_sh : dict
+        Dictionary containing results for split-half reproducibility tests.
+        See documentation on Reproducibility Tests for more information.
+    pls_repro_tt : dict
+        Dictionary containing results for split-half test-train reproducibility 
+        tests. See documentation on Reproducibility Tests for more information.
     """
 
     def __init__(
@@ -1517,8 +1616,8 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
-        rotate_method: int = 0,
         contrasts: list = None,
+        CI: float = 0.95,
         **kwargs,
     ):
         # so pylint will shut up
@@ -1603,7 +1702,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
 
         self.num_perm = num_perm
         self.num_boot = num_boot
-
+        self.CI = CI
         if contrasts is None:
             raise exceptions.MissingParameterError(
                 "Please provide a contrast matrix."
@@ -1655,6 +1754,9 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         # Compute Busc (Bvsc in matlab)
         Busc = class_functions._get_Busc(Bu, num_conditions, self.Ybscan, self.cond_order, self.bscan)
 
+        # Compute Tvsc_orig (orig_Tusc in matlab)
+        Tvsc_orig = class_functions._get_group_condition_means(T_X_latent, self.cond_order)
+
         # Change names to match matlab
         self.Bvsc = Busc
         self.Tvsc = Tusc
@@ -1670,7 +1772,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.lvcorrs = self._compute_corr(
             B_X_latent, self.Ybscan, self.cond_order[:,self.bscan]
         )
-        
+
         self.resample_tests = bootstrap_permutation.ResampleTest._create(
             self.pls_alg,
             self.X,
@@ -1683,11 +1785,13 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             preprocess=self._create_multiblock,
             nperm=self.num_perm,
             nboot=self.num_boot,
-            rotate_method=rotate_method,
             contrast=self.contrasts,
             bscan = self.bscan,
             Xbscan = self.Xbscan,
-            Ybscan = self.Ybscan
+            Ybscan = self.Ybscan,
+            lvcorrs_orig = self.lvcorrs,
+            Tvsc_orig = Tvsc_orig,
+            CI = self.CI
         )
 
         # Split-half resampling
@@ -1718,7 +1822,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                     bscan=self.bscan,
                     Xbscan=self.Xbscan,
                     Ybscan = self.Ybscan,
-                    lv = self.lv-1,
+                    lv = self.lv,
                     CI = self.CI,
                 )   
             else:

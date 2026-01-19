@@ -49,7 +49,23 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             different methods of comparison.
 
     Returns:
-        pls_repro: Dictionary containing split-half test-train reproducibility results.
+        pls_repro_tt: Dictionary containing split-half test-train reproducibility results.
+
+            Keys
+            ----
+            pls_s_train : np.ndarray
+                Distribution of singular values from training samples.
+            pls_s_test : np.ndarray
+                Distribution of singular values from corresponding test samples.
+            z : np.ndarray
+                Z-values for each test singular value, computed as mean(pls_s_test)/std(pls_s_test).
+            pls_s_train_null : np.ndarray
+                Distribution singular values from training sample where rows for one data block are permuted.
+            pls_s_test_null : np.ndarray
+                Distribution singular values from test sample where rows for one data block are permuted.
+            z_null : np.ndarray
+                Z-values for null test singular values (mean(pls_s_test_null)/std(pls_s_test_null)).
+
     """
 
     inds = np.array([i for i in range(len(matrix))])
@@ -66,7 +82,6 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
         d = min(p,contrasts.shape[1])
     else: # rb
         d = min(p, num_conditions*num_groups*Y.shape[1])
-    splitflag = []
     
     pls_s_train = np.zeros((d, d, num_split))
     pls_s_test = np.zeros((d, d, num_split))
@@ -77,7 +92,11 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
     start = 0
     allgroup_ids = None
     separate_group_ids = []
- 
+
+    # from scipy.io import loadmat
+    # mat_inds = loadmat("C:/Users/lrokos/Documents/plspy_test/plspy/plspy/MATLAB_SPLITHALF_IDX.mat")
+    # mat_inds= mat_inds["idx"]-1
+
     # Loop to get ids for each group
     for g, group_sizes in enumerate(cond_order): # g is group number in this loop
         group_split = []
@@ -127,6 +146,9 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
                 idx_2_all = np.concatenate((idx_2_all, idx_2))
                 group_tuple_1.append(len(idx_1)//num_conditions) # Append subsequent group sizes for first split-half
                 group_tuple_2.append(len(idx_2)//num_conditions) # Append subsequent group sizes for second split-half
+
+            # idx_1_all = mat_inds[0:50,i]
+            # idx_2_all = mat_inds[50:,i]
 
             if pls_alg in ["mb", "cmb"]:
                 # Split indices into training and testing
@@ -366,18 +388,16 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
         "pls_s_train": pls_s_train,
         "pls_s_test": pls_s_test,
         "z": [
-            np.mean(pls_s_test[i, i, :]) / np.std(pls_s_test[i, i, :])
+            np.mean(pls_s_test[i, i, :]) / np.std(pls_s_test[i, i, :],ddof=1)
             for i in range(d)
         ]
     }
     pls_repro["pls_s_train_null"] = pls_s_train_null
     pls_repro["pls_s_test_null"] = pls_s_test_null
     pls_repro["z_null"] = [
-        np.mean(pls_s_test_null[i, i, :]) / np.std(pls_s_test_null[i, i, :])
+        np.mean(pls_s_test_null[i, i, :]) / np.std(pls_s_test_null[i, i, :],ddof=1)
         for i in range(d)
     ]
-
-    pls_repro["splitflag"] = splitflag
     return pls_repro
 
 
@@ -413,10 +433,56 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             Number of LVs to evaluate.
 
         CI (float): 
-            Confidence interval percentile.
+            Confidence interval percentile. Defaults to 0.95.
 
     Returns:
-        pls_repro: Dictionary containing split-half reproducibility results.
+        pls_repro_sh: Dictionary containing split-half reproducibility results.
+
+            Keys
+            ----
+            pls_rep_mean_u : list[float]
+                Average of cosines for u distribution from split-half.
+            pls_rep_mean_v : list[float]
+                Average of cosines for v distribution from split-half.
+            pls_rep_z_u : list[float]
+                Z-value for u distribution (mean_u/std_u)
+            pls_rep_z_v : list[float]
+                Z-value for v distribution (mean_v/std_v)
+            pls_rep_ul_u : list[float]
+                Upper bound of the u distribution.
+            pls_rep_ll_u : list[float]
+                Lower bound of the u distribution.
+            pls_rep_ul_v : list[float]
+                Upper bound of the v distribution.
+            pls_rep_ll_v : list[float]
+                Lower bound of the v distribution.
+
+            pls_null_mean_u : list[float]
+                Average of null u distribution created by permutation.
+            pls_null_mean_v : list[float]
+                Average of null v distribution.
+            pls_null_z_u : list[float]
+                Z-value for null u distribution.
+            pls_null_z_v : list[float]
+                Z-value for null v distribution.
+            pls_null_ul_u : list[float]
+                Upper bound of null u distribution.
+            pls_null_ll_u : list[float]
+                Lower bound of null u distribution.
+            pls_null_ul_v : list[float]
+                Upper bound of null v distribution.
+            pls_null_ll_v : list[float]
+                Lower bound of null v distribution.
+
+            pls_dist_u : np.ndarray
+                Full distribution of u cosines.
+            pls_dist_v : np.ndarray
+                Full distribution of v cosines.
+            pls_dist_null_u : np.ndarray
+                Full distribution of null u cosines.
+            pls_dist_null_v : np.ndarray
+                Full distribution of null v cosines.
+
     """
 
     inds = np.array([i for i in range(len(matrix))])
@@ -460,6 +526,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         else:
             allgroup_ids = np.concatenate((allgroup_ids, group_split))  # Horizontally concatenate groups
 
+
     # Loop for each split
     for i in range(num_split):
         start = 0
@@ -495,7 +562,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
                 idx_2_all = np.concatenate((idx_2_all, idx_2))
                 group_tuple_1.append(len(idx_1)//num_conditions) # Append subsequent group sizes for first split-half
                 group_tuple_2.append(len(idx_2)//num_conditions) # Append subsequent group sizes for second split-half
-           
+
             if pls_alg in ["mb", "cmb"]:
 
                 # Split indices into training and testing
@@ -538,9 +605,11 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             my_U2, _, my_V2 = class_functions._run_pls(X2_mc)
         
         if pls_alg == "rb":
-            permy = Y[np.random.permutation(n), :]
-            Y1 = permy[idx_1_all, :]
-            Y2 = permy[idx_2_all, :]
+            # permy = Y[np.random.permutation(n), :]
+            # Y1 = permy[idx_1_all, :]
+            # Y2 = permy[idx_2_all, :]
+            Y1 = Y[idx_1_all, :]
+            Y2 = Y[idx_2_all, :]
 
             # Compute correlation matrix
             R1= class_functions._compute_R(X1, Y1, cond_order_1)
@@ -567,10 +636,12 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             X2_mc, contrasts
         )
         if pls_alg == "csb":
-            permy = Y[np.random.permutation(n), :]
-            Y1 = permy[idx_1_all, :]
-            Y2 = permy[idx_2_all, :]
-
+            # permy = Y[np.random.permutation(n), :]
+            # Y1 = permy[idx_1_all, :]
+            # Y2 = permy[idx_2_all, :] 
+            Y1 = Y[idx_1_all, :]
+            Y2 = Y[idx_2_all, :]
+            
             # Compute correlation matrix
             R1= class_functions._compute_R(X1, Y1, cond_order_1)
             R2= class_functions._compute_R(X2, Y2, cond_order_2)
@@ -735,11 +806,11 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         "pls_rep_mean_u": [np.mean(np.abs(pls_u_repro[i, i, :])) for i in range(lv)],
         "pls_rep_mean_v": [np.mean(np.abs(pls_v_repro[i, i, :])) for i in range(lv)],
         "pls_rep_z_u": [
-            np.mean(np.abs(pls_u_repro[i, i, :])) / np.std(np.abs(pls_u_repro[i, i, :]))
+            np.mean(np.abs(pls_u_repro[i, i, :])) / np.std(np.abs(pls_u_repro[i, i, :]),ddof=1)
             for i in range(lv)
         ],
         "pls_rep_z_v": [
-            np.mean(np.abs(pls_v_repro[i, i, :])) / np.std(np.abs(pls_v_repro[i, i, :]))
+            np.mean(np.abs(pls_v_repro[i, i, :])) / np.std(np.abs(pls_v_repro[i, i, :]),ddof=1)
             for i in range(lv)
         ],
         "pls_rep_ul_u": [
@@ -758,7 +829,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         "pls_null_mean_u": [np.mean(np.abs(pls_u_null[i, i, :])) for i in range(lv)],
         "pls_null_std_u": [np.std(np.abs(pls_u_null[i, i, :])) for i in range(lv)],
         "pls_null_z_u": [
-            np.mean(np.abs(pls_u_null[i, i, :])) / np.std(np.abs(pls_u_null[i, i, :]))
+            np.mean(np.abs(pls_u_null[i, i, :])) / np.std(np.abs(pls_u_null[i, i, :]),ddof=1)
             for i in range(lv)
         ],
         "pls_null_ul_u": [
@@ -770,7 +841,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         "pls_null_mean_v": [np.mean(np.abs(pls_v_null[i, i, :])) for i in range(lv)],
         "pls_null_std_v": [np.std(np.abs(pls_v_null[i, i, :])) for i in range(lv)],
         "pls_null_z_v": [
-            np.mean(np.abs(pls_v_null[i, i, :])) / np.std(np.abs(pls_v_null[i, i, :]))
+            np.mean(np.abs(pls_v_null[i, i, :])) / np.std(np.abs(pls_v_null[i, i, :]),ddof=1)
             for i in range(lv)
         ],
         "pls_null_ul_v": [
@@ -780,6 +851,8 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             np.percentile(np.abs(pls_v_null[i, i, :]), 100 - CI) for i in range(lv)
         ],
     }
+
+
     pls_repro["pls_dist_u"] = pls_u_repro
     pls_repro["pls_dist_v"] = pls_v_repro
     pls_repro["pls_dist_null_u"] = pls_u_null

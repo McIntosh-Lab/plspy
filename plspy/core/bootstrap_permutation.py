@@ -4,6 +4,8 @@ import numpy as np
 import scipy
 import scipy.stats
 from scipy.io import loadmat
+from scipy.stats import norm
+
 # project imports
 from . import class_functions, exceptions, gsvd, resample
 
@@ -70,7 +72,7 @@ class ResampleTest(abc.ABC):
 class _ResampleTestTaskPLS(ResampleTest):
     """Class that runs permutation and bootstrap tests for Task PLS. When run,
     this class generates fields for permutation test information
-    (permutation ratio, etc.) and for bootstrap test informtaion (confidence
+    (permutation ratio, etc.) and for bootstrap test information (confidence
     intervals, standard errors, bootstrap ratios, etc.).
 
     Parameters
@@ -96,21 +98,29 @@ class _ResampleTestTaskPLS(ResampleTest):
     nboot : int, optional
         Optional value specifying the number of iterations for the bootstrap
         test. Defaults to 1000.
-    nonrotated : boolean, optional
-        Not implememted yet.
-    dist : 2-tuple of floats, optional
+    dist : 2-tuple of floats, deprecated
         Distribution values used for calculating the confidence interval in
         the bootstrap test. Defaults to (0.05, 0.95).
+    CI : float
+        Confidence level used to derive the z-score threshold for bootstrap
+        confidence intervals. Defaults to 0.95.
+        Note: The percentile-based CI approach is deprecated and not supported;
+        code remains commented out and requires manual changes to use.
 
     Attributes
     ----------
-    dist : 2-tuple of floats, optional
+    dist : 2-tuple of floats, deprecated
         Distribution values used for calculating the confidence interval in
         the bootstrap test. Defaults to (0.05, 0.95).
     permute_ratio : float
         Ratio of resampled values greater than observed values, divided by
         the number of iterations in the permutation test. A higher ratio
         indicates a higher level of randomness.
+    stepdown_ratio : float
+        Ratio of resampled cumulative covariances for each LV and the remaining
+        LVs that exceed the observed cumulative covariance, 
+        divided by the number of iterations in the permutation test. 
+        Provides a more stringent assessment than permute_ratio.
     conf_ints : 2-tuple of np.arrays
         Upper and lower element-wise confidence intervals for the resampled
         left singular vectors in a tuple.
@@ -118,8 +128,13 @@ class _ResampleTestTaskPLS(ResampleTest):
         Element-wise standard errors for the resampled right singular vectors.
     boot_ratios : np.array
         NumPy array containing element-wise ratios of
-
-    """
+    CI : float
+        Confidence level used to derive the z-score threshold for bootstrap
+        confidence intervals. Defaults to 0.95.
+    LVcorr : np.array
+        Bootstrap distribution of LV correlations across iterations for 
+        behavioural or multi-block PLS.
+        """
 
     def __init__(
         self,
@@ -134,17 +149,19 @@ class _ResampleTestTaskPLS(ResampleTest):
         preprocess=None,
         nperm=1000,
         nboot=1000,
-        dist=(0.05, 0.95),
-        rotate_method=0,
+#        dist=(0.05, 0.95),
         bscan = None,
         Xbscan = None,
-        Ybscan = None
+        Ybscan = None,
+        lvcorrs_orig = None,
+        Tvsc_orig = None,
+        CI = 0.95
     ):
-        self.dist = dist
-
+    #    self.dist = dist
+        self.CI = CI
         print(f"PLS ALG: {self.pls_alg}")
         if nperm > 0:
-            self.permute_ratio, self.perm_debug_dict = self._permutation_test(
+            self.permute_ratio, self.stepdown_ratio, self.perm_debug_dict = self._permutation_test(
                 X,
                 Y,
                 U,
@@ -155,13 +172,15 @@ class _ResampleTestTaskPLS(ResampleTest):
                 nperm,
                 self.pls_alg,
                 preprocess=preprocess,
-                rotate_method=rotate_method,
                 contrast=contrast,
                 bscan = bscan,
                 Xbscan = Xbscan,
                 Ybscan = Ybscan
             )
-
+        else:
+            self.permute_ratio = "NA"
+            self.stepdown_ratio = "NA"
+            
         if nboot > 0:
             if self.pls_alg in ["rb", "csb"]:
                 (
@@ -183,9 +202,10 @@ class _ResampleTestTaskPLS(ResampleTest):
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
-                    rotate_method=rotate_method,
-                    dist=self.dist,
+#                    dist=self.dist,
                     contrast=contrast,
+                    lvcorrs_orig = lvcorrs_orig,
+                    CI = CI
                 )
             elif self.pls_alg in ["mb", "cmb"]:
                 (
@@ -206,12 +226,14 @@ class _ResampleTestTaskPLS(ResampleTest):
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
-                    rotate_method=rotate_method,
-                    dist=self.dist,
+#                    dist=self.dist,
                     contrast=contrast,
                     bscan = bscan,
                     Xbscan = Xbscan,
-                    Ybscan = Ybscan
+                    Ybscan = Ybscan,
+                    lvcorrs_orig = lvcorrs_orig,
+                    Tvsc_orig = Tvsc_orig,
+                    CI = CI
                 )
             else:
                 (
@@ -230,10 +252,15 @@ class _ResampleTestTaskPLS(ResampleTest):
                     nboot,
                     self.pls_alg,
                     preprocess=preprocess,
-                    rotate_method=rotate_method,
-                    dist=self.dist,
+#                    dist=self.dist,
                     contrast=contrast,
+                    Tvsc_orig = Tvsc_orig,
+                    CI = CI
                 )
+        else:
+            self.conf_ints = ["NA", "NA"]
+            self.std_errs = "NA"
+            self.boot_ratios = "NA"
 
     @staticmethod
     def _permutation_test(
@@ -248,7 +275,6 @@ class _ResampleTestTaskPLS(ResampleTest):
         pls_alg,
         preprocess=None,
         contrast=None,
-        rotate_method=0,
         threshold=1e-12,
         bscan = None,
         Xbscan = None,
@@ -265,6 +291,7 @@ class _ResampleTestTaskPLS(ResampleTest):
 
         # singvals = np.empty((s.shape[0], niter))
         greatersum = np.zeros(s.shape)
+        stepdown_greatersum = np.zeros(s.shape)     # for stepdown test
         s[np.abs(s) < threshold] = 0
         debug = True
         debug_dict = {}
@@ -283,6 +310,13 @@ class _ResampleTestTaskPLS(ResampleTest):
             total_s = np.sum(np.power(mb_datamat_notnormed, 2))
             per_orig = np.power(s,2) / np.sum(np.power(s,2))
             org_s = np.sqrt(per_orig * total_s)
+        else:
+            org_s = np.copy(s)
+
+        # --- Stepdown baseline ---
+        totcov_org = np.zeros_like(org_s)
+        for r in range(len(org_s)):
+            totcov_org[r] = np.sum(org_s[r:] ** 2)
 
         print("----Running Permutation Test----\n")
         for i in range(niter):
@@ -351,76 +385,16 @@ class _ResampleTestTaskPLS(ResampleTest):
                 sum_perm[i] = np.sum(np.power(permuted, 2))
 
 
-            if rotate_method == 0:
-                if contrast is None:
-                    VS_hat = permuted.T @ U
-                    s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
-                    #print(s_hat)
-                else:
-                    inpt = contrast.T @ permuted
-                    # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
-                    s_hat = np.linalg.svd(inpt, compute_uv=False)
-                # print(s_hat)
-            # elif rotate_method == 1:
-            #     # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-            #     if contrast is not None:
-            #         U_hat, s_hat, V_hat = class_functions._run_pls_contrast(
-            #             permuted, contrast
-            #         )
-            #     else:
-            #         U_hat, s_hat, V_hat = np.linalg.svd(
-            #             permuted, full_matrices=False
-            #         )
-            #         V_hat = V_hat.T
-            #     # procustes
-            #     # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-            #     # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-            #     U_bar, s_bar, V_bar = np.linalg.svd(
-            #         U.T @ U_hat, full_matrices=False
-            #     )
-            #     V_bar = V_bar.T
-            #     # print(X_new_mc.shape)
-            #     rot = V_bar @ U_bar.T
-            #     U_rot = (U_hat * s_hat) @ rot
-            #     # permuted_rot = permuted @ V_rot
-            #     # permuted_rot = U_rot.T @ permuted
-            #     # s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
-            #     s_rot = np.sqrt(np.sum(np.power(U_rot, 2), axis=0))
-            #     s_hat = np.copy(s_rot)
-            #     # print(s_hat)
-            # elif rotate_method == 2:
-            #     # use derivation equations to compute permuted singular values
-            #     if pls_alg in ["cst", "csb", "cmb"]:
-            #         s_hat = class_functions._run_pls_contrast(
-            #             permuted, contrast, compute_uv=False
-            #         )
-            #     else:
-            #         US_hat = permuted.T @ U
-            #         s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
 
-            #     # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
-
-            #     # gd = [float("{:.5f}".format(i)) for i in s_hat_]
-            #     # der = [float("{:.5f}".format(i)) for i in s_hat]
-
-            #     # print(f"GSVD: {gd}")
-            #     # print(f"Derived: {der}")
-
-            #     # U_hat = US_hat / s_hat
-            #     # V_hat = np.linalg.inv(np.diag(s_hat)) @ (U.T @ X_new_mc)
-            #     # print(s_hat)
+            if contrast is None:
+                VS_hat = permuted.T @ U
+                s_hat = np.sqrt(np.sum(VS_hat**2, axis = 0))
+                #print(s_hat)
             else:
-                raise exceptions.NotImplementedError(
-                    f"Specified rotation method ({rotate_method}) "
-                    "has not been implemented."
-                )
-
-            # insert s_hat into singvals tracking matrix
-            # singvals[:, i] = s_hat
-            # count number of times sampled singular values are
-            # greater than observed singular values, element-wise
-            # greatersum += s >= s_hat
-            # print(s_hat >= s)
+                inpt = contrast.T @ permuted
+                # s_hat = np.linalg.svd(contrast.T @ permuted, compute_uv=False)
+                s_hat = np.linalg.svd(inpt, compute_uv=False)
+            # print(s_hat)
 
             if pls_alg in ["mb"]:
                 mb_permdatamat_notnormed = preprocess(
@@ -455,17 +429,25 @@ class _ResampleTestTaskPLS(ResampleTest):
 
             permute_ratio = greatersum / (niter + 1)
 
+            # --- Stepdown permutation test ---
+            totcov_perm = np.zeros_like(s_hat)
+            for r in range(len(s_hat)):
+                totcov_perm[r] = np.sum(s_hat[r:] ** 2)
 
+            stepdown_greatersum += totcov_perm >= totcov_org
+            stepdown_ratio = stepdown_greatersum / (niter + 1)
+            
         print(f"real s: {s}")
         print(f"ratio: {permute_ratio}")
+        print(f"Stepdown perm ratio: {stepdown_ratio}")
         if debug:
             debug_dict["s_list"] = s_list
             debug_dict["sum_s"] = sum_perm
             debug_dict["sum_perm"] = sum_s
             debug_dict["indices"] = indices
             # debug_dict[""] =
-            return (permute_ratio, debug_dict)
-        return permute_ratio
+            return (permute_ratio, stepdown_ratio, debug_dict)
+        return permute_ratio, stepdown_ratio
 
     @staticmethod
     def _bootstrap_test(
@@ -479,12 +461,14 @@ class _ResampleTestTaskPLS(ResampleTest):
         niter,
         pls_alg,
         preprocess=None,
-        rotate_method=0,
         dist=(0.05, 0.95),
         contrast=None,
         bscan = None,
         Xbscan = None,
-        Ybscan = None
+        Ybscan = None,
+        lvcorrs_orig = None,
+        Tvsc_orig = None,
+        CI = 0.95
     ):
         """Runs a bootstrap estimation on X matrix. Resamples X with
         replacement according to the condition order, runs PLS on the
@@ -520,18 +504,18 @@ class _ResampleTestTaskPLS(ResampleTest):
             else:
                 ncols = contrast.shape[1]
 
-            left_sv_sampled = np.empty((niter,np.product(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
-            Tdistrib = np.empty((niter, np.product(cond_order.shape), ncols))
-            LVcorr = np.empty((niter, np.product(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
+            left_sv_sampled = np.empty((niter,np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
+            Tdistrib = np.empty((niter, np.prod(cond_order.shape), ncols))
+            LVcorr = np.empty((niter, np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
 
         else:
             if pls_alg in ["rb"]:
-                ncols = np.product(cond_order.shape) * Y.shape[1]
+                ncols = np.prod(cond_order.shape) * Y.shape[1]
 
             if pls_alg in ["csb"]:
                 ncols = contrast.shape[1]
 
-            LVcorr = np.empty((niter, np.product(cond_order.shape) * Y.shape[1], ncols,))
+            LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
                 
             
         print("----Running Bootstrap Test----\n")
@@ -600,70 +584,15 @@ class _ResampleTestTaskPLS(ResampleTest):
                 else:
                     permuted = preprocess(X_new, Y_new, cond_order)
             
-            if rotate_method == 0:
-                #Get U
-                U_hat = (np.dot(V.T, permuted.T)).T
-                
-                #Get VS
-                VS_hat = permuted.T @ U
 
-                # Get V - normalize VS_hat
-                V_hat = class_functions._normalize(VS_hat)
+            #Get U
+            U_hat = (np.dot(V.T, permuted.T)).T
+            
+            #Get VS
+            VS_hat = permuted.T @ U
 
-            # elif rotate_method == 1:
-            #     # U_hat, s_hat, V_hat = gsvd.gsvd(permuted)
-            #     U_hat, s_hat, V_hat = np.linalg.svd(
-            #         permuted, full_matrices=False
-            #     )
-            #     V_hat = V_hat.T
-            #     # procustes
-            #     # U_bar, s_bar, V_bar = gsvd.gsvd(V.T @ V_hat)
-            #     # U_bar, s_bar, V_bar = np.linalg.svd(V.T @ V_hat, full_matrices=False)
-            #     U_bar, s_bar, V_bar = np.linalg.svd(
-            #         U.T @ U_hat, full_matrices=False
-            #     )
-            #     # s_pro = np.sqrt(np.sum(np.power(V_bar, 2), axis=0))
-            #     # print(X_new_mc.shape)
-            #     # rot = U_bar @ V.T
-            #     # V_rot = V_hat.T @ rot.T
-
-            #     rot = V_bar @ U_bar.T
-            #     U_rot = (U_hat * s_hat) @ rot
-            #     # permuted_rot = permuted @ V_rot
-            #     permuted_rot = U_rot @ permuted
-            #     s_rot = np.sqrt(np.sum(np.power(permuted_rot.T, 2), axis=0))
-            #     s_hat = np.copy(s_rot)
-
-            # elif rotate_method == 2:
-            #     # use derivation equations to compute permuted singular values
-            #     # US_hat = X_new_mc @ V
-            #     VS_hat = permuted.T @ U
-            #     s_hat = np.sqrt(np.sum(np.power(VS_hat, 2), axis=0))
-            #     # US_hat = V.T @ permuted.T
-            #     # s_hat = np.sqrt(np.sum(np.power(US_hat, 2), axis=0))
-            #     V_hat_der = VS_hat / s_hat
-            #     U_hat = (
-            #         np.linalg.inv(np.diag(s_hat)) @ (V_hat_der.T @ permuted.T)
-            #     ).T
-            #     # V_hat = (X_new_mc.T @ U_hat_der) / s_hat
-            #     # potential fix for sign issues
-            #     V_hat = V_hat_der
-            #     # U_hat = (X_new_mc @ V_hat) / s_hat
-            #     # U_hat_, s_hat_, V_hat_ = gsvd.gsvd(X_new_mc)
-
-            #     # print("DERIVED\n")
-            #     # print(U_hat_der)
-            #     # print("=====================")
-            #     # print("DOUBLE DERIVED\n")
-            #     # print(s_hat)
-            #     # print("----------------------")
-            #     # print(s_hat_)
-            #     # print("++++++++++++++++++++++")
-            else:
-                raise exceptions.NotImplementedError(
-                    f"Specified rotation method ({rotate_method}) "
-                    "has not been implemented."
-                )
+            # Get V - normalize VS_hat
+            V_hat = class_functions._normalize(VS_hat)
             
             # assign right singular vector
             right_sv_sampled[i] = VS_hat 
@@ -749,22 +678,32 @@ class _ResampleTestTaskPLS(ResampleTest):
         # maybe tokenizing a dictionary?
 
         # compute confidence intervals
+        CI_zscore = norm.ppf(1 - (1 - CI)/2)
+        #print(f"CI_zscore", CI_zscore)
         if pls_alg in ["mct","cst"]:
             # Task PLS (ulusc & llusc in matlab)
-            conf_int = resample.confidence_interval(
-                Tdistrib, conf=dist)
+            # conf_int = resample.confidence_interval(
+            #     Tdistrib, conf=dist) # TO DO: add in std of Tdistrib
+            std_errs_tmp = np.std(Tdistrib, axis=0)
+            conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
+            conf_int =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
         else:
             # Behavioural PLS CI (ulcorr & llcorr in matlab)
-            conf_int = resample.confidence_interval(
-                left_sv_sampled, conf=dist
-            )
-
+            # conf_int = resample.confidence_interval(
+            #     left_sv_sampled, conf=dist
+            # )
+            std_errs_tmp = np.std(left_sv_sampled, axis=0)
+            conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
+            conf_int =(lvcorrs_orig - conf_tmp,lvcorrs_orig + conf_tmp)
+        
             if pls_alg in ["mb", "cmb"]:
             # Multi-block Task CI (ulusc & llusc in matlab)
-                conf_int_T = resample.confidence_interval(
-                Tdistrib, conf=dist
-                )      
-            
+                # conf_int_T = resample.confidence_interval(
+                # Tdistrib, conf=dist
+                # )      
+                std_errs_tmp = np.std(Tdistrib, axis=0)
+                conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
+                conf_int_T =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
 
 
         if debug:
@@ -797,28 +736,17 @@ class _ResampleTestTaskPLS(ResampleTest):
             )
         else:
             return (conf_int, std_errs, boot_ratios, debug_dict)
-        # if Y is None:
-        #     return (conf_int, std_errs, boot_ratios, debug_dict)
-        # else:
-        #     llcorr, ulcorr = resample.confidence_interval(LVcorr, conf=dist)
-        #     return (
-        #         conf_int,
-        #         std_errs,
-        #         boot_ratios,
-        #         LVcorr,
-        #         llcorr,
-        #         ulcorr,
-        #         debug_dict,
-        #     )
     
     def __repr__(self):
         stg = ""
         stg += "Permutation Test Results\n"
         stg += "------------------------\n\n"
         stg += f"Ratio: {self.permute_ratio}\n\n"
+        stg += f"Step Down Ratio: {self.stepdown_ratio}\n\n"
         stg += "Bootstrap Test Results\n"
         stg += "----------------------\n\n"
-        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+#        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+        stg += f"Selected Confidence Interval Level: {self.CI}\n"
         stg += "\nLower CI: \n"
         stg += str(self.conf_ints[0])
         stg += "\n\nUpper CI: \n"
@@ -841,9 +769,11 @@ class _ResampleTestTaskPLS(ResampleTest):
         stg += "Permutation Test Results\n"
         stg += "------------------------\n\n"
         stg += f"Ratio: {self.permute_ratio}\n\n"
+        stg += f"Step Down Ratio: {self.stepdown_ratio}\n\n"
         stg += "Bootstrap Test Results\n"
         stg += "----------------------\n\n"
-        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+#        stg += f"Element-wise Confidence Interval: {self.dist}\n"
+        stg += f"Selected Confidence Interval Level: {self.CI}\n"
         stg += "\nLower CI: \n"
         stg += str(self.conf_ints[0])
         stg += "\n\nUpper CI: \n"
