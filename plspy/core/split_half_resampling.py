@@ -829,7 +829,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         "pls_null_mean_u": [np.mean(np.abs(pls_u_null[i, i, :])) for i in range(lv)],
         "pls_null_std_u": [np.std(np.abs(pls_u_null[i, i, :])) for i in range(lv)],
         "pls_null_z_u": [
-            np.mean(np.abs(pls_u_null[i, i, :])) / np.std(np.abs(pls_u_null[i, i, :]))
+            np.mean(np.abs(pls_u_null[i, i, :])) / np.std(np.abs(pls_u_null[i, i, :]),ddof=1)
             for i in range(lv)
         ],
         "pls_null_ul_u": [
@@ -841,7 +841,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         "pls_null_mean_v": [np.mean(np.abs(pls_v_null[i, i, :])) for i in range(lv)],
         "pls_null_std_v": [np.std(np.abs(pls_v_null[i, i, :])) for i in range(lv)],
         "pls_null_z_v": [
-            np.mean(np.abs(pls_v_null[i, i, :])) / np.std(np.abs(pls_v_null[i, i, :]))
+            np.mean(np.abs(pls_v_null[i, i, :])) / np.std(np.abs(pls_v_null[i, i, :]),ddof=1)
             for i in range(lv)
         ],
         "pls_null_ul_v": [
