@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats
 
 from . import class_functions, exceptions, gsvd, resample
+
 def _get_cond_order(X_shape, groups_tuple, num_conditions):
     """
     Returns a list of lists. Each sub-list contains the number of subjects
@@ -67,7 +68,7 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
                 Z-values for null test singular values (mean(pls_s_test_null)/std(pls_s_test_null)).
 
     """
-
+   
     inds = np.array([i for i in range(len(matrix))])
     num_conditions = np.shape(cond_order)[1]
     num_groups = np.shape(cond_order)[0]
@@ -125,8 +126,7 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
         for g, group_sizes in enumerate(cond_order):
             group_split = separate_group_ids[g]
             n_per_g = group_split.shape[0]
-            nsplit = int(np.ceil(n_per_g / 2))
-
+            nsplit = int(np.floor(n_per_g / 2))
             # Randomly shuffle subjects
             idx = np.random.permutation(n_per_g)
             tmp_idx_subj = group_split[idx, :]
@@ -161,8 +161,8 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
                     idx_2_bscan = np.concatenate((idx_2_bscan, idx_2))
 
         # Extract data for indices for each split-half
-        idx_1_all = mat_inds[0:nsplit,i]
-        idx_2_all = mat_inds[nsplit:,i]
+        idx_1_all = mat_inds[:len(idx_1_all),i]
+        idx_2_all = mat_inds[len(idx_1_all):,i]
         X1 = matrix[idx_1_all, :]
         X2 = matrix[idx_2_all, :]
 
@@ -544,8 +544,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             group_split = separate_group_ids[g]
 
             n_per_g = group_split.shape[0]
-            nsplit = int(np.ceil(n_per_g / 2))
-
+            nsplit = int(np.floor(n_per_g / 2))
             # Randomly shuffle subjects
             idx = np.random.permutation(n_per_g)
             tmp_idx_subj = group_split[idx, :]
@@ -582,8 +581,9 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
 
 
         # Extract data for indices for each split-half
-        idx_1_all = mat_inds[0:nsplit,i]
-        idx_2_all = mat_inds[nsplit:,i]
+        idx_1_all = mat_inds[:len(idx_1_all),i]
+        idx_2_all = mat_inds[len(idx_1_all):,i]
+
         X1 = matrix[idx_1_all, :]
         X2 = matrix[idx_2_all, :]
 
