@@ -16,7 +16,8 @@ The following steps will download and install plspy to your computer:
 
 `pip install plspy`
 
-If you prefer to build from source, run these commands:
+> **Note:** Currently, the version available via `pip install` is not the most up to date. For the latest features, bug fixes, and development updates, we recommend installing from source.
+To build from source, run these commands:
 
 ```
 git clone https://github.com/McIntosh-LabI/plspy.git
