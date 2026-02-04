@@ -125,7 +125,7 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
         for g, group_sizes in enumerate(cond_order):
             group_split = separate_group_ids[g]
             n_per_g = group_split.shape[0]
-            nsplit = int(np.ceil(n_per_g / 2))
+            nsplit = int(np.floor(n_per_g / 2))
 
             # Randomly shuffle subjects
             idx = np.random.permutation(n_per_g)
@@ -541,7 +541,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             group_split = separate_group_ids[g]
 
             n_per_g = group_split.shape[0]
-            nsplit = int(np.ceil(n_per_g / 2))
+            nsplit = int(np.floor(n_per_g / 2))
 
             # Randomly shuffle subjects
             idx = np.random.permutation(n_per_g)
