@@ -500,7 +500,7 @@ class _ResampleTestTaskPLS(ResampleTest):
   
         elif pls_alg in ["mb", "cmb"]:
             if pls_alg in ["mb"]:
-                ncols = U.shape[0]
+                ncols = U.shape[1]
             else:
                 ncols = contrast.shape[1]
 
