@@ -253,7 +253,7 @@ class _MeanCentreTaskPLS(PLSBase):
             self.mctype = 1
         else:
             self.mctype = mctype
-
+        print(self.mctype)
         # compute X means and X mean-centred values
         self.X_means, self.X_mc = class_functions._mean_centre(
             self.X, self.cond_order, mctype=self.mctype
@@ -1279,6 +1279,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         X: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        mctype: int = 0,
         Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
@@ -1323,6 +1324,14 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             groups_sizes
         )
         self.num_conditions = num_conditions
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
+        
         # if no user-specified condition list, generate one
         if cond_order is None:
             self.cond_order = self._get_cond_order(
@@ -1612,6 +1621,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         X: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        mctype: int = 0,
         Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
@@ -1649,6 +1659,14 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             groups_sizes
         )
         self.num_conditions = num_conditions
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
+        
         # if no user-specified condition list, generate one
         if cond_order is None:
             self.cond_order = self._get_cond_order(
