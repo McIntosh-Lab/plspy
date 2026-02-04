@@ -352,10 +352,20 @@ class _ResampleTestTaskPLS(ResampleTest):
                 inds = TSAMP_perm[:,i] 
                 X_new_T = X[inds,:]         
                 # Permute behavioural data (use "rb" option)
-                # Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
+                #Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
+
+                mask = np.array([])
+                for item in cond_order:
+                    for cond_i, cond in enumerate(item):
+                        if cond_i in bscan:
+                            mask = np.concatenate((mask,np.repeat(1,cond)))
+                        else:
+                            mask = np.concatenate((mask,np.repeat(0,cond)))
+                
+                mask = mask.flatten().astype(bool)
                 inds = BSAMP_perm[:,i]
                 Y_new = Y[inds,:]
-        
+                Y_new = Y_new[mask]
             # pass in preprocessing function (i.e. mean-centering) for use
             # after sampling
 
@@ -393,7 +403,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                     X_new_T, cond_order, pls_alg, bscan, mctype, 
                     norm_opt = False, Xbscan = Xbscan, Ybscan = Y_new
                 )
-
+                
                 total_s_hat = np.sum(np.power(mb_permdatamat_notnormed, 2))
 
                 squared_diag = np.diag(s_hat ** 2)
@@ -492,7 +502,7 @@ class _ResampleTestTaskPLS(ResampleTest):
   
         elif pls_alg in ["mb", "cmb"]:
             if pls_alg in ["mb"]:
-                ncols = U.shape[0]
+                ncols = U.shape[1]
             else:
                 ncols = contrast.shape[1]
 
@@ -539,7 +549,7 @@ class _ResampleTestTaskPLS(ResampleTest):
                 #     Xbscan, cond_order[:,bscan], return_indices=True
                 # )
                 # Y_new = Ybscan[inds, :]
-                SAMP_boot
+                #SAMP_boot
                 inds = BSAMP_boot[:,i]
                 Y_new = Y[inds,:]
                 X_new = X[inds,:]
