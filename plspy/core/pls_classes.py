@@ -1708,12 +1708,16 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
                 "Please provide a contrast matrix."
             )
         # Create a binary mask for conditions of interest
-        TBi = np.ones(self.num_conditions)
+        Ti = np.ones(self.num_conditions)
         Bi = np.zeros((self.Y.shape[1], self.num_conditions))
         Bi[:, self.bscan] = 1
 
         # Flatten and repeat for num_groups
-        TBi = np.hstack((TBi, Bi.flatten()))
+        #TBi = np.hstack((TBi, Bi.flatten()))
+        TBi = np.concatenate([
+            Ti.reshape(-1, order='F'),
+            Bi.reshape(-1, order='F')
+        ])
         TBi = np.tile(TBi, self.num_groups)
 
         # Apply the mask
