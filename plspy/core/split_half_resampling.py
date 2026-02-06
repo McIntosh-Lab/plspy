@@ -154,7 +154,7 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
 
                 # Append group indices
                 if idx_1_bscan is None: # Initialize with the first group
-                    idx_1_bscan = idx_1
+                    idx_1_bscan = idx_1 #TO DO: ADD PROPER INDEXING FOR IDX_1_BSCAN ETC.
                     idx_2_bscan = idx_2
                 else: # Horizontally concatenate groups
                     idx_1_bscan = np.concatenate((idx_1_bscan, idx_1))  
@@ -203,14 +203,10 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             pls_s_test[:, :, i] = my_V.T @ R2.T @ my_U
 
         if pls_alg == "cst":
-            # Mean centering            
-            X1_mc = class_functions._mean_centre(
-            X1, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc = class_functions._mean_centre(
-            X2, cond_order_2, return_means=False, mctype=mctype
-        )
-        # Perform Contrast Task PLS    
+            X1_mc = class_functions._get_group_condition_means(X1, cond_order_1)
+            X2_mc = class_functions._get_group_condition_means(X2, cond_order_2)
+
+        # Perform Contrast Task PLS
             my_U, my_s, my_V = class_functions._run_pls_contrast(
             X1_mc, contrasts)
 
@@ -233,11 +229,16 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
 
         if pls_alg in ["mb","cmb"]:
                 
-            Xbscan1 = matrix[idx_1_bscan, :]
-            Ybscan1 = Y[idx_1_bscan, :]
+            # Xbscan1 = matrix[idx_1_bscan, :]
+            # Ybscan1 = Y[idx_1_bscan, :]
 
-            Xbscan2 = matrix[idx_2_bscan, :]
-            Ybscan2 = Y[idx_2_bscan, :]
+            # Xbscan2 = matrix[idx_2_bscan, :]
+            # Ybscan2 = Y[idx_2_bscan, :]
+            Xbscan1 = matrix[idx_1_all, :]
+            Ybscan1 = Y[idx_1_all, :]
+
+            Xbscan2 = matrix[idx_2_all, :]
+            Ybscan2 = Y[idx_2_all, :]
 
             # Get multiblock
             multiblock1 = class_functions._create_multiblock(
@@ -322,13 +323,10 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             pls_s_test_null[:, :, i] = my_V.T @ R2_null.T @ my_U
 
         if pls_alg == "cst":
-            # Mean centering            
-            X1_mc_null = class_functions._mean_centre(
-            X1_null, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc_null = class_functions._mean_centre(
-            X2_null, cond_order_2, return_means=False, mctype=mctype
-        )
+            # Mean centering
+            X1_mc_null = class_functions._get_group_condition_means(X1_null, cond_order_1)
+            X2_mc_null = class_functions._get_group_condition_means(X2_null, cond_order_2)        
+
             # Perform Contrast Task PLS    
             my_U, my_s, my_V = class_functions._run_pls_contrast(
             X1_mc_null, contrasts)
@@ -625,13 +623,9 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             my_U2, _, my_V2 = class_functions._run_pls(R2)
 
         if pls_alg == "cst":
-            # Mean centering
-            X1_mc = class_functions._mean_centre(
-            X1, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc = class_functions._mean_centre(
-            X2, cond_order_2, return_means=False, mctype=mctype
-        )
+            X1_mc = class_functions._get_group_condition_means(X1, cond_order_1)
+            X2_mc = class_functions._get_group_condition_means(X2, cond_order_2)
+
             # Perform Contrast Task PLS 
             my_U1, _, my_V1 = class_functions._run_pls_contrast(
             X1_mc, contrasts
@@ -746,13 +740,9 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             my_U2, _, my_V2 = class_functions._run_pls(R2_null)
 
         if pls_alg == "cst":
-            # Mean centering
-            X1_mc_null = class_functions._mean_centre(
-            X1_null, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc_null = class_functions._mean_centre(
-            X2_null, cond_order_2, return_means=False, mctype=mctype
-        )
+            X1_mc_null = class_functions._get_group_condition_means(X1_null, cond_order_1)
+            X2_mc_null = class_functions._get_group_condition_means(X2_null, cond_order_2)
+
             # Perform Contrast Task PLS 
             my_U1, _, my_V1 = class_functions._run_pls_contrast(
             X1_mc_null, contrasts
