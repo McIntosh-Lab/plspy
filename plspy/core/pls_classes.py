@@ -1283,6 +1283,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         cond_order: list = None,
         num_perm: int = 1000,
         num_boot: int = 1000,
+        mctype: int = 0,
         CI: float = 0.95,
         **kwargs,
     ):
@@ -1360,7 +1361,14 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.num_perm = num_perm
         self.num_boot = num_boot
         self.CI = CI
-
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
+        print(self.mctype)
         # assign functions to class
         # TODO: decide whether or not these should be applied
         # or if users should import from class_functions module     
@@ -1618,6 +1626,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         num_perm: int = 1000,
         num_boot: int = 1000,
         contrasts: list = None,
+        mctype: int = 0,
         CI: float = 0.95,
         **kwargs,
     ):
@@ -1650,6 +1659,14 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             groups_sizes
         )
         self.num_conditions = num_conditions
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
+
         # if no user-specified condition list, generate one
         if cond_order is None:
             self.cond_order = self._get_cond_order(
