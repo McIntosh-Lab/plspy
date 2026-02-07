@@ -154,11 +154,12 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
 
                 # Append group indices
                 if idx_1_bscan is None: # Initialize with the first group
-                    idx_1_bscan = idx_1 #TO DO: ADD PROPER INDEXING FOR IDX_1_BSCAN ETC.
+                    idx_1_bscan = idx_1
                     idx_2_bscan = idx_2
                 else: # Horizontally concatenate groups
                     idx_1_bscan = np.concatenate((idx_1_bscan, idx_1))  
                     idx_2_bscan = np.concatenate((idx_2_bscan, idx_2))
+                
 
         # Extract data for indices for each split-half
         idx_1_all = mat_inds[:len(idx_1_all),i]
@@ -234,11 +235,32 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
 
             # Xbscan2 = matrix[idx_2_bscan, :]
             # Ybscan2 = Y[idx_2_bscan, :]
+            mask1 = np.array([])
+            for item in cond_order_1:
+                for cond_i, cond in enumerate(item):
+                    if cond_i in bscan:
+                        mask1 = np.concatenate((mask1,np.repeat(1,cond)))
+                    else:
+                        mask1 = np.concatenate((mask1,np.repeat(0,cond)))
+            
+            mask1 = mask1.flatten().astype(bool)
+            mask2 = np.array([])
+            for item in cond_order_2:
+                for cond_i, cond in enumerate(item):
+                    if cond_i in bscan:
+                        mask2 = np.concatenate((mask2,np.repeat(1,cond)))
+                    else:
+                        mask2 = np.concatenate((mask2,np.repeat(0,cond)))
+            
+            mask2 = mask2.flatten().astype(bool)
             Xbscan1 = matrix[idx_1_all, :]
+            Xbscan1 = Xbscan1[mask1]
             Ybscan1 = Y[idx_1_all, :]
-
+            Ybscan1 = Ybscan1[mask1]
             Xbscan2 = matrix[idx_2_all, :]
+            Xbscan2 = Xbscan2[mask2]
             Ybscan2 = Y[idx_2_all, :]
+            Ybscan2 = Ybscan2[mask2]
 
             # Get multiblock
             multiblock1 = class_functions._create_multiblock(
@@ -650,12 +672,39 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             my_U2, _, my_V2 = class_functions._run_pls_contrast(R2, contrasts)
 
         if pls_alg in ["mb","cmb"]:
-            Xbscan1 = matrix[idx_1_bscan, :]
-            Ybscan1 = Y[idx_1_bscan, :]
+            # Xbscan1 = matrix[idx_1_bscan, :]
+            # Ybscan1 = Y[idx_1_bscan, :]
             
-            Xbscan2 = matrix[idx_2_bscan, :]
-            Ybscan2 = Y[idx_2_bscan, :]
+            # Xbscan2 = matrix[idx_2_bscan, :]
+            # Ybscan2 = Y[idx_2_bscan, :]
 
+
+            mask1 = np.array([])
+            for item in cond_order_1:
+                for cond_i, cond in enumerate(item):
+                    if cond_i in bscan:
+                        mask1 = np.concatenate((mask1,np.repeat(1,cond)))
+                    else:
+                        mask1 = np.concatenate((mask1,np.repeat(0,cond)))
+            
+            mask1 = mask1.flatten().astype(bool)
+            mask2 = np.array([])
+            for item in cond_order_2:
+                for cond_i, cond in enumerate(item):
+                    if cond_i in bscan:
+                        mask2 = np.concatenate((mask2,np.repeat(1,cond)))
+                    else:
+                        mask2 = np.concatenate((mask2,np.repeat(0,cond)))
+            
+            mask2 = mask2.flatten().astype(bool)
+            Xbscan1 = matrix[idx_1_all, :]
+            Xbscan1 = Xbscan1[mask1]
+            Ybscan1 = Y[idx_1_all, :]
+            Ybscan1 = Ybscan1[mask1]
+            Xbscan2 = matrix[idx_2_all, :]
+            Xbscan2 = Xbscan2[mask2]
+            Ybscan2 = Y[idx_2_all, :]
+            Ybscan2 = Ybscan2[mask2]
             
             # Get multiblock
             multiblock1 = class_functions._create_multiblock(
