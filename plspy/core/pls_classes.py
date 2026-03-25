@@ -286,6 +286,14 @@ class _MeanCentreTaskPLS(PLSBase):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -595,6 +603,14 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -867,6 +883,14 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1130,6 +1154,14 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1466,6 +1498,14 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1821,6 +1861,14 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
