@@ -67,7 +67,7 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
                 Z-values for null test singular values (mean(pls_s_test_null)/std(pls_s_test_null)).
 
     """
-
+    print(f"----Running Split-Half Test-Train Reproducibility Test----\n")
     inds = np.array([i for i in range(len(matrix))])
     num_conditions = np.shape(cond_order)[1]
     num_groups = np.shape(cond_order)[0]
@@ -113,7 +113,10 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             allgroup_ids = np.concatenate((allgroup_ids, group_split))  # Horizontally concatenate groups
 
     # Loop for each split
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Iteration {i + 1}/{num_split}")
         start = 0
         idx_1_all = None
         idx_2_all = None
@@ -257,7 +260,10 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             pls_s_test[:, :, i] = my_V.T @ multiblock2.T @ my_U
 
 # Generate null distribution
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Null Iteration {i + 1}/{num_split}")
         n_per_cond = n // num_conditions
         nsplit = sum(group_tuple_1) # Set split to same size as non-null split
         idx = np.random.permutation(n_per_cond)
@@ -476,7 +482,7 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
                 Full distribution of null v cosines.
 
     """
-
+    print(f"----Running Split-Half Reproducibility Test----\n")
     inds = np.array([i for i in range(len(matrix))])
     num_conditions = np.shape(cond_order)[1]
     num_groups = np.shape(cond_order)[0]
@@ -520,7 +526,10 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
 
 
     # Loop for each split
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Iteration {i + 1}/{num_split}")
         start = 0
         idx_1_all = None
         idx_2_all = None
@@ -667,7 +676,10 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         pls_v_repro[:, :, i] = my_U1.T @ my_U2 # Flip for consistency with matlab
 
 # Generate null distribution
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Null Iteration {i + 1}/{num_split}")
         n_per_cond = n // num_conditions # n is the total number of conditions*subjects
         nsplit = sum(group_tuple_1) # Set split to same size as non-null split
         idx = np.random.permutation(n_per_cond)
