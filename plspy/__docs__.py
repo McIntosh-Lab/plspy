@@ -21,6 +21,8 @@ resample
     Functions used for resampling in permutation and bootstrap
 bootstrap_permutation
     Houses the bootstrap and permutation object (called by PLS)
+split_half_resampling
+    Functions used for split-half and split-half test-train resampling
 pls_classes
     Source code for each PLS version
 exceptions
@@ -45,7 +47,7 @@ Basic usage examples:
 
     Mean-Centred Task PLS:
 
-        >>> result = plspy.PLS(X, [10, 10], 3, num_perm=500, num_boot=500,  pls_method="mct")
+        >>> result = plspy.PLS(X, [10, 10], 3, num_perm=500, num_boot=500, num_split=500, lv=1, CI=0.95, pls_method="mct")
 
     Behavioural PLS:
 
@@ -89,7 +91,7 @@ Available methods:
 
     "mb"  - Multiblock PLS
 
-    "cmb" - Contrast Multiblock PLS (under construction)
+    "cmb" - Contrast Multiblock PLS
 
 
 Note: calling

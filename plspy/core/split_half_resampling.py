@@ -26,26 +26,26 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
 
     Parameters
     ----------
-        pls_alg (str): 
+        pls_alg : str
             Name of the PLS variant.
 
-        matrix (np.ndarray): 
+        matrix : np.ndarray
             Input data matrix with dimensions (subjects x features).
 
-        Y (np.ndarray): 
+        Y : np.ndarray, optional 
             Input behavioral matrix.
 
-        cond_order (array-like): 
+        cond_order : array-like 
             List/array where each entry holds the number of subjects per 
             condition for each group in the input matrix.
 
-        num_split (int): 
+        num_split : int
             Number of split-half samples.
 
-        mctype (int, optional): 
+        mctype : int, optional
             Method for mean-centering the data
 
-        contrasts (np.ndarray, optional): 
+        contrasts : np.ndarray, optional
             Contrast matrix for use in Contrast Task PLS. Used to create 
             different methods of comparison.
 
@@ -407,35 +407,35 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
 
     Parameters
     ----------
-        pls_alg (str): 
+        pls_alg : str
             Name of the PLS variant.
 
-        matrix (np.ndarray): 
+        matrix : np.ndarray 
             Input data matrix with dimensions (subjects x features).
 
-        Y (np.ndarray): 
+        Y : np.ndarray, optional 
             Input behavioral matrix.
 
-        cond_order (array-like): 
+        cond_order : array-like
             List/array where each entry holds the number of subjects per 
             condition for each group in the input matrix.
 
-        num_split (int): 
+        num_split : int
             Number of split-half samples.
 
-        mctype (int, optional): 
+        mctype : int, optional
             Method for mean-centering the data.
 
-        contrasts (np.ndarray, optional): 
+        contrasts : np.ndarray, optional 
             Contrast matrix for use in Contrast Task PLS. Used to create 
             different methods of comparison.
 
-        lv (int): 
+        lv : int
             Number of LVs to evaluate.
             If the specified value exceeds the maximum possible number of LVs,
             it is automatically set to the maximum.
 
-        CI (float): 
+        CI : float
             Confidence interval percentile. Defaults to 0.95.
 
 
