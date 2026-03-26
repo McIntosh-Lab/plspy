@@ -286,6 +286,14 @@ class _MeanCentreTaskPLS(PLSBase):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -595,6 +603,14 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -867,6 +883,14 @@ class _ContrastTaskPLS(_MeanCentreTaskPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1130,6 +1154,14 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1279,6 +1311,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         X: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        mctype: int = 0,
         Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
@@ -1323,6 +1356,14 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             groups_sizes
         )
         self.num_conditions = num_conditions
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
+        
         # if no user-specified condition list, generate one
         if cond_order is None:
             self.cond_order = self._get_cond_order(
@@ -1457,6 +1498,14 @@ class _MultiblockPLS(_RegularBehaviourPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,
@@ -1612,6 +1661,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         X: np.array,
         groups_sizes: tuple,
         num_conditions: int,
+        mctype: int = 0,
         Y: list = None,
         cond_order: list = None,
         num_perm: int = 1000,
@@ -1649,6 +1699,14 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             groups_sizes
         )
         self.num_conditions = num_conditions
+        if num_conditions == 1 and mctype != 1:
+            print("Because you are running single condition Task PLS, " 
+                "input Mean-Centering Type has to set to 1"
+            )
+            self.mctype = 1
+        else:
+            self.mctype = mctype
+        
         # if no user-specified condition list, generate one
         if cond_order is None:
             self.cond_order = self._get_cond_order(
@@ -1803,6 +1861,14 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
             self.num_split = int(self.num_split)
             if self.num_split > 0:
                 print("----Running Split-half Reproducibility Tests----\n")
+                # Adjust lv if specified value too large
+                max_lv = min(self.s.shape)
+                if self.lv > max_lv:
+                    print(
+                        f"Warning: Requested lv={self.lv} exceeds maximum possible LVs ({max_lv}). "
+                        f"Using lv={max_lv} instead."
+                    )
+                    self.lv = max_lv
                 self.pls_repro_tt = split_half_resampling.split_half_test_train(
                     self.pls_alg,
                     self.X,

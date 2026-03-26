@@ -11,6 +11,7 @@ from .core import (
     pls,
     pls_classes,
     resample,
+    split_half_resampling
 )
 from .core.pls import PLS, methods
 from .io import io

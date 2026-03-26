@@ -24,7 +24,8 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
     """
     Perform split-half test-train PLS reproducibility test.
 
-    Parameters:
+    Parameters
+    ----------
         pls_alg (str): 
             Name of the PLS variant.
 
@@ -48,26 +49,27 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             Contrast matrix for use in Contrast Task PLS. Used to create 
             different methods of comparison.
 
-    Returns:
+    Returns
+    -------
         pls_repro_tt: Dictionary containing split-half test-train reproducibility results.
 
-            Keys
-            ----
-            pls_s_train : np.ndarray
-                Distribution of singular values from training samples.
-            pls_s_test : np.ndarray
-                Distribution of singular values from corresponding test samples.
-            z : np.ndarray
-                Z-values for each test singular value, computed as mean(pls_s_test)/std(pls_s_test).
-            pls_s_train_null : np.ndarray
-                Distribution singular values from training sample where rows for one data block are permuted.
-            pls_s_test_null : np.ndarray
-                Distribution singular values from test sample where rows for one data block are permuted.
-            z_null : np.ndarray
-                Z-values for null test singular values (mean(pls_s_test_null)/std(pls_s_test_null)).
+    Keys
+    -------
+    pls_s_train : np.ndarray
+        Distribution of singular values from training samples.
+    pls_s_test : np.ndarray
+        Distribution of singular values from corresponding test samples.
+    z : np.ndarray
+        Z-values for each test singular value, computed as mean(pls_s_test)/std(pls_s_test).
+    pls_s_train_null : np.ndarray
+        Distribution singular values from training sample where rows for one data block are permuted.
+    pls_s_test_null : np.ndarray
+        Distribution singular values from test sample where rows for one data block are permuted.
+    z_null : np.ndarray
+        Z-values for null test singular values (mean(pls_s_test_null)/std(pls_s_test_null)).
 
     """
-
+    print(f"----Running Split-Half Test-Train Reproducibility Test----\n")
     inds = np.array([i for i in range(len(matrix))])
     num_conditions = np.shape(cond_order)[1]
     num_groups = np.shape(cond_order)[0]
@@ -113,7 +115,10 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             allgroup_ids = np.concatenate((allgroup_ids, group_split))  # Horizontally concatenate groups
 
     # Loop for each split
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Iteration {i + 1}/{num_split}")
         start = 0
         idx_1_all = None
         idx_2_all = None
@@ -204,13 +209,9 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             pls_s_test[:, :, i] = my_V.T @ R2.T @ my_U
 
         if pls_alg == "cst":
-            # Mean centering            
-            X1_mc = class_functions._mean_centre(
-            X1, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc = class_functions._mean_centre(
-            X2, cond_order_2, return_means=False, mctype=mctype
-        )
+            X1_mc = class_functions._get_group_condition_means(X1, cond_order_1)
+            X2_mc = class_functions._get_group_condition_means(X2, cond_order_2)
+
         # Perform Contrast Task PLS    
             my_U, my_s, my_V = class_functions._run_pls_contrast(
             X1_mc, contrasts)
@@ -261,7 +262,10 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             pls_s_test[:, :, i] = my_V.T @ multiblock2.T @ my_U
 
 # Generate null distribution
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Null Iteration {i + 1}/{num_split}")
         n_per_cond = n // num_conditions
         nsplit = sum(group_tuple_1) # Set split to same size as non-null split
         idx = np.random.permutation(n_per_cond)
@@ -323,13 +327,9 @@ def split_half_test_train(pls_alg, matrix, Y, cond_order, num_split, mctype=None
             pls_s_test_null[:, :, i] = my_V.T @ R2_null.T @ my_U
 
         if pls_alg == "cst":
-            # Mean centering            
-            X1_mc_null = class_functions._mean_centre(
-            X1_null, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc_null = class_functions._mean_centre(
-            X2_null, cond_order_2, return_means=False, mctype=mctype
-        )
+            X1_mc_null = class_functions._get_group_condition_means(X1_null, cond_order_1)
+            X2_mc_null = class_functions._get_group_condition_means(X2_null, cond_order_2)        
+
             # Perform Contrast Task PLS    
             my_U, my_s, my_V = class_functions._run_pls_contrast(
             X1_mc_null, contrasts)
@@ -405,7 +405,8 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
     """
     Perform split-half reproducibility test.
 
-    Parameters:
+    Parameters
+    ----------
         pls_alg (str): 
             Name of the PLS variant.
 
@@ -431,60 +432,64 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
 
         lv (int): 
             Number of LVs to evaluate.
+            If the specified value exceeds the maximum possible number of LVs,
+            it is automatically set to the maximum.
 
         CI (float): 
             Confidence interval percentile. Defaults to 0.95.
 
-    Returns:
+
+    Returns
+    -------
         pls_repro_sh: Dictionary containing split-half reproducibility results.
 
-            Keys
-            ----
-            pls_rep_mean_u : list[float]
-                Average of cosines for u distribution from split-half.
-            pls_rep_mean_v : list[float]
-                Average of cosines for v distribution from split-half.
-            pls_rep_z_u : list[float]
-                Z-value for u distribution (mean_u/std_u)
-            pls_rep_z_v : list[float]
-                Z-value for v distribution (mean_v/std_v)
-            pls_rep_ul_u : list[float]
-                Upper bound of the u distribution.
-            pls_rep_ll_u : list[float]
-                Lower bound of the u distribution.
-            pls_rep_ul_v : list[float]
-                Upper bound of the v distribution.
-            pls_rep_ll_v : list[float]
-                Lower bound of the v distribution.
+    Keys
+    -------
+    pls_rep_mean_u : list[float]
+        Average of cosines for u distribution from split-half.
+    pls_rep_mean_v : list[float]
+        Average of cosines for v distribution from split-half.
+    pls_rep_z_u : list[float]
+        Z-value for u distribution (mean_u/std_u)
+    pls_rep_z_v : list[float]
+        Z-value for v distribution (mean_v/std_v)
+    pls_rep_ul_u : list[float]
+        Upper bound of the u distribution.
+    pls_rep_ll_u : list[float]
+        Lower bound of the u distribution.
+    pls_rep_ul_v : list[float]
+        Upper bound of the v distribution.
+    pls_rep_ll_v : list[float]
+        Lower bound of the v distribution.
 
-            pls_null_mean_u : list[float]
-                Average of null u distribution created by permutation.
-            pls_null_mean_v : list[float]
-                Average of null v distribution.
-            pls_null_z_u : list[float]
-                Z-value for null u distribution.
-            pls_null_z_v : list[float]
-                Z-value for null v distribution.
-            pls_null_ul_u : list[float]
-                Upper bound of null u distribution.
-            pls_null_ll_u : list[float]
-                Lower bound of null u distribution.
-            pls_null_ul_v : list[float]
-                Upper bound of null v distribution.
-            pls_null_ll_v : list[float]
-                Lower bound of null v distribution.
+    pls_null_mean_u : list[float]
+        Average of null u distribution created by permutation.
+    pls_null_mean_v : list[float]
+        Average of null v distribution.
+    pls_null_z_u : list[float]
+        Z-value for null u distribution.
+    pls_null_z_v : list[float]
+        Z-value for null v distribution.
+    pls_null_ul_u : list[float]
+        Upper bound of null u distribution.
+    pls_null_ll_u : list[float]
+        Lower bound of null u distribution.
+    pls_null_ul_v : list[float]
+        Upper bound of null v distribution.
+    pls_null_ll_v : list[float]
+        Lower bound of null v distribution.
 
-            pls_dist_u : np.ndarray
-                Full distribution of u cosines.
-            pls_dist_v : np.ndarray
-                Full distribution of v cosines.
-            pls_dist_null_u : np.ndarray
-                Full distribution of null u cosines.
-            pls_dist_null_v : np.ndarray
-                Full distribution of null v cosines.
+    pls_dist_u : np.ndarray
+        Full distribution of u cosines.
+    pls_dist_v : np.ndarray
+        Full distribution of v cosines.
+    pls_dist_null_u : np.ndarray
+        Full distribution of null u cosines.
+    pls_dist_null_v : np.ndarray
+        Full distribution of null v cosines.
 
     """
-
+    print(f"----Running Split-Half Reproducibility Test----\n")
     inds = np.array([i for i in range(len(matrix))])
     num_conditions = np.shape(cond_order)[1]
     num_groups = np.shape(cond_order)[0]
@@ -528,7 +533,10 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
 
 
     # Loop for each split
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Iteration {i + 1}/{num_split}")
         start = 0
         idx_1_all = None
         idx_2_all = None
@@ -620,13 +628,9 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             my_U2, _, my_V2 = class_functions._run_pls(R2)
 
         if pls_alg == "cst":
-            # Mean centering
-            X1_mc = class_functions._mean_centre(
-            X1, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc = class_functions._mean_centre(
-            X2, cond_order_2, return_means=False, mctype=mctype
-        )
+            X1_mc = class_functions._get_group_condition_means(X1, cond_order_1)
+            X2_mc = class_functions._get_group_condition_means(X2, cond_order_2)
+
             # Perform Contrast Task PLS 
             my_U1, _, my_V1 = class_functions._run_pls_contrast(
             X1_mc, contrasts
@@ -636,9 +640,6 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             X2_mc, contrasts
         )
         if pls_alg == "csb":
-            # permy = Y[np.random.permutation(n), :]
-            # Y1 = permy[idx_1_all, :]
-            # Y2 = permy[idx_2_all, :] 
             Y1 = Y[idx_1_all, :]
             Y2 = Y[idx_2_all, :]
             
@@ -682,7 +683,10 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
         pls_v_repro[:, :, i] = my_U1.T @ my_U2 # Flip for consistency with matlab
 
 # Generate null distribution
+    step = max(1, num_split // 10)
     for i in range(num_split):
+        if (i + 1) % step == 0 or i == num_split - 1:
+            print(f"Null Iteration {i + 1}/{num_split}")
         n_per_cond = n // num_conditions # n is the total number of conditions*subjects
         nsplit = sum(group_tuple_1) # Set split to same size as non-null split
         idx = np.random.permutation(n_per_cond)
@@ -741,13 +745,9 @@ def split_half(pls_alg, matrix, Y, cond_order, num_split, mctype=None, contrasts
             my_U2, _, my_V2 = class_functions._run_pls(R2_null)
 
         if pls_alg == "cst":
-            # Mean centering
-            X1_mc_null = class_functions._mean_centre(
-            X1_null, cond_order_1, return_means=False, mctype=mctype
-        )
-            X2_mc_null = class_functions._mean_centre(
-            X2_null, cond_order_2, return_means=False, mctype=mctype
-        )
+            X1_mc_null = class_functions._get_group_condition_means(X1_null, cond_order_1)
+            X2_mc_null = class_functions._get_group_condition_means(X2_null, cond_order_2)
+
             # Perform Contrast Task PLS 
             my_U1, _, my_V1 = class_functions._run_pls_contrast(
             X1_mc_null, contrasts

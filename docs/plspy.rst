@@ -77,3 +77,11 @@ plspy.resample module
    :members:
    :undoc-members:
    :show-inheritance:
+
+plspy.split_half_resampling module
+----------------------------------
+
+.. automodule:: plspy.split_half_resampling
+   :members: split_half, split_half_test_train
+   :undoc-members:
+   :show-inheritance:

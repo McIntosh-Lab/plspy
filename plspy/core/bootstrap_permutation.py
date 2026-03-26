@@ -319,9 +319,10 @@ class _ResampleTestTaskPLS(ResampleTest):
             totcov_org[r] = np.sum(org_s[r:] ** 2)
 
         print("----Running Permutation Test----\n")
+        step = max(1, niter // 10)
         for i in range(niter):
-            if (i + 1) % 50 == 0:
-                print(f"Iteration {i + 1}")
+            if (i + 1) % step == 0 or i == niter - 1:
+                print(f"Iteration {i + 1}/{niter}")
             # create resampled X matrix and get resampled indices
 
             if pls_alg in ["mct", "cst"]:
@@ -519,11 +520,10 @@ class _ResampleTestTaskPLS(ResampleTest):
                 
             
         print("----Running Bootstrap Test----\n")
+        step = max(1, niter // 10)
         for i in range(niter):
-            # print out iteration number every 50 iterations
-            if (i + 1) % 50 == 0:
-                print(f"Iteration {i + 1}")
-
+            if (i + 1) % step == 0 or i == niter - 1:
+                print(f"Iteration {i + 1}/{niter}")
 
             if pls_alg in ["mb", "cmb"]:
                 # X_new_T = Task portion
