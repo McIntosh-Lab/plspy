@@ -20,7 +20,7 @@ The following steps will download and install plspy to your computer:
 To build from source, run these commands:
 
 ```
-git clone https://github.com/McIntosh-LabI/plspy.git
+git clone https://github.com/McIntosh-Lab/plspy.git
 cd plspy
 python setup.py install
 ```
