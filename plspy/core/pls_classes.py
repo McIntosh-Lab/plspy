@@ -253,7 +253,7 @@ class _MeanCentreTaskPLS(PLSBase):
             self.mctype = 1
         else:
             self.mctype = mctype
-        print(self.mctype)
+
         # compute X means and X mean-centred values
         self.X_means, self.X_mc = class_functions._mean_centre(
             self.X, self.cond_order, mctype=self.mctype
