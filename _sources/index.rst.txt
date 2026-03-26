@@ -13,7 +13,7 @@ Welcome to plspy's documentation!
    :members: pls
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Contents:
 
    /plspy
