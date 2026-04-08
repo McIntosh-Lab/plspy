@@ -7,17 +7,12 @@
 Welcome to plspy's documentation!
 ===================================
 
-
-
-.. automodule:: plspy
-   :members: pls
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
-   /plspy
    /modules
+
 
 
 Indices and tables

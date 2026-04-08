@@ -69,8 +69,8 @@ class ResampleTest(abc.ABC):
 @ResampleTest._register_subclass("csb")
 @ResampleTest._register_subclass("mb")
 @ResampleTest._register_subclass("cmb")
-class _ResampleTestTaskPLS(ResampleTest):
-    """Class that runs permutation and bootstrap tests for Task PLS. When run,
+class _ResampleTestPLS(ResampleTest):
+    """Class that runs permutation and bootstrap tests for PLS. When run,
     this class generates fields for permutation test information
     (permutation ratio, etc.) and for bootstrap test information (confidence
     intervals, standard errors, bootstrap ratios, etc.).
