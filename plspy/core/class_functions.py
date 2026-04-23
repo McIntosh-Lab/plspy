@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.stats
-
+import warnings
 from . import exceptions, gsvd
 
 
@@ -673,9 +673,17 @@ def _get_Busc(Bu, n_cond, Ybscan, cond_order, bscan):
 def _normalize(variable):
     """
     Normalize Euclidean distance of vectors in original 
- 	matrix to unit 1.
+    matrix to unit 1. Zero-norm columns are left as zero
+    with a warning.
     """
     base = np.linalg.norm(variable, axis=0)
-    normed_variable = np.divide(variable, base, where=base != 0)
-   
+    
+    if np.any(base == 0):
+        warnings.warn(
+            "_normalize: encountered column(s) with zero norm; "
+            "these will be returned as zero vectors.",
+            RuntimeWarning,
+        )
+    normed_variable = np.zeros_like(variable, dtype=float)
+    np.divide(variable, base, out=normed_variable, where=base != 0)
     return normed_variable
