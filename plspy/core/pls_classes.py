@@ -1433,7 +1433,7 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         self.Ybscan = self.Y[mask]
 
         # Check behavioural data
-        Y_std = class_functions._get_group_means(self.Ybscan, self.cond_order, return_std = True)
+        Y_std = class_functions._get_group_means(self.Ybscan, self.cond_order[:,self.bscan], return_std = True)
         if (Y_std==0).any():
             raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
 
@@ -1774,7 +1774,7 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         self.Ybscan = self.Y[mask]
 
         # Check behavioural data
-        Y_std = class_functions._get_group_means(self.Ybscan, self.cond_order, return_std = True)
+        Y_std = class_functions._get_group_means(self.Ybscan, self.cond_order[:,self.bscan], return_std = True)
         if (Y_std==0).any():
             raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
 
