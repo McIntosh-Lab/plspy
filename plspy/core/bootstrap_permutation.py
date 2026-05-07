@@ -531,7 +531,7 @@ class _ResampleTestPLS(ResampleTest):
 
             LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
                 
-            
+        Y_new = None    
         print("----Running Bootstrap Test----\n")
         step = max(1, niter // 10)
         for i in range(niter):
