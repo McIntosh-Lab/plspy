@@ -330,17 +330,30 @@ class _ResampleTestPLS(ResampleTest):
                     X, cond_order, return_indices=True, pls_alg=pls_alg
                 )
 
-            if pls_alg in ["rb", "csb"]:
-                Y_new, inds = resample.resample_without_replacement(
-                    Y, cond_order, return_indices=True, pls_alg=pls_alg
-                )
+            rerun_counter=0
+            while rerun_counter<100: #rerun up to 100x if behaviour std=0
+                if pls_alg in ["mct", "cst"]:
+                    break
+                if pls_alg in ["rb", "csb"]:
+                    Y_new, inds = resample.resample_without_replacement(
+                        Y, cond_order, return_indices=True, pls_alg=pls_alg
+                    )
 
-            if pls_alg in ["mb", "cmb"]:
-                X_new_T, inds = resample.resample_without_replacement(
-                    X, cond_order, return_indices=True, pls_alg=pls_alg
-                ) 
-                # Permute behavioural data (use "rb" option)
-                Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
+                if pls_alg in ["mb", "cmb"]:
+                    X_new_T, inds = resample.resample_without_replacement(
+                        X, cond_order, return_indices=True, pls_alg=pls_alg
+                    ) 
+                    # Permute behavioural data (use "rb" option)
+                    Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
+                
+                permY_std = class_functions._get_group_means(Y_new, cond_order, return_std = True)
+                if (permY_std==0).any():
+                    rerun_counter=rerun_counter+1
+                else:
+                    break
+            if rerun_counter==100:
+                raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
+            
             # indices[i] = inds ## TO DO: modify
             #print(inds)
             # inds = loadmat("BSAMP.mat")
@@ -525,24 +538,39 @@ class _ResampleTestPLS(ResampleTest):
             if (i + 1) % step == 0 or i == niter - 1:
                 print(f"Iteration {i + 1}/{niter}")
 
-            if pls_alg in ["mb", "cmb"]:
-                # X_new_T = Task portion
-                X_new_T = resample.resample_with_replacement(
-                    X, cond_order, return_indices=False
-                )
-                # X_new = Behaviour portion
-                X_new,inds = resample.resample_with_replacement(
-                    Xbscan, cond_order[:,bscan], return_indices=True
-                )
-                Y_new = Ybscan[inds, :]
-            else:
-            # return indices to use with Y_new
-                X_new, inds = resample.resample_with_replacement(
-                    X, cond_order, return_indices=True
-                )
-                if Y is not None:
-                    Y_new = Y[inds, :]
 
+            rerun_counter=0
+            while rerun_counter<100: #rerun up to 100x if behaviour std=0
+
+                if pls_alg in ["mb", "cmb"]:
+                    # X_new_T = Task portion
+                    X_new_T = resample.resample_with_replacement(
+                        X, cond_order, return_indices=False
+                    )
+                    # X_new = Behaviour portion
+                    X_new,inds = resample.resample_with_replacement(
+                        Xbscan, cond_order[:,bscan], return_indices=True
+                    )
+                    Y_new = Ybscan[inds, :]
+                else:
+                # return indices to use with Y_new
+                    X_new, inds = resample.resample_with_replacement(
+                        X, cond_order, return_indices=True
+                    )
+                    if Y is not None:
+                        Y_new = Y[inds, :]
+                if Y_new is not None:
+                    bootY_std = class_functions._get_group_means(Y_new, cond_order, return_std = True)
+                    if (bootY_std==0).any():
+                        rerun_counter=rerun_counter+1
+                        print(rerun_counter)
+                    else:
+                        break
+                else:
+                    break
+            if rerun_counter==100:
+                raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
+            
             #indices[i] = inds
             
         # #     # TESTING WITH MATLAB

@@ -236,6 +236,7 @@ def _compute_corr(X, Y, cond_order):  # , n_cond):
         # print(f"Yc_zsc: \n{Yc_zsc.shape}\n")
         np.nan_to_num(Xc_zsc, copy=False)
         np.nan_to_num(Yc_zsc, copy=False)
+
         R[
             start_R : Y.shape[1] + start_R,
         ] = np.matmul(Yc_zsc.T, Xc_zsc)
@@ -310,7 +311,7 @@ def _mean_single_group(x, sg_cond_order):
     return meaned
 
 
-def _get_group_means(X, cond_order):
+def _get_group_means(X, cond_order,return_std=False):
     """Computes the mean of each group and returns them.
 
     Computes the group-wise, element-wise mean of an input matrix `X` and
@@ -324,11 +325,15 @@ def _get_group_means(X, cond_order):
     cond_order : np.array
         Condition order for all groups in input `X`. Specifies the number
         of subjects per condition in each group.
-
+    return_std : boolean, optional
+        Optionally specify whether or not to return the standard deviations along
+        with the means.
     Returns
     -------
     meaned : np.array
         Condition-wise mean of a single group.
+    group_std: np.array
+        Standard deviations of each group.
     """
 
     group_means = np.empty((len(cond_order), X.shape[-1]))
@@ -337,15 +342,30 @@ def _get_group_means(X, cond_order):
     # index tracking beginning of each group
     start = 0
 
+    if return_std == True:
+        group_std = np.empty((len(cond_order), X.shape[-1]))
+
     for i in range(len(cond_order)):
-        group_means[i,] = np.mean(
-            X[
-                start : start + group_sums[i],
-            ],
-            axis=0,
-        )
+        if return_std == False:        
+            group_means[i,] = np.mean(
+                X[
+                    start : start + group_sums[i],
+                ],
+                axis=0,
+            )
+        else:
+            group_std[i,] = np.std(
+                X[
+                    start : start + group_sums[i],
+                ],
+                axis=0,
+            )            
+
         start += group_sums[i]
-    return group_means
+    if return_std == False:
+        return group_means
+    else:
+        return group_std 
 
 
 def _get_group_condition_means(X, cond_order):

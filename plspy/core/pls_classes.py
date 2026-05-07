@@ -556,6 +556,11 @@ class _RegularBehaviourPLS(_MeanCentreTaskPLS):
                     "up to the number of rows in the input matrices."
                 )
             self.cond_order = cond_order
+        
+        # Check behavioural data
+        Y_std = class_functions._get_group_means(self.Y, self.cond_order, return_std = True)
+        if (Y_std==0).any():
+            raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
 
         self.num_perm = num_perm
         self.num_boot = num_boot
@@ -1104,6 +1109,11 @@ class _ContrastBehaviourPLS(_ContrastTaskPLS):
 
         self.contrasts = class_functions._normalize(contrasts)
 
+        # Check behavioural data
+        Y_std = class_functions._get_group_means(self.Y, self.cond_order, return_std = True)
+        if (Y_std==0).any():
+            raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
+
         self.num_perm = num_perm
         self.num_boot = num_boot
         self.CI = CI
@@ -1421,7 +1431,12 @@ class _MultiblockPLS(_RegularBehaviourPLS):
         # i.e., Xbscan will contain all conditions and will be equivalent to X.
         self.Xbscan = self.X[mask]
         self.Ybscan = self.Y[mask]
-        
+
+        # Check behavioural data
+        Y_std = class_functions._get_group_means(self.Ybscan, self.cond_order, return_std = True)
+        if (Y_std==0).any():
+            raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
+
         # compute R correlation matrix
         self.multiblock = self._create_multiblock(
             self.X, self.cond_order, self.pls_alg, self.bscan, self.mctype,
@@ -1757,6 +1772,11 @@ class _ContrastMultiblockPLS(_MultiblockPLS):
         # i.e., Xbscan will contain all conditions and will be equivalent to X.
         self.Xbscan = self.X[mask]
         self.Ybscan = self.Y[mask]
+
+        # Check behavioural data
+        Y_std = class_functions._get_group_means(self.Ybscan, self.cond_order, return_std = True)
+        if (Y_std==0).any():
+            raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
 
         self.num_perm = num_perm
         self.num_boot = num_boot
