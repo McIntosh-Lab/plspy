@@ -524,12 +524,12 @@ class _ResampleTestPLS(ResampleTest):
 
         else:
             if pls_alg in ["rb"]:
-                ncols = np.prod(cond_order.shape) * Y.shape[1]
-
+                ncols = U.shape[1]
             if pls_alg in ["csb"]:
                 ncols = contrast.shape[1]
 
             LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
+
                 
         Y_new = None    
         print("----Running Bootstrap Test----\n")
