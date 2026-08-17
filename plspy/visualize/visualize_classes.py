@@ -408,26 +408,6 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
                 ]
             x_counter += sum(group_cond)  # Move the counter forward for the next group
 
-            # #Get confidence intervals
-            # ci_values = []
-            # condition_means = []
-            # for cond_idx in range(len(group_cond)):
-            #     # Extract data for the current condition
-            #     condition_data = group_data[
-            #         sum(group_cond[:cond_idx]) : sum(group_cond[:cond_idx + 1])
-            #     ]
-
-            #     # Compute the mean and confidence intervals for the mean
-            #     condition_means.append(condition_data.mean())
-
-            #     # Compute 5th and 95th percentiles
-            #     lower_percentile = np.percentile(condition_data, 5)  # 5th percentile
-            #     upper_percentile = np.percentile(condition_data, 95)  # 95th percentile
-
-            #     # Store as (lower bound, upper bound)
-            #     ci_values.append((condition_data.mean() - lower_percentile, upper_percentile - condition_data.mean()))
-
-
             #Get confidence intervals
             ci_values = []
             condition_means = []
@@ -449,8 +429,6 @@ class _TaskPLSBrainScorePlot(_SingularValuesPlot):
                 # Get upper and lower CI
                 lower_ci = pls_result.resample_tests.conf_ints[0].T[self.lv][cond_idx]
                 upper_ci = pls_result.resample_tests.conf_ints[1].T[self.lv][cond_idx]
-
-                # Store as (lower bound, upper bound)
                 ci_values.append((condition_data.mean() - lower_ci, upper_ci - condition_data.mean()))
 
             # Create DataFrame for plotting
