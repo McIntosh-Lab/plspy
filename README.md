@@ -22,6 +22,7 @@ To build from source, run these commands:
 git clone https://github.com/McIntosh-Lab/plspy.git
 cd plspy
 python setup.py install
+python -m pip install -r requirements.txt
 ```
 
 
