@@ -21,7 +21,11 @@ To build from source, run these commands:
 ```
 git clone https://github.com/McIntosh-Lab/plspy.git
 cd plspy
+python3 -m venv plspy-env
+. plspy-env/bin/activate
+pip install -e .
 python setup.py install
+python -m pip install -r requirements.txt
 ```
 
 
