@@ -325,10 +325,55 @@ class _ResampleTestPLS(ResampleTest):
                 print(f"Iteration {i + 1}/{niter}")
             # create resampled X matrix and get resampled indices
 
-            if pls_alg in ["mct", "cst"]:
-                X_new, inds = resample.resample_without_replacement(
-                    X, cond_order, return_indices=True, pls_alg=pls_alg
-                )
+            task_rerun_counter=0
+            while task_rerun_counter<500:
+                if pls_alg in ["mct", "cst"]:
+                    X_new, inds = resample.resample_without_replacement(
+                        X, cond_order, return_indices=True, pls_alg=pls_alg
+                    )
+
+                elif pls_alg in ["mb", "cmb"]:
+                    X_new_T, inds = resample.resample_without_replacement(
+                        X, cond_order, return_indices=True, pls_alg=pls_alg
+                    )
+                else: # if rb or csb
+                    break
+
+                ## Check for invalid permutations
+                duplicate_flag = 0 
+
+                # Split indices into groups and conditions based on cond_order
+                start=0
+                original_inds = np.array(list(range(np.sum(cond_order))))
+
+                for j, group_sizes in enumerate(cond_order):
+                    for cond_size in group_sizes:
+                        # ensure the permuted indices in each condition/group are different from original
+                        current_section_in_perm_ind = (inds[start : start + cond_size])
+                        current_section_in_orig_ind = (original_inds[start : start + cond_size])
+                        if (np.sort(current_section_in_perm_ind) == current_section_in_orig_ind).all():
+                            duplicate_flag=1
+                            break
+                        start += cond_size
+
+                    if duplicate_flag == 1:
+                        break                  
+
+                # ensure the permuted indices are unique
+                for existing_index in indices:
+                    if (inds == existing_index).all():
+                        duplicate_flag=1
+                        break                   
+
+                if duplicate_flag:
+                    task_rerun_counter=task_rerun_counter+1                
+                else:
+                    break
+                
+            indices[i] = inds 
+
+            if task_rerun_counter==500:
+                print("ERROR: Duplicated permutation orders are used!")
 
             rerun_counter=0
             while rerun_counter<100: #rerun up to 100x if behaviour std=0
@@ -338,11 +383,7 @@ class _ResampleTestPLS(ResampleTest):
                     Y_new, inds = resample.resample_without_replacement(
                         Y, cond_order, return_indices=True, pls_alg=pls_alg
                     )
-
                 if pls_alg in ["mb", "cmb"]:
-                    X_new_T, inds = resample.resample_without_replacement(
-                        X, cond_order, return_indices=True, pls_alg=pls_alg
-                    ) 
                     # Permute behavioural data (use "rb" option)
                     Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
                 
@@ -353,7 +394,8 @@ class _ResampleTestPLS(ResampleTest):
                     break
             if rerun_counter==100:
                 raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
-            
+
+
             # indices[i] = inds ## TO DO: modify
             #print(inds)
             # inds = loadmat("BSAMP.mat")
