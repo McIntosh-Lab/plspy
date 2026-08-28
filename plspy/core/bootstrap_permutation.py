@@ -344,7 +344,7 @@ class _ResampleTestPLS(ResampleTest):
 
                 # Split indices into groups and conditions based on cond_order
                 start=0
-                original_inds = np.array(list(range(np.sum(cond_order))))
+                original_inds = np.arange(np.sum(cond_order))
 
                 for j, group_sizes in enumerate(cond_order):
                     for cond_size in group_sizes:
@@ -360,7 +360,7 @@ class _ResampleTestPLS(ResampleTest):
                         break                  
 
                 # ensure the permuted indices are unique
-                for existing_index in indices:
+                for existing_index in indices[:i]:
                     if (inds == existing_index).all():
                         duplicate_flag=1
                         break                   
@@ -369,12 +369,12 @@ class _ResampleTestPLS(ResampleTest):
                     task_rerun_counter=task_rerun_counter+1                
                 else:
                     break
-                
-            indices[i] = inds 
 
-            if task_rerun_counter==500:
-                print("ERROR: Duplicated permutation orders are used!")
-
+            if pls_alg in ["mct", "cst","mb", "cmb"]:
+                indices[i] = inds
+                if task_rerun_counter==500:
+                    print("ERROR: Duplicated permutation orders are used!")             
+                     
             rerun_counter=0
             while rerun_counter<100: #rerun up to 100x if behaviour std=0
                 if pls_alg in ["mct", "cst"]:
@@ -575,44 +575,78 @@ class _ResampleTestPLS(ResampleTest):
                 
         Y_new = None    
         print("----Running Bootstrap Test----\n")
+
         step = max(1, niter // 10)
         for i in range(niter):
             if (i + 1) % step == 0 or i == niter - 1:
                 print(f"Iteration {i + 1}/{niter}")
 
+            duplicate_rerun_counter = 0
 
-            rerun_counter=0
-            while rerun_counter<100: #rerun up to 100x if behaviour std=0
+            while duplicate_rerun_counter < 500:
+                rerun_counter=0
+                while rerun_counter<100: #rerun up to 100x if behaviour std=0
 
-                if pls_alg in ["mb", "cmb"]:
-                    # X_new_T = Task portion
-                    X_new_T = resample.resample_with_replacement(
-                        X, cond_order, return_indices=False
-                    )
-                    # X_new = Behaviour portion
-                    X_new,inds = resample.resample_with_replacement(
-                        Xbscan, cond_order[:,bscan], return_indices=True
-                    )
-                    Y_new = Ybscan[inds, :]
-                else:
-                # return indices to use with Y_new
-                    X_new, inds = resample.resample_with_replacement(
-                        X, cond_order, return_indices=True
-                    )
-                    if Y is not None:
-                        Y_new = Y[inds, :]
-                if Y_new is not None:
-                    bootY_std = class_functions._get_group_means(Y_new, cond_order, return_std = True)
-                    if (bootY_std==0).any():
-                        rerun_counter=rerun_counter+1
-                        print(rerun_counter)
+                    if pls_alg in ["mb", "cmb"]:
+                        # X_new_T = Task portion
+                        X_new_T = resample.resample_with_replacement(
+                            X, cond_order, return_indices=False
+                        )
+                        # X_new = Behaviour portion
+                        X_new,inds = resample.resample_with_replacement(
+                            Xbscan, cond_order[:,bscan], return_indices=True
+                        )
+                        Y_new = Ybscan[inds, :]
+                    else:
+                    # return indices to use with Y_new
+                        X_new, inds = resample.resample_with_replacement(
+                            X, cond_order, return_indices=True
+                        )
+                        if Y is not None:
+                            Y_new = Y[inds, :]
+                    if Y_new is not None:
+                        bootY_std = class_functions._get_group_means(Y_new, cond_order, return_std = True)
+                        if (bootY_std==0).any():
+                            rerun_counter=rerun_counter+1
+                            print(rerun_counter)
+                        else:
+                            break
                     else:
                         break
+                if rerun_counter==100:
+                    raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
+
+                # =====================================================
+                # Check whether this bootstrap order has already been used
+                # =====================================================
+                duplicate_flag = 0
+
+                # Check against all previous bootstrap orders
+                if i > 0:
+                    for existing_index in indices[:i]:
+                        if (inds == existing_index).all():
+                            duplicate_flag=1
+                            break    
+
+                # Treat sequential/original order as a duplicate
+                if duplicate_flag == 0:
+                    original_inds = np.arange(np.sum(cond_order))
+                    inds = np.arange(np.sum(cond_order))
+                    if np.array_equal(inds, original_inds):
+                        duplicate_flag = 1
+
+                # If duplicate, generate another bootstrap order
+                if duplicate_flag==1:
+                    duplicate_rerun_counter += 1
                 else:
                     break
-            if rerun_counter==100:
-                raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
-            
+
+            # Save accepted bootstrap order
+            indices[i] = inds
+            if duplicate_rerun_counter == 500:
+                print("ERROR: Duplicated bootstrap orders are used!")
+
+
             #indices[i] = inds
             
         # #     # TESTING WITH MATLAB
