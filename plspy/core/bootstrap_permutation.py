@@ -687,7 +687,10 @@ class _ResampleTestPLS(ResampleTest):
 
                     # Treat sequential/original order as a duplicate
                     if duplicate_flag == 0:
-                        original_inds = np.arange(np.sum(cond_order))
+                        if pls_alg in ["mb", "cmb"]:
+                            original_inds = np.arange(np.sum(cond_order[:,bscan]))
+                        else:
+                            original_inds = np.arange(np.sum(cond_order))
                         if np.array_equal(inds, original_inds):
                             duplicate_flag = 1
 
