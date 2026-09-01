@@ -5,11 +5,17 @@ import scipy
 import scipy.stats
 from scipy.io import loadmat
 from scipy.stats import norm
-
+from math import ceil
 # project imports
 from . import class_functions, exceptions, gsvd, resample
 
 # import scipy.io as sio
+from itertools import combinations_with_replacement as cwr
+from math import comb
+
+def generate_max_boots(n, min_unique):
+    return [list(c) for c in cwr(range(n), n)
+            if min_unique <= len(set(c)) <= n - 1]
 
 class ResampleTest(abc.ABC):
     """Abstract base class for the ResampleTest class set. Forces existence
@@ -191,6 +197,7 @@ class _ResampleTestPLS(ResampleTest):
                     #self.llcorr,
                     #self.ulcorr,
                     self.boot_debug_dict,
+                    self.count_lowvariability_boots,
                 ) = self._bootstrap_test(
                     X,
                     Y,
@@ -215,6 +222,7 @@ class _ResampleTestPLS(ResampleTest):
                     self.boot_ratios,
                     self.LVcorr,
                     self.boot_debug_dict,
+                    self.count_lowvariability_boots,
                 ) = self._bootstrap_test(
                     X,
                     Y,
@@ -325,11 +333,56 @@ class _ResampleTestPLS(ResampleTest):
                 print(f"Iteration {i + 1}/{niter}")
             # create resampled X matrix and get resampled indices
 
-            if pls_alg in ["mct", "cst"]:
-                X_new, inds = resample.resample_without_replacement(
-                    X, cond_order, return_indices=True, pls_alg=pls_alg
-                )
+            task_rerun_counter=0
+            while task_rerun_counter<500:
+                if pls_alg in ["mct", "cst"]:
+                    X_new, inds = resample.resample_without_replacement(
+                        X, cond_order, return_indices=True, pls_alg=pls_alg
+                    )
 
+                elif pls_alg in ["mb", "cmb"]:
+                    X_new_T, inds = resample.resample_without_replacement(
+                        X, cond_order, return_indices=True, pls_alg=pls_alg
+                    )
+                else: # if rb or csb
+                    break
+
+                ## Check for invalid permutations
+                duplicate_flag = 0 
+
+                # Split indices into groups and conditions based on cond_order
+                start=0
+                original_inds = np.arange(np.sum(cond_order))
+
+                for j, group_sizes in enumerate(cond_order):
+                    for cond_size in group_sizes:
+                        # ensure the permuted indices in each condition/group are different from original
+                        current_section_in_perm_ind = (inds[start : start + cond_size])
+                        current_section_in_orig_ind = (original_inds[start : start + cond_size])
+                        if (np.sort(current_section_in_perm_ind) == current_section_in_orig_ind).all():
+                            duplicate_flag=1
+                            break
+                        start += cond_size
+
+                    if duplicate_flag == 1:
+                        break                  
+
+                # ensure the permuted indices are unique
+                for existing_index in indices[:i]:
+                    if (inds == existing_index).all():
+                        duplicate_flag=1
+                        break                   
+
+                if duplicate_flag:
+                    task_rerun_counter=task_rerun_counter+1                
+                else:
+                    break
+
+            if pls_alg in ["mct", "cst","mb", "cmb"]:
+                indices[i] = inds
+                if task_rerun_counter==500:
+                    print("ERROR: Duplicated permutation orders are used!")             
+                     
             rerun_counter=0
             while rerun_counter<100: #rerun up to 100x if behaviour std=0
                 if pls_alg in ["mct", "cst"]:
@@ -338,11 +391,7 @@ class _ResampleTestPLS(ResampleTest):
                     Y_new, inds = resample.resample_without_replacement(
                         Y, cond_order, return_indices=True, pls_alg=pls_alg
                     )
-
                 if pls_alg in ["mb", "cmb"]:
-                    X_new_T, inds = resample.resample_without_replacement(
-                        X, cond_order, return_indices=True, pls_alg=pls_alg
-                    ) 
                     # Permute behavioural data (use "rb" option)
                     Y_new, inds = resample.resample_without_replacement(Ybscan, cond_order[:,bscan],pls_alg="rb",return_indices=True)
                 
@@ -353,7 +402,8 @@ class _ResampleTestPLS(ResampleTest):
                     break
             if rerun_counter==100:
                 raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
-            
+
+
             # indices[i] = inds ## TO DO: modify
             #print(inds)
             # inds = loadmat("BSAMP.mat")
@@ -491,6 +541,46 @@ class _ResampleTestPLS(ResampleTest):
         """
         debug = True
         debug_dict = {}
+        
+        rng=np.random.default_rng()
+        group_sizes = cond_order[:, 0]
+        # Ensure groups are >= 3 subjects
+        n_min = min(group_sizes)
+        if n_min < 3:
+            raise ValueError("each group needs >= 3 subjects")
+        
+        min_unique_digits = ceil(n_min/2)
+        create_max_boots = 0
+
+        def pregenerate_boots(group_sizes, min_unique_digits, niter):
+            max_boots_per_group = np.zeros(len(group_sizes),dtype=object)
+            num_max_boots_per_group = np.zeros(len(group_sizes))
+
+            total_group_sizes = 0 
+            for j, group_size in enumerate(group_sizes):
+                current_max_boots = generate_max_boots(group_size, min_unique_digits)
+
+                for k, boot in enumerate(current_max_boots):
+                    for m, sub_index in enumerate(boot):
+                        current_max_boots[k][m] = sub_index + total_group_sizes
+
+                max_boots_per_group[j] = current_max_boots
+                rng.shuffle(max_boots_per_group[j])
+                num_max_boots_per_group[j]=len(max_boots_per_group[j])
+                total_group_sizes += int(group_size)
+            
+            if niter > min(num_max_boots_per_group):
+                niter = int(min(num_max_boots_per_group))
+                print(f"'WARNING: this number of subjects can only have ' {niter} ' different bootstrap samples. Set num_boot to this theoretical maximum.")
+
+            return max_boots_per_group, niter
+
+        if max(group_sizes) <= 8 and len(cond_order[0])==1:
+            create_max_boots = 1
+            X_inds,niter = pregenerate_boots(group_sizes, min_unique_digits, niter)
+            if pls_alg in ["mb", "cmb"]:
+                X_T_inds, _ = pregenerate_boots(group_sizes, min_unique_digits, niter)
+
 
         # allocate memory for sampled values
         left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
@@ -511,7 +601,7 @@ class _ResampleTestPLS(ResampleTest):
 
         if pls_alg in ["mct","cst"]:
             Tdistrib = np.empty((niter, U.shape[0], U.shape[1]))
-  
+            
         elif pls_alg in ["mb", "cmb"]:
             if pls_alg in ["mb"]:
                 ncols = U.shape[1]
@@ -521,6 +611,7 @@ class _ResampleTestPLS(ResampleTest):
             left_sv_sampled = np.empty((niter,np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
             Tdistrib = np.empty((niter, np.prod(cond_order.shape), ncols))
             LVcorr = np.empty((niter, np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
+            indices = np.empty((niter, Ybscan.shape[0])) # overwrite indices shape to match Ybscan number of rows
 
         else:
             if pls_alg in ["rb"]:
@@ -531,48 +622,131 @@ class _ResampleTestPLS(ResampleTest):
             LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
 
                 
-        Y_new = None    
+        Y_new = None
+
         print("----Running Bootstrap Test----\n")
+        if pls_alg in ["rb","csb"]:
+            count_lowvariability_boots = np.zeros(Y.shape[1])
+        elif pls_alg in ["mb", "cmb"]:
+            count_lowvariability_boots = np.zeros(Ybscan.shape[1])
+        else:
+            count_lowvariability_boots = None    
+
         step = max(1, niter // 10)
         for i in range(niter):
             if (i + 1) % step == 0 or i == niter - 1:
                 print(f"Iteration {i + 1}/{niter}")
 
+            if create_max_boots ==0:
+                duplicate_rerun_counter = 0
 
-            rerun_counter=0
-            while rerun_counter<100: #rerun up to 100x if behaviour std=0
+                while duplicate_rerun_counter < 500:
+                    rerun_counter=0
+                    while rerun_counter<100: #rerun up to 100x if behaviour std=0
+                        
+                        if pls_alg in ["mb", "cmb"]:
+                            # X_new_T = Task portion
+                            X_new_T = resample.resample_with_replacement(
+                                X, cond_order, return_indices=False
+                            )
+                            # X_new = Behaviour portion
+                            X_new,inds = resample.resample_with_replacement(
+                                Xbscan, cond_order[:,bscan], return_indices=True
+                            )
+                            Y_new = Ybscan[inds, :]
+                        else:
+                        # return indices to use with Y_new
+                            X_new, inds = resample.resample_with_replacement(
+                                X, cond_order, return_indices=True
+                            )
+                            if Y is not None:
+                                Y_new = Y[inds, :]
+                        if Y_new is not None:
+                            bootY_std = class_functions._get_group_means(Y_new, cond_order, return_std = True)
+                            if (bootY_std==0).any():
+                                rerun_counter=rerun_counter+1
+                                print(rerun_counter)
+                            else:
+                                break
+                        else:
+                            break
+                    if rerun_counter==100:
+                        raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
+
+                    # =====================================================
+                    # Check whether this bootstrap order has already been used
+                    # =====================================================
+                    duplicate_flag = 0
+
+                    # Check against all previous bootstrap orders
+                    if i > 0:
+                        for existing_index in indices[:i]:
+                            if (inds == existing_index).all():
+                                duplicate_flag=1
+                                break    
+
+                    # Treat sequential/original order as a duplicate
+                    if duplicate_flag == 0:
+                        if pls_alg in ["mb", "cmb"]:
+                            original_inds = np.arange(np.sum(cond_order[:,bscan]))
+                        else:
+                            original_inds = np.arange(np.sum(cond_order))
+                        if np.array_equal(inds, original_inds):
+                            duplicate_flag = 1
+
+                    # Check if at least 50% unique values 
+                    if duplicate_flag == 0:
+                        group_position_counter = 0
+                        for group in group_sizes:
+                            group_total_size = np.sum(group)
+                            if len(set(inds[group_position_counter:group_position_counter+group_total_size])) < min_unique_digits:
+                                duplicate_flag = 1
+                                break
+                            group_position_counter+=group_total_size
+
+                    # If duplicate, generate another bootstrap order
+                    if duplicate_flag==1:
+                        duplicate_rerun_counter += 1
+                    else:
+                        break
+
+                # Save accepted bootstrap order
+                indices[i] = inds
+                if duplicate_rerun_counter == 500:
+                    print("ERROR: Duplicated bootstrap orders are used!")
+
+            else:
+                inds = []
+                for j, group_size in enumerate(group_sizes):
+                    inds=inds + X_inds[j][i]
 
                 if pls_alg in ["mb", "cmb"]:
                     # X_new_T = Task portion
-                    X_new_T = resample.resample_with_replacement(
-                        X, cond_order, return_indices=False
-                    )
+                    T_inds=[]
+                    for j, group_size in enumerate(group_sizes):
+                        T_inds=T_inds + X_T_inds[j][i]
+
+                    X_new_T = X[T_inds,:]
+
                     # X_new = Behaviour portion
-                    X_new,inds = resample.resample_with_replacement(
-                        Xbscan, cond_order[:,bscan], return_indices=True
-                    )
+                    X_new = Xbscan[inds,:]            
                     Y_new = Ybscan[inds, :]
+
                 else:
                 # return indices to use with Y_new
-                    X_new, inds = resample.resample_with_replacement(
-                        X, cond_order, return_indices=True
-                    )
+                    X_new =  X[inds,:]
                     if Y is not None:
                         Y_new = Y[inds, :]
-                if Y_new is not None:
-                    bootY_std = class_functions._get_group_means(Y_new, cond_order, return_std = True)
-                    if (bootY_std==0).any():
-                        rerun_counter=rerun_counter+1
-                        print(rerun_counter)
-                    else:
-                        break
-                else:
-                    break
-            if rerun_counter==100:
-                raise Exception("Please check your behaviour data, and make sure that none of the columns are all the same for each group.")
-            
+
+            # Check low variabilty in behavioural data
+            if Y_new is not None:
+                n_rows = Y_new.shape[0]
+                for c in range(Y_new.shape[1]):
+                    if np.unique(Y_new[:, c], return_counts=True)[1].max() > 0.5 * n_rows:
+                        count_lowvariability_boots[c] += 1
+
             #indices[i] = inds
-            
+
         # #     # TESTING WITH MATLAB
             # inds = loadmat("TSAMP.mat") 
             # inds = inds["TSAMP"][:,i] -1
@@ -733,6 +907,9 @@ class _ResampleTestPLS(ResampleTest):
                 conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
                 conf_int_T =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
 
+        if count_lowvariability_boots is not None:
+            if np.any(count_lowvariability_boots > 0):
+                print("For at least one behavior measure, the minimum unique values of resampled behavior data does not exceed 50% of its total.")
 
         if debug:
             debug_dict["left_sv_sampled"] = left_sv_sampled
@@ -750,6 +927,7 @@ class _ResampleTestPLS(ResampleTest):
                 #llcorr,
                 #ulcorr,
                 debug_dict,
+                count_lowvariability_boots
             )
         elif pls_alg in ["mb", "cmb"]:
             return (
@@ -761,6 +939,7 @@ class _ResampleTestPLS(ResampleTest):
                 #llcorr,
                 #ulcorr,
                 debug_dict,
+                count_lowvariability_boots,
             )
         else:
             return (conf_int, std_errs, boot_ratios, debug_dict)
