@@ -541,50 +541,8 @@ class _ResampleTestPLS(ResampleTest):
         """
         debug = True
         debug_dict = {}
-
-        # allocate memory for sampled values
-        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
-        right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
-        indices = np.empty((niter, X.shape[0]))
-        rng=np.random.default_rng()
-        # #MATLAB equivalent
-        # if pls_alg in ["mct"]:
-        #     u_sum = np.zeros_like(V)
-        # if pls_alg in ["cst", "csb", "cmb"]:
-        #     u_sum = V
-        # if pls_alg in ["mb", "rb"]:
-        #     u_sum = V * s
-        # u_sq = np.power(u_sum,2)
         
-        # m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
-        # print(f"MATLAB SHAPE: {m_inds.shape}")
-
-        if pls_alg in ["mct","cst"]:
-            Tdistrib = np.empty((niter, U.shape[0], U.shape[1]))
-  
-        elif pls_alg in ["mb", "cmb"]:
-            if pls_alg in ["mb"]:
-                ncols = U.shape[1]
-            else:
-                ncols = contrast.shape[1]
-
-            left_sv_sampled = np.empty((niter,np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
-            Tdistrib = np.empty((niter, np.prod(cond_order.shape), ncols))
-            LVcorr = np.empty((niter, np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
-
-        else:
-            if pls_alg in ["rb"]:
-                ncols = U.shape[1]
-            if pls_alg in ["csb"]:
-                ncols = contrast.shape[1]
-
-            LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
-
-                
-        Y_new = None    
-        print("----Running Bootstrap Test----\n")
-
-        count_lowvariability_boots = 0
+        rng=np.random.default_rng()
         group_sizes = cond_order[:, 0]
         # Ensure groups are >= 3 subjects
         n_min = min(group_sizes)
@@ -623,6 +581,56 @@ class _ResampleTestPLS(ResampleTest):
             if pls_alg in ["mb", "cmb"]:
                 X_T_inds, _ = pregenerate_boots(group_sizes, min_unique_digits, niter)
 
+
+        # allocate memory for sampled values
+        left_sv_sampled = np.empty((niter, U.shape[0], U.shape[1]))
+        right_sv_sampled = np.empty((niter, V.shape[0], V.shape[1]))
+        indices = np.empty((niter, X.shape[0]))
+
+        # #MATLAB equivalent
+        # if pls_alg in ["mct"]:
+        #     u_sum = np.zeros_like(V)
+        # if pls_alg in ["cst", "csb", "cmb"]:
+        #     u_sum = V
+        # if pls_alg in ["mb", "rb"]:
+        #     u_sum = V * s
+        # u_sq = np.power(u_sum,2)
+        
+        # m_inds = sio.loadmat("/home/nfrazier-logue/matlab/samps.mat")["x"].T - 1
+        # print(f"MATLAB SHAPE: {m_inds.shape}")
+
+        if pls_alg in ["mct","cst"]:
+            Tdistrib = np.empty((niter, U.shape[0], U.shape[1]))
+            
+        elif pls_alg in ["mb", "cmb"]:
+            if pls_alg in ["mb"]:
+                ncols = U.shape[1]
+            else:
+                ncols = contrast.shape[1]
+
+            left_sv_sampled = np.empty((niter,np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1],ncols))
+            Tdistrib = np.empty((niter, np.prod(cond_order.shape), ncols))
+            LVcorr = np.empty((niter, np.prod(cond_order[:,bscan].shape) * Ybscan.shape[1], ncols,))
+            indices = np.empty((niter, Ybscan.shape[0])) # overwrite indices shape to match Ybscan number of rows
+
+        else:
+            if pls_alg in ["rb"]:
+                ncols = U.shape[1]
+            if pls_alg in ["csb"]:
+                ncols = contrast.shape[1]
+
+            LVcorr = np.empty((niter, np.prod(cond_order.shape) * Y.shape[1], ncols,))
+
+                
+        Y_new = None
+
+        print("----Running Bootstrap Test----\n")
+        if pls_alg in ["rb","csb"]:
+            count_lowvariability_boots = np.zeros(Y.shape[1])
+        elif pls_alg in ["mb", "cmb"]:
+            count_lowvariability_boots = np.zeros(Ybscan.shape[1])
+        else:
+            count_lowvariability_boots = None    
 
         step = max(1, niter // 10)
         for i in range(niter):
@@ -683,10 +691,15 @@ class _ResampleTestPLS(ResampleTest):
                         if np.array_equal(inds, original_inds):
                             duplicate_flag = 1
 
-                    # Check if at least 50% unique values
+                    # Check if at least 50% unique values 
                     if duplicate_flag == 0:
-                        if len(set(inds)) < min_unique_digits:
-                            duplicate_flag = 1                    
+                        group_position_counter = 0
+                        for group in group_sizes:
+                            group_total_size = np.sum(group)
+                            if len(set(inds[group_position_counter:group_position_counter+group_total_size])) < min_unique_digits:
+                                duplicate_flag = 1
+                                break
+                            group_position_counter+=group_total_size
 
                     # If duplicate, generate another bootstrap order
                     if duplicate_flag==1:
@@ -713,8 +726,9 @@ class _ResampleTestPLS(ResampleTest):
                     X_new_T = X[T_inds,:]
 
                     # X_new = Behaviour portion
-                    X_new = X[inds,:]            
+                    X_new = Xbscan[inds,:]            
                     Y_new = Ybscan[inds, :]
+
                 else:
                 # return indices to use with Y_new
                     X_new =  X[inds,:]
@@ -723,10 +737,11 @@ class _ResampleTestPLS(ResampleTest):
 
             # Check low variabilty in behavioural data
             if Y_new is not None:
-                if np.max(np.unique(Y_new, return_counts=True)[1]) > 0.5 * len(Y_new): 
-                    count_lowvariability_boots += 1
-                
-            
+                n_rows = Y_new.shape[0]
+                for c in range(Y_new.shape[1]):
+                    if np.unique(Y_new[:, c], return_counts=True)[1].max() > 0.5 * n_rows:
+                        count_lowvariability_boots[c] += 1
+
             #indices[i] = inds
 
         # #     # TESTING WITH MATLAB
@@ -889,9 +904,9 @@ class _ResampleTestPLS(ResampleTest):
                 conf_tmp = std_errs_tmp * CI_zscore # default = 1.96
                 conf_int_T =(Tvsc_orig - conf_tmp,Tvsc_orig + conf_tmp)
 
-        if count_lowvariability_boots > 0:
-            print("For at least one behavior measure, the minimum unique values of resampled behavior data does not exceed 50% of its total.")
-            #self.count_lowvariability_boots=count_lowvariability_boots
+        if count_lowvariability_boots is not None:
+            if np.any(count_lowvariability_boots > 0):
+                print("For at least one behavior measure, the minimum unique values of resampled behavior data does not exceed 50% of its total.")
 
         if debug:
             debug_dict["left_sv_sampled"] = left_sv_sampled
