@@ -22,7 +22,7 @@ plspy.pls\_classes
 ~~~~~~~~~~~~~~~~~~
 
 *Options*
-""""""""
+"""""""""
 - :class:`Mean-Centred Task PLS <plspy.pls_classes._MeanCentreTaskPLS>`
 - :class:`Behavioural PLS <plspy.pls_classes._RegularBehaviourPLS>`
 - :class:`Contrast Task PLS <plspy.pls_classes._ContrastTaskPLS>`
