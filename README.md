@@ -10,24 +10,16 @@ Check out the documentation for `plspy` at https://plspy.readthedocs.io/en/lates
 
 
 ## Installation
-
-The following steps will download and install plspy to your computer:
-
-`pip install plspy`
-
-> **Note:** Currently, the version available via `pip install` is not the most up to date. For the latest features, bug fixes, and development updates, we recommend installing from source.
-To build from source, run these commands:
+To install the latest version of plspy, clone the repository and install the package from source:
 
 ```
 git clone https://github.com/McIntosh-Lab/plspy.git
 cd plspy
 python3 -m venv plspy-env
-. plspy-env/bin/activate
-pip install -e .
-python setup.py install
+source plspy-env/bin/activate
+python -m pip install -e .
 python -m pip install -r requirements.txt
 ```
-
 
 ## Usage
 
