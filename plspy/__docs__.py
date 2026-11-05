@@ -32,6 +32,43 @@ exceptions
 
 
 plspy_body = """
+Installation
+============
+
+To install the latest version of **plspy**, clone the repository and install the package from source.
+
+1. Clone the repository:
+
+   .. code-block:: bash
+
+      git clone https://github.com/McIntosh-Lab/plspy.git
+      cd plspy
+
+2. Create and activate a virtual environment:
+
+   .. code-block:: bash
+
+      python3 -m venv plspy-env
+      source plspy-env/bin/activate
+
+3. Install plspy and its dependencies:
+
+   .. code-block:: bash
+
+      python -m pip install -e .
+      python -m pip install -r requirements.txt
+
+Installing in editable mode (i.e., with the -e flag) allows changes to the local source code to take
+effect immediately without reinstalling the package. This is useful for
+users who wish to modify the codebase or contribute to development.
+
+To update an existing local copy of **plspy** with the latest changes from GitHub, run
+the following command from the repository directory:
+
+.. code-block:: bash
+
+   git pull
+
 
 Usage Examples
 ==============
