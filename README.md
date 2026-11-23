@@ -74,3 +74,6 @@ Available methods:
 * "mb"  - Multiblock PLS
   
 * "cmb" - Contrast Multiblock PLS
+
+
+#### The [examples folder](/examples/) includes a notebook for running a regular behavioural PLS analysis.
